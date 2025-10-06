@@ -59,23 +59,34 @@
         const CLIENT_ID = '810564581383-q8bl4g6f2ttd0n0i0c986277tfqap9r5.apps.googleusercontent.com'; // PASTE YOUR CLIENT ID HERE
         const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
-        // --- GLOBAL STATE & DOM ELEMENTS ---
+        // --- GLOBAL STATE ---
         let tokenClient;
         const state = { currentUser: null, uploadedFileLinks: [], isAuthenticated: false, googleApiReady: false };
-        const dom = {}; // To hold all DOM elements
-        ['loginSection', 'adminPanel', 'customerPanel', 'postFormSection', 'loginForm', 'loginBtn', 'statusDiv', 'welcomeMessage', 'showFormBtn', 'postForm', 'submitPostBtn', 'postStatusDiv', 'backToPanelBtn', 'uploadBtn', 'fileList'].forEach(id => {
-            dom[id] = document.getElementById(id.replace(/Div|Btn|Form|Section|Message|List/,'-'.toLowerCase()));
-             if (!dom[id]) dom[id] = document.getElementById(id);
-        });
-        dom.statusDiv = document.getElementById('status');
-        dom.postStatusDiv = document.getElementById('post-status');
+
+        // --- DOM ELEMENTS (Corrected) ---
+        const loginSection = document.getElementById('login-section');
+        const adminPanel = document.getElementById('admin-panel');
+        const customerPanel = document.getElementById('customer-panel');
+        const postFormSection = document.getElementById('post-form-section');
+        const loginForm = document.getElementById('login-form');
+        const loginBtn = document.getElementById('login-btn');
+        const statusDiv = document.getElementById('status');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const showFormBtn = document.getElementById('show-form-btn');
+        const postForm = document.getElementById('post-form');
+        const submitPostBtn = document.getElementById('submit-post-btn');
+        const postStatusDiv = document.getElementById('post-status');
+        const backToPanelBtn = document.getElementById('back-to-panel-btn');
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileList = document.getElementById('file-list');
 
         const setStatus = (element, message, type = 'info') => { element.textContent = message; element.className = type; };
-
+        
         // --- GOOGLE API DYNAMIC LOADING & INITIALIZATION ---
         let gapiScript, gisScript;
         function loadGoogleScripts() {
             return new Promise((resolve, reject) => {
+                if (window.gapi && window.google) return resolve(); // Already loaded
                 let loaded = 0;
                 const checkDone = () => { if (++loaded === 2) resolve(); };
                 
@@ -96,17 +107,17 @@
         async function initializeGapiClient() { await gapi.client.init({ clientId: CLIENT_ID, scope: SCOPES, discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"] }); }
         async function initializeGisClient() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: '' }); }
 
-        // --- GOOGLE DRIVE UPLOAD LOGIC ---
         function handleUploadClick() {
+            if (!tokenClient) { setStatus(postStatusDiv, 'Google API is not ready yet. Please wait a moment.', 'error'); return; }
             if (!state.isAuthenticated) {
-                setStatus(dom.postStatusDiv, 'Authenticating... Please check for a pop-up.', 'info');
+                setStatus(postStatusDiv, 'Authenticating... Please check for a pop-up.', 'info');
                 tokenClient.callback = (resp) => {
                     if (resp.error) {
-                        setStatus(dom.postStatusDiv, 'Authentication failed. Please allow pop-ups and try again.', 'error');
+                        setStatus(postStatusDiv, 'Authentication failed. Please allow pop-ups and try again.', 'error');
                         return;
                     }
                     state.isAuthenticated = true;
-                    setStatus(dom.postStatusDiv, 'Authentication successful! Select your files.', 'success');
+                    setStatus(postStatusDiv, 'Authentication successful! Select your files.', 'success');
                     openFileDialog();
                 };
                 if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({ prompt: 'consent' }); } 
@@ -116,68 +127,46 @@
             }
         }
         
-        // Compacted functions from before, no changes needed
-        const openFileDialog=()=>{const e=document.createElement("input");e.type="file",e.multiple=!0,e.onchange=t=>Array.from(t.target.files).forEach(uploadFile),e.click()},uploadFile=e=>{const t={name:e.name,mimeType:e.type},o=new FormData;o.append("metadata",new Blob([JSON.stringify(t)],{type:"application/json"})),o.append("file",e);const n=gapi.client.getToken().access_token;setStatus(dom.postStatusDiv,`Uploading ${e.name}...`,"info"),fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",{method:"POST",headers:{Authorization:`Bearer ${n}`},body:o}).then(e=>e.json()).then(t=>{if(t.id){const o=`https://drive.google.com/uc?id=${t.id}`;state.uploadedFileLinks.push(o);const n=document.createElement("li");n.textContent=`✅ ${e.name}`,dom.fileList.appendChild(n),setStatus(dom.postStatusDiv,"Upload complete!","success")}else throw new Error("Upload failed for "+e.name)}).catch(e=>setStatus(dom.postStatusDiv,e.message,"error"))};
+        function openFileDialog(){const i=document.createElement("input");i.type="file",i.multiple=!0,i.onchange=e=>Array.from(e.target.files).forEach(uploadFile),i.click()}
+        function uploadFile(e){const t={name:e.name,mimeType:e.type},o=new FormData;o.append("metadata",new Blob([JSON.stringify(t)],{type:"application/json"})),o.append("file",e);const n=gapi.client.getToken().access_token;setStatus(postStatusDiv,`Uploading ${e.name}...`,"info"),fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",{method:"POST",headers:{Authorization:`Bearer ${n}`},body:o}).then(e=>e.json()).then(t=>{if(t.id){const o=`https://drive.google.com/uc?id=${t.id}`;state.uploadedFileLinks.push(o);const n=document.createElement("li");n.textContent=`✅ ${e.name}`,fileList.appendChild(n),setStatus(postStatusDiv,"Upload complete!","success")}else throw new Error("Upload failed for "+e.name)}).catch(e=>setStatus(postStatusDiv,e.message,"error"))}
         
-        // --- MAIN APP LOGIC ---
-        async function handleLogin(event) {
-            event.preventDefault();
-            const username = document.getElementById('username').value, password = document.getElementById('password').value;
-            setStatus(dom.statusDiv, 'Logging in...', 'info');
-            dom.loginBtn.disabled = true;
-            try {
-                const response = await fetch(LOGIN_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
-                const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'Server error');
-                state.currentUser = username;
-                setStatus(dom.statusDiv, 'Login successful!', 'success');
-                showPanel(data.role);
-            } catch (error) {
-                setStatus(dom.statusDiv, error.message, 'error');
-            } finally {
-                dom.loginBtn.disabled = false;
-            }
-        }
-
-        async function handlePostSubmit(event) { /* ... same as before, no changes needed ... */ }
-        function showPanel(role) { /* ... same as before, no changes needed ... */ }
+        async function handleLogin(e){e.preventDefault();const t=document.getElementById("username").value,o=document.getElementById("password").value;setStatus(statusDiv,"Logging in...","info"),loginBtn.disabled=!0;try{const e=await fetch(LOGIN_WORKFLOW_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:t,password:o})}),n=await e.json();if(!e.ok)throw new Error(n.message||"Server error");state.currentUser=t,setStatus(statusDiv,"Login successful!","success"),showPanel(n.role)}catch(e){setStatus(statusDiv,e.message,"error")}finally{loginBtn.disabled=!1}}
+        
+        async function handlePostSubmit(e){e.preventDefault(),setStatus(postStatusDiv,"Submitting post...","info"),submitPostBtn.disabled=!0;try{const e={username:state.currentUser,PostTitle:document.getElementById("postTitle").value,PostContent:document.getElementById("postContent").value,FileLinks:state.uploadedFileLinks},t=await fetch(POST_WORKFLOW_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(e)});if(!t.ok)throw new Error("Failed to submit post.");setStatus(postStatusDiv,"Post submitted! Redirecting...","success"),setTimeout(()=>{postForm.reset(),fileList.innerHTML="",state.uploadedFileLinks=[],postFormSection.style.display="none",customerPanel.style.display="block",setStatus(postStatusDiv,"","info")},2e3)}catch(e){setStatus(postStatusDiv,e.message,"error")}finally{submitPostBtn.disabled=!1}}
+        
+        function showPanel(e){loginSection.style.display="none","admin"===e?adminPanel.style.display="block":"customer"===e?(welcomeMessage.textContent=`Welcome, ${state.currentUser}!`,customerPanel.style.display="block"):(loginSection.style.display="block",setStatus(statusDiv,"Invalid user role.","error"))}
 
         // --- EVENT LISTENERS ---
-        dom.loginForm.addEventListener('submit', handleLogin);
-        dom.postForm.addEventListener('submit', handlePostSubmit);
+        loginForm.addEventListener('submit', handleLogin);
+        postForm.addEventListener('submit', handlePostSubmit);
 
-        dom.showFormBtn.addEventListener('click', () => {
-            dom.customerPanel.style.display = 'none';
-            dom.postFormSection.style.display = 'block';
+        showFormBtn.addEventListener('click', () => {
+            customerPanel.style.display = 'none';
+            postFormSection.style.display = 'block';
 
-            // **NEW LOGIC:** Proactively start loading Google API
             if (!state.googleApiReady) {
-                setStatus(dom.postStatusDiv, 'Initializing file uploader...', 'info');
+                setStatus(postStatusDiv, 'Initializing file uploader...', 'info');
                 loadGoogleScripts()
                     .then(() => {
                         state.googleApiReady = true;
-                        dom.uploadBtn.disabled = false;
-                        dom.uploadBtn.textContent = 'Select and Upload Files';
-                        setStatus(dom.postStatusDiv, 'Uploader is ready.', 'success');
+                        uploadBtn.disabled = false;
+                        uploadBtn.textContent = 'Select and Upload Files';
+                        setStatus(postStatusDiv, 'Uploader is ready.', 'success');
                     })
                     .catch(err => {
                         console.error("Google Script loading failed:", err);
-                        dom.uploadBtn.textContent = 'Uploader Failed to Load';
-                        setStatus(dom.postStatusDiv, 'Could not load Google API.', 'error');
+                        uploadBtn.textContent = 'Uploader Failed to Load';
+                        setStatus(postStatusDiv, 'Could not load Google API.', 'error');
                     });
             }
         });
 
-        dom.backToPanelBtn.addEventListener('click', () => {
-            dom.postFormSection.style.display = 'none';
-            dom.customerPanel.style.display = 'block';
+        backToPanelBtn.addEventListener('click', () => {
+            postFormSection.style.display = 'none';
+            customerPanel.style.display = 'block';
         });
 
-        dom.uploadBtn.addEventListener('click', handleUploadClick);
-        
-        // Compacted functions
-        async function handlePostSubmit(e){e.preventDefault(),setStatus(dom.postStatusDiv,"Submitting post...","info"),dom.submitPostBtn.disabled=!0;try{const e={username:state.currentUser,PostTitle:document.getElementById("postTitle").value,PostContent:document.getElementById("postContent").value,FileLinks:state.uploadedFileLinks},t=await fetch(POST_WORKFLOW_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(e)});if(!t.ok)throw new Error("Failed to submit post.");setStatus(dom.postStatusDiv,"Post submitted! Redirecting...","success"),setTimeout(()=>{dom.postForm.reset(),dom.fileList.innerHTML="",state.uploadedFileLinks=[],dom.postFormSection.style.display="none",dom.customerPanel.style.display="block",setStatus(dom.postStatusDiv,"","info")},2e3)}catch(e){setStatus(dom.postStatusDiv,e.message,"error")}finally{dom.submitPostBtn.disabled=!1}}
-        function showPanel(e){dom.loginSection.style.display="none","admin"===e?dom.adminPanel.style.display="block":"customer"===e?(dom.welcomeMessage.textContent=`Welcome, ${state.currentUser}!`,dom.customerPanel.style.display="block"):(dom.loginSection.style.display="block",setStatus(dom.statusDiv,"Invalid user role.","error"))}
+        uploadBtn.addEventListener('click', handleUploadClick);
     </script>
 </body>
 </html>
