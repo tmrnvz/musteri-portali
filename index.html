@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portal Login</title>
     <style>
+        /* CSS still the same */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .container { background: white; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 500px; text-align: center; }
         h1, h2 { color: #1c1e21; margin-bottom: 2rem; }
@@ -18,42 +19,20 @@
         #status, #post-status { margin-top: 1.5rem; font-weight: bold; min-height: 20px; }
         .error { color: #d9534f; }
         .success { color: #5cb85c; }
+        #file-list li { list-style: none; background: #f0f2f5; padding: 5px 10px; border-radius: 4px; margin-bottom: 5px; font-size: 0.9em; display: flex; justify-content: space-between; align-items: center; }
     </style>
+    <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
+    <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
 </head>
 <body>
 
     <div class="container">
-        <!-- 1. Login Form -->
-        <div id="login-section">
-            <h1>Portal Login</h1>
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required>
-                </div>
-                <button type="submit" id="login-btn">Log In</button>
-            </form>
-            <div id="status"></div>
-        </div>
+        <!-- Login, Admin and Customer Panels are the same -->
+        <div id="login-section"><h1>Portal Login</h1><form id="login-form"><div class="form-group"><label for="username">Username</label><input type="text" id="username" required></div><div class="form-group"><label for="password">Password</label><input type="password" id="password" required></div><button type="submit" id="login-btn">Log In</button></form><div id="status"></div></div>
+        <div id="admin-panel" style="display:none;"><h1>Admin Panel</h1><p>Welcome, Admin!</p></div>
+        <div id="customer-panel" style="display:none;"><h1>Customer Panel</h1><p id="welcome-message"></p><button id="show-form-btn">Create New Post</button></div>
 
-        <!-- 2. Admin Panel -->
-        <div id="admin-panel" style="display:none;">
-            <h1>Admin Panel</h1>
-            <p>Welcome, Admin!</p>
-        </div>
-
-        <!-- 3. Customer Panel -->
-        <div id="customer-panel" style="display:none;">
-            <h1>Customer Panel</h1>
-            <p id="welcome-message"></p>
-            <button id="show-form-btn">Create New Post</button>
-        </div>
-
-        <!-- 4. Post Creation Form -->
+        <!-- Post Creation Form - UPDATED with single button -->
         <div id="post-form-section" style="display:none;">
             <h2>Create New Post</h2>
             <form id="post-form">
@@ -65,12 +44,14 @@
                     <label for="postContent">Post Content</label>
                     <textarea id="postContent" name="PostContent" required></textarea>
                 </div>
+                <!-- SIMPLIFIED: File Upload Section -->
                 <div class="form-group">
-                    <label for="fileLinks">Image/Video Links (one link per line)</label>
-                    <textarea id="fileLinks" name="FileLinks" placeholder="https://.../image1.jpg\nhttps://.../video.mp4"></textarea>
+                    <label>Upload Files</label>
+                    <button type="button" id="upload-btn" style="background-color:#34A853;">Select and Upload Files</button>
+                    <ul id="file-list"></ul>
                 </div>
                 <button type="submit" id="submit-post-btn">Submit Post</button>
-                 <button type="button" id="back-to-panel-btn" style="background-color: #6c757d;">Back to Panel</button>
+                <button type="button" id="back-to-panel-btn" style="background-color: #6c757d;">Back to Panel</button>
             </form>
             <div id="post-status"></div>
         </div>
@@ -80,54 +61,90 @@
         // --- SETTINGS ---
         const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/a918b35b-cb7c-40a3-8ab5-de47c6135c82';
         const POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
+        
+        // PASTE YOUR GOOGLE CLIENT ID HERE:
+        const CLIENT_ID = '810564581383-q8bl4g6f2ttd0n0i0c986277tfqap9r5.apps.googleusercontent.com'; // ÖRNEK ID, KENDİ ID'NİZİ YAPIŞTIRIN
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 
         // --- GLOBAL STATE ---
-        const state = {
-            currentUser: null,
-        };
+        let tokenClient;
+        let gapiInited = false;
+        const state = { currentUser: null, uploadedFileLinks: [], isAuthenticated: false };
 
-        // --- DOM ELEMENTS ---
-        const loginSection = document.getElementById('login-section');
-        const adminPanel = document.getElementById('admin-panel');
-        const customerPanel = document.getElementById('customer-panel');
-        const postFormSection = document.getElementById('post-form-section');
-        
-        const loginForm = document.getElementById('login-form');
-        const loginBtn = document.getElementById('login-btn');
-        const statusDiv = document.getElementById('status');
-        
-        const welcomeMessage = document.getElementById('welcome-message');
-        const showFormBtn = document.getElementById('show-form-btn');
-
-        const postForm = document.getElementById('post-form');
-        const submitPostBtn = document.getElementById('submit-post-btn');
-        const postStatusDiv = document.getElementById('post-status');
-        const backToPanelBtn = document.getElementById('back-to-panel-btn');
+        // --- DOM ELEMENTS (simplified) ---
+        const [loginSection, adminPanel, customerPanel, postFormSection] = ['login-section', 'admin-panel', 'customer-panel', 'post-form-section'].map(id => document.getElementById(id));
+        const [loginForm, loginBtn, statusDiv] = ['login-form', 'login-btn', 'status'].map(id => document.getElementById(id));
+        const [welcomeMessage, showFormBtn] = ['welcome-message', 'show-form-btn'].map(id => document.getElementById(id));
+        const [postForm, submitPostBtn, postStatusDiv, backToPanelBtn, uploadBtn, fileList] = ['post-form', 'submit-post-btn', 'post-status', 'back-to-panel-btn', 'upload-btn', 'file-list'].map(id => document.getElementById(id));
 
         // --- FUNCTIONS ---
-        function setStatus(element, message, type = 'info') {
-            element.textContent = message;
-            element.className = type;
+        const setStatus = (element, message, type = 'info') => { element.textContent = message; element.className = type; };
+
+        // --- GOOGLE DRIVE UPLOAD LOGIC ---
+        function gapiLoaded() { gapi.load('client', initializeGapiClient); }
+        async function initializeGapiClient() { await gapi.client.init({ clientId: CLIENT_ID, scope: SCOPES, discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"] }); gapiInited = true; }
+        function gisLoaded() { tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CLIENT_ID, scope: SCOPES, callback: '' }); }
+
+        function handleUploadClick() {
+            if (!state.isAuthenticated) {
+                tokenClient.callback = (resp) => {
+                    if (resp.error) { throw resp; }
+                    state.isAuthenticated = true;
+                    setStatus(postStatusDiv, 'Authentication successful! You can now select files.', 'success');
+                    openFileDialog(); // Authenticate, then immediately open file dialog
+                };
+                if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({ prompt: 'consent' }); } 
+                else { tokenClient.requestAccessToken({ prompt: '' }); }
+            } else {
+                openFileDialog();
+            }
         }
 
+        function openFileDialog() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.multiple = true;
+            input.onchange = e => Array.from(e.target.files).forEach(uploadFile);
+            input.click();
+        }
+
+        function uploadFile(file) {
+            const metadata = { 'name': file.name, 'mimeType': file.type };
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+            form.append('file', file);
+
+            const accessToken = gapi.client.getToken().access_token;
+            setStatus(postStatusDiv, `Uploading ${file.name}...`, 'info');
+            fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${accessToken}` },
+                body: form
+            }).then(res => res.json()).then(data => {
+                if (data.id) {
+                    const fileLink = `https://drive.google.com/uc?id=${data.id}`;
+                    state.uploadedFileLinks.push(fileLink);
+                    const li = document.createElement('li');
+                    li.textContent = `✅ ${file.name}`;
+                    fileList.appendChild(li);
+                    setStatus(postStatusDiv, 'Upload complete!', 'success');
+                } else {
+                    throw new Error('Upload failed for ' + file.name);
+                }
+            }).catch(error => setStatus(postStatusDiv, error.message, 'error'));
+        }
+
+        // --- MAIN APP LOGIC ---
         async function handleLogin(event) {
             event.preventDefault();
-            const usernameInput = document.getElementById('username').value;
-            const passwordInput = document.getElementById('password').value;
-
+            const username = document.getElementById('username').value, password = document.getElementById('password').value;
             setStatus(statusDiv, 'Logging in...', 'info');
             loginBtn.disabled = true;
-
             try {
-                const response = await fetch(LOGIN_WORKFLOW_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
-                });
+                const response = await fetch(LOGIN_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.message || 'A server error occurred.');
-                
-                state.currentUser = usernameInput;
+                if (!response.ok) throw new Error(data.message || 'Server error');
+                state.currentUser = username;
                 setStatus(statusDiv, 'Login successful!', 'success');
                 showPanel(data.role);
             } catch (error) {
@@ -141,30 +158,24 @@
             event.preventDefault();
             setStatus(postStatusDiv, 'Submitting post...', 'info');
             submitPostBtn.disabled = true;
-
             try {
                 const formData = {
                     username: state.currentUser,
                     PostTitle: document.getElementById('postTitle').value,
                     PostContent: document.getElementById('postContent').value,
-                    FileLinks: document.getElementById('fileLinks').value.split('\n').filter(link => link.trim() !== '')
+                    FileLinks: state.uploadedFileLinks
                 };
-
-                const response = await fetch(POST_WORKFLOW_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(formData)
-                });
-                 if (!response.ok) throw new Error('Failed to submit the post.');
-
-                setStatus(postStatusDiv, 'Post submitted successfully! Redirecting...', 'success');
+                const response = await fetch(POST_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+                if (!response.ok) throw new Error('Failed to submit post.');
+                setStatus(postStatusDiv, 'Post submitted! Redirecting...', 'success');
                 setTimeout(() => {
                     postForm.reset();
+                    fileList.innerHTML = '';
+                    state.uploadedFileLinks = [];
                     postFormSection.style.display = 'none';
                     customerPanel.style.display = 'block';
                     setStatus(postStatusDiv, '', 'info');
                 }, 2000);
-
             } catch(error) {
                 setStatus(postStatusDiv, error.message, 'error');
             } finally {
@@ -174,9 +185,8 @@
 
         function showPanel(role) {
             loginSection.style.display = 'none';
-            if (role === 'admin') {
-                adminPanel.style.display = 'block';
-            } else if (role === 'customer') {
+            if (role === 'admin') { adminPanel.style.display = 'block'; } 
+            else if (role === 'customer') {
                 welcomeMessage.textContent = `Welcome, ${state.currentUser}!`;
                 customerPanel.style.display = 'block';
             } else {
@@ -188,17 +198,9 @@
         // --- EVENT LISTENERS ---
         loginForm.addEventListener('submit', handleLogin);
         postForm.addEventListener('submit', handlePostSubmit);
-
-        showFormBtn.addEventListener('click', () => {
-            customerPanel.style.display = 'none';
-            postFormSection.style.display = 'block';
-        });
-
-        backToPanelBtn.addEventListener('click', () => {
-            postFormSection.style.display = 'none';
-            customerPanel.style.display = 'block';
-        });
-
+        showFormBtn.addEventListener('click', () => { customerPanel.style.display = 'none'; postFormSection.style.display = 'block'; });
+        backToPanelBtn.addEventListener('click', () => { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; });
+        uploadBtn.addEventListener('click', handleUploadClick);
     </script>
 </body>
 </html>
