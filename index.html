@@ -4,9 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SynqBrand Customer Portal</title>
+    <!-- UPPY.js CSS Dosyası -->
+    <link href="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.css" rel="stylesheet">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; box-sizing: border-box; }
-        .container { background: white; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 600px; text-align: center; }
+        .container { background: white; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 650px; text-align: center; }
         h1, h2 { color: #1c1e21; margin-top: 0; margin-bottom: 2rem; }
         .form-group { margin-bottom: 1.5rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; color: #606770; font-weight: 600; }
@@ -16,29 +18,23 @@
         button:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
         .btn-primary { border-color: #4A90E2; color: #4A90E2; }
         .btn-primary:not(:disabled):hover { background-color: #4A90E2; color: white; }
-        .btn-upload { border-color: #F5A623; color: #F5A623; }
-        .btn-upload:not(:disabled):hover { background-color: #F5A623; color: white; }
         .btn-secondary { border-color: #6c757d; color: #6c757d; }
         .btn-secondary:not(:disabled):hover { background-color: #6c757d; color: white; }
         #status, #post-status { margin-top: 1.5rem; font-weight: bold; min-height: 20px; }
         .error { color: #d9534f; }
         .success { color: #5cb85c; }
-        #file-list { padding-left: 0; }
-        .file-item { display: flex; align-items: center; justify-content: space-between; background: #f0f2f5; padding: 0.5rem 0.8rem; border-radius: 4px; margin-bottom: 8px; font-size: 0.9em; text-align: left; }
-        .file-info { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
-        .file-remove-btn { background: none; border: none; color: #d9534f; font-weight: bold; cursor: pointer; font-size: 1.2rem; padding: 0 5px; margin: 0; width: auto; }
-        .progress-bar-container { flex-grow: 1; height: 8px; background-color: #e0e0e0; border-radius: 4px; margin: 0 10px; display: none; }
-        .progress-bar { width: 0%; height: 100%; background-color: #5cb85c; border-radius: 4px; transition: width 0.3s ease; }
+        /* Uppy container'ı için stiller */
+        #uppy-drag-drop-area .uppy-Dashboard-inner { border: 2px dashed #dddfe2; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- RE-ADDED: Login, Admin, Customer Panels -->
+        <!-- Login, Admin, Customer Panelleri -->
         <div id="login-section"><h1>Portal Login</h1><form id="login-form"><div class="form-group"><label for="username">Username</label><input type="text" id="username" required></div><div class="form-group"><label for="password">Password</label><input type="password" id="password" required></div><button type="submit" id="login-btn" class="btn-primary">Log In</button></form><div id="status"></div></div>
         <div id="admin-panel" style="display:none;"><h1>Admin Panel</h1><p>Welcome, Admin!</p></div>
         <div id="customer-panel" style="display:none;"><h1>Customer Panel</h1><p id="welcome-message"></p><button id="show-form-btn" class="btn-primary">Create New Post</button></div>
         
-        <!-- Post Creation Form (Now in English) -->
+        <!-- Uppy ile güncellenmiş Post Formu -->
         <div id="post-form-section" style="display:none;">
             <h2>Create New Post</h2>
             <form id="post-form">
@@ -46,9 +42,7 @@
                 <div class="form-group"><label for="postContent">Content / Caption</label><textarea id="postContent" required></textarea></div>
                 <div class="form-group">
                     <label>Media Files</label>
-                    <input type="file" id="file-input" multiple hidden accept="image/*,video/*">
-                    <button type="button" id="upload-btn" class="btn-upload">Select Files</button>
-                    <ul id="file-list"></ul>
+                    <div id="uppy-drag-drop-area"></div>
                 </div>
                 <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
                 <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
@@ -57,18 +51,23 @@
         </div>
     </div>
 
-    <script>
-        // --- SETTINGS ---
+    <!-- UPPY.js Kütüphanesi -->
+    <script src="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.js"></script>
+
+    <script type="module">
+        // Uppy modüllerini import et
+        const { Uppy, Dashboard, AwsS3 } = Uppy;
+
+        // --- AYARLAR ---
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
         const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/a918b35b-cb7c-40a3-8ab5-de47c6135c82';
         const POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
-        const R2_PUBLIC_BASE_URL = 'https://media-synqbrand.pub-c8474344917d0d71678dffaae2031c52.r2.dev'; // UPDATED to a working temporary public URL.
+        const R2_PUBLIC_BASE_URL = 'https://media-synqbrand.pub-c8474344917d0d71678dffaae2031c52.r2.dev';
 
         // --- GLOBAL STATE ---
         const state = { currentUser: null };
-        let filesToUpload = [];
 
-        // --- DOM ELEMENTS ---
+        // --- DOM ELEMENTLERİ ---
         const loginSection = document.getElementById('login-section');
         const adminPanel = document.getElementById('admin-panel');
         const customerPanel = document.getElementById('customer-panel');
@@ -82,23 +81,60 @@
         const submitPostBtn = document.getElementById('submit-post-btn');
         const postStatusDiv = document.getElementById('post-status');
         const backToPanelBtn = document.getElementById('back-to-panel-btn');
-        const uploadBtn = document.getElementById('upload-btn');
-        const fileInput = document.getElementById('file-input');
-        const fileList = document.getElementById('file-list');
-
-        // --- HELPER FUNCTIONS ---
-        const setStatus = (element, message, type = 'info') => { element.textContent = message; element.className = type; };
-        const formatFileSize = (bytes) => {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        };
         
-        // --- CORE FUNCTIONS ---
+        // --- YARDIMCI FONKSİYONLAR ---
+        const setStatus = (element, message, type = 'info') => { element.textContent = message; element.className = type; };
 
-        // RE-ADDED: Login Handler
+        // --- UPPY.js KURULUMU ---
+        const uppy = new Uppy({
+            debug: false,
+            autoProceed: false,
+            restrictions: {
+                maxFileSize: 100 * 1024 * 1024, // 100 MB
+                allowedFileTypes: ['image/*', 'video/*'],
+            },
+        });
+
+        uppy.use(Dashboard, {
+            inline: true,
+            target: '#uppy-drag-drop-area',
+            proudlyDisplayPoweredByUppy: false,
+            theme: 'light',
+            height: 300,
+        });
+
+        uppy.use(AwsS3, {
+            getUploadParameters: async (file) => {
+                try {
+                    const response = await fetch(PRESIGNER_API_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            fileName: file.name,
+                            contentType: file.type,
+                        }),
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`Presigner error: ${errorData.error}`);
+                    }
+                    const presignData = await response.json();
+                    
+                    // Uppy'nin anladığı formatta veriyi döndür
+                    return {
+                        method: 'PUT',
+                        url: presignData.uploadUrl,
+                        fields: {},
+                        headers: { 'Content-Type': file.type }
+                    };
+                } catch (error) {
+                    uppy.info(error.message, 'error', 5000);
+                    throw error;
+                }
+            }
+        });
+
+        // --- ANA FONKSİYONLAR ---
         const handleLogin = async (event) => {
             event.preventDefault();
             const username = document.getElementById("username").value;
@@ -123,7 +159,6 @@
             }
         };
 
-        // RE-ADDED: Panel Display Logic
         const showPanel = (role) => {
             loginSection.style.display = "none";
             if (role === "admin") {
@@ -136,57 +171,39 @@
                 setStatus(statusDiv, "Invalid user role.", "error");
             }
         };
-        
-        const handleFileSelection = (event) => {
-            filesToUpload.push(...Array.from(event.target.files));
-            renderFileList();
-            fileInput.value = '';
-        };
-        
-        const renderFileList = () => {
-            fileList.innerHTML = '';
-            filesToUpload.forEach((file, index) => {
-                const listItem = document.createElement('li');
-                listItem.className = 'file-item';
-                listItem.dataset.index = index;
-                listItem.innerHTML = `<span class="file-info">${file.name} (${formatFileSize(file.size)})</span><div class="progress-bar-container" id="progress-container-${index}"><div class="progress-bar" id="progress-bar-${index}"></div></div><button type="button" class="file-remove-btn" title="Remove file">×</button>`;
-                fileList.appendChild(listItem);
-            });
-        };
-        
-        const handleRemoveFile = (event) => {
-            if (event.target.classList.contains('file-remove-btn')) {
-                const index = parseInt(event.target.closest('.file-item').dataset.index, 10);
-                filesToUpload.splice(index, 1);
-                renderFileList();
-            }
-        };
 
         const handlePostSubmit = async (event) => {
             event.preventDefault();
-            if (filesToUpload.length === 0) {
+
+            const files = uppy.getFiles();
+            if (files.length === 0) {
                 setStatus(postStatusDiv, 'Please select at least one media file.', 'error');
                 return;
             }
-            setStatus(postStatusDiv, 'Starting upload process...', 'info');
-            submitPostBtn.disabled = true;
-            uploadBtn.disabled = true;
 
-            const uploadPromises = filesToUpload.map((file, index) => {
-                const itemNode = fileList.querySelector(`[data-index='${index}']`);
-                itemNode.querySelector('.file-remove-btn').style.display = 'none';
-                itemNode.querySelector('.progress-bar-container').style.display = 'block';
-                return uploadFileToR2(file, index);
-            });
+            setStatus(postStatusDiv, 'Starting upload process... Please wait.', 'info');
+            submitPostBtn.disabled = true;
 
             try {
-                const uploadedFileKeys = await Promise.all(uploadPromises);
+                const result = await uppy.upload();
+
+                if (result.failed.length > 0) {
+                    const failedFiles = result.failed.map(f => f.name).join(', ');
+                    throw new Error(`Failed to upload: ${failedFiles}`);
+                }
+
                 setStatus(postStatusDiv, 'All files uploaded. Submitting post...', 'success');
 
+                const uploadedFileKeys = result.successful.map(file => {
+                    const url = new URL(file.uploadURL);
+                    return url.pathname.substring(1); // baştaki '/' işaretini kaldırır: media-synqbrand/submissions/...
+                });
+                
                 const postData = {
-                    username: state.currentUser, // MODIFIED: Added username
+                    username: state.currentUser,
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
+                    fileKeys: uploadedFileKeys, // n8n'de daha kolay işlemek için sadece key'leri gönderelim
                     fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`)
                 };
                 
@@ -196,12 +213,11 @@
                     body: JSON.stringify(postData)
                 });
                 if (!response.ok) throw new Error('Failed to submit post to n8n.');
-                setStatus(postStatusDiv, 'Post submitted successfully!', 'success');
                 
+                setStatus(postStatusDiv, 'Post submitted successfully!', 'success');
                 setTimeout(() => {
                     postForm.reset();
-                    filesToUpload = [];
-                    renderFileList();
+                    uppy.reset();
                     setStatus(postStatusDiv, '', 'info');
                     postFormSection.style.display = 'none';
                     customerPanel.style.display = 'block';
@@ -209,42 +225,15 @@
 
             } catch (error) {
                 setStatus(postStatusDiv, `An error occurred: ${error.message}`, 'error');
+                console.error(error);
             } finally {
                 submitPostBtn.disabled = false;
-                uploadBtn.disabled = false;
             }
-        };
-
-        const uploadFileToR2 = async (file, index) => {
-            const presignResponse = await fetch(PRESIGNER_API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileName: file.name, contentType: file.type })
-            });
-            if (!presignResponse.ok) throw new Error(`Could not get upload URL for '${file.name}'.`);
-            const { uploadUrl, fileKey } = await presignResponse.json();
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('PUT', uploadUrl, true);
-                xhr.setRequestHeader('Content-Type', file.type);
-                xhr.upload.onprogress = (e) => {
-                    if (e.lengthComputable) {
-                        const percent = (e.loaded / e.total) * 100;
-                        document.getElementById(`progress-bar-${index}`).style.width = percent + '%';
-                    }
-                };
-                xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve(fileKey) : reject(new Error(`Upload failed for '${file.name}'.`));
-                xhr.onerror = () => reject(new Error(`A network error occurred while uploading '${file.name}'.`));
-                xhr.send(file);
-            });
         };
 
         // --- EVENT LISTENERS ---
         loginForm.addEventListener('submit', handleLogin);
         postForm.addEventListener('submit', handlePostSubmit);
-        uploadBtn.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', handleFileSelection);
-        fileList.addEventListener('click', handleRemoveFile);
         showFormBtn.addEventListener('click', () => {
             customerPanel.style.display = 'none';
             postFormSection.style.display = 'block';
