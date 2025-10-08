@@ -23,7 +23,6 @@
         #status, #post-status { margin-top: 1.5rem; font-weight: bold; min-height: 20px; }
         .error { color: #d9534f; }
         .success { color: #5cb85c; }
-        /* Uppy container'ı için stiller */
         #uppy-drag-drop-area .uppy-Dashboard-inner { border: 2px dashed #dddfe2; }
     </style>
 </head>
@@ -51,12 +50,11 @@
         </div>
     </div>
 
-    <!-- UPPY.js Kütüphanesi -->
-    <script src="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.js"></script>
+    <!-- DİKKAT: Uppy.js Kütüphanesi buradan kaldırıldı -->
 
     <script type="module">
-        // Uppy modüllerini import et
-        const { Uppy, Dashboard, AwsS3 } = Uppy;
+        // 1. ADIM: Uppy modüllerini doğrudan CDN'den import et
+        import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
         // --- AYARLAR ---
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
@@ -90,7 +88,7 @@
             debug: false,
             autoProceed: false,
             restrictions: {
-                maxFileSize: 100 * 1024 * 1024, // 100 MB
+                maxFileSize: 100 * 1024 * 1024,
                 allowedFileTypes: ['image/*', 'video/*'],
             },
         });
@@ -120,7 +118,6 @@
                     }
                     const presignData = await response.json();
                     
-                    // Uppy'nin anladığı formatta veriyi döndür
                     return {
                         method: 'PUT',
                         url: presignData.uploadUrl,
@@ -147,8 +144,11 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username, password }),
                 });
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({ message: "Server error" }));
+                    throw new Error(data.message);
+                }
                 const data = await response.json();
-                if (!response.ok) throw new Error(data.message || "Server error");
                 state.currentUser = username;
                 setStatus(statusDiv, "Login successful!", "success");
                 showPanel(data.role);
@@ -174,36 +174,28 @@
 
         const handlePostSubmit = async (event) => {
             event.preventDefault();
-
             const files = uppy.getFiles();
             if (files.length === 0) {
                 setStatus(postStatusDiv, 'Please select at least one media file.', 'error');
                 return;
             }
-
             setStatus(postStatusDiv, 'Starting upload process... Please wait.', 'info');
             submitPostBtn.disabled = true;
 
             try {
                 const result = await uppy.upload();
-
                 if (result.failed.length > 0) {
                     const failedFiles = result.failed.map(f => f.name).join(', ');
                     throw new Error(`Failed to upload: ${failedFiles}`);
                 }
-
                 setStatus(postStatusDiv, 'All files uploaded. Submitting post...', 'success');
-
-                const uploadedFileKeys = result.successful.map(file => {
-                    const url = new URL(file.uploadURL);
-                    return url.pathname.substring(1); // baştaki '/' işaretini kaldırır: media-synqbrand/submissions/...
-                });
+                const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
                 
                 const postData = {
                     username: state.currentUser,
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
-                    fileKeys: uploadedFileKeys, // n8n'de daha kolay işlemek için sadece key'leri gönderelim
+                    fileKeys: uploadedFileKeys,
                     fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`)
                 };
                 
