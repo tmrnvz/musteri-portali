@@ -50,10 +50,7 @@
         </div>
     </div>
 
-    <!-- DİKKAT: Uppy.js Kütüphanesi buradan kaldırıldı -->
-
     <script type="module">
-        // 1. ADIM: Uppy modüllerini doğrudan CDN'den import et
         import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
         // --- AYARLAR ---
@@ -62,7 +59,6 @@
         const POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
         const R2_PUBLIC_BASE_URL = 'https://media-synqbrand.pub-c8474344917d0d71678dffaae2031c52.r2.dev';
 
-        // --- GLOBAL STATE ---
         const state = { currentUser: null };
 
         // --- DOM ELEMENTLERİ ---
@@ -80,13 +76,12 @@
         const postStatusDiv = document.getElementById('post-status');
         const backToPanelBtn = document.getElementById('back-to-panel-btn');
         
-        // --- YARDIMCI FONKSİYONLAR ---
         const setStatus = (element, message, type = 'info') => { element.textContent = message; element.className = type; };
 
         // --- UPPY.js KURULUMU ---
         const uppy = new Uppy({
             debug: false,
-            autoProceed: false,
+            autoProceed: false, // Yüklemeyi otomatik başlatma
             restrictions: {
                 maxFileSize: 100 * 1024 * 1024,
                 allowedFileTypes: ['image/*', 'video/*'],
@@ -99,6 +94,7 @@
             proudlyDisplayPoweredByUppy: false,
             theme: 'light',
             height: 300,
+            hideUploadButton: true, // ** DEĞİŞİKLİK: Uppy'nin kendi yükleme butonunu gizle
         });
 
         uppy.use(AwsS3, {
@@ -179,15 +175,19 @@
                 setStatus(postStatusDiv, 'Please select at least one media file.', 'error');
                 return;
             }
-            setStatus(postStatusDiv, 'Starting upload process... Please wait.', 'info');
+            setStatus(postStatusDiv, 'Starting file upload... Please wait.', 'info');
             submitPostBtn.disabled = true;
 
             try {
+                // ** DEĞİŞİKLİK: Önce Uppy yüklemesini başlat ve bitmesini bekle
                 const result = await uppy.upload();
+
                 if (result.failed.length > 0) {
                     const failedFiles = result.failed.map(f => f.name).join(', ');
                     throw new Error(`Failed to upload: ${failedFiles}`);
                 }
+
+                // Yükleme başarılıysa, n8n'e gönder
                 setStatus(postStatusDiv, 'All files uploaded. Submitting post...', 'success');
                 const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
                 
