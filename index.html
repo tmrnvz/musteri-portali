@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SynqBrand Customer Portal</title>
-    <!-- UPPY.js CSS Dosyası -->
     <link href="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.css" rel="stylesheet">
     <style>
-        /* --- TEMEL STİLLER --- */
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; box-sizing: border-box; }
         .container { background: white; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 650px; text-align: center; }
         h1, h2 { color: #1c1e21; margin-top: 0; margin-bottom: 2rem; }
@@ -19,40 +17,17 @@
         .error { color: #d9534f; }
         .success { color: #5cb85c; }
         #uppy-drag-drop-area .uppy-Dashboard-inner { border: 2px dashed #dddfe2; }
-        
-        /* --- DÜZELTİLMİŞ BUTON STİLLERİ --- */
-        /* Genel 'button' kuralı kaldırıldı. Stiller doğrudan sınıflara verildi. */
-        .btn-primary, .btn-secondary {
-            width: 100%;
-            padding: 0.8rem;
-            border-radius: 6px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            margin-top: 1rem;
-            border: 2px solid;
-            background-color: transparent;
-        }
-
+        .btn-primary, .btn-secondary { width: 100%; padding: 0.8rem; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease-in-out; margin-top: 1rem; border: 2px solid; background-color: transparent; }
         .btn-primary { border-color: #4A90E2; color: #4A90E2; }
         .btn-primary:not(:disabled):hover { background-color: #4A90E2; color: white; }
-        
         .btn-secondary { border-color: #6c757d; color: #6c757d; }
         .btn-secondary:not(:disabled):hover { background-color: #6c757d; color: white; }
-
-        /* Devre dışı bırakılmış butonlar için genel kural */
-        .btn-primary:disabled, .btn-secondary:disabled {
-            border-color: #ccc;
-            color: #ccc;
-            background-color: #f8f8f8;
-            cursor: not-allowed;
-        }
+        .btn-primary:disabled, .btn-secondary:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Login, Admin, Customer Panelleri -->
+        <!-- Paneller -->
         <div id="login-section"><h1>Portal Login</h1><form id="login-form"><div class="form-group"><label for="username">Username</label><input type="text" id="username" required></div><div class="form-group"><label for="password">Password</label><input type="password" id="password" required></div><button type="submit" id="login-btn" class="btn-primary">Log In</button></form><div id="status"></div></div>
         <div id="admin-panel" style="display:none;"><h1>Admin Panel</h1><p>Welcome, Admin!</p></div>
         <div id="customer-panel" style="display:none;"><h1>Customer Panel</h1><p id="welcome-message"></p><button id="show-form-btn" class="btn-primary">Create New Post</button></div>
@@ -63,6 +38,8 @@
             <form id="post-form">
                 <div class="form-group"><label for="postTitle">Title</label><input type="text" id="postTitle" required></div>
                 <div class="form-group"><label for="postContent">Content / Caption</label><textarea id="postContent" required></textarea></div>
+                <!-- YENİ EKLENDİ: Destination Link Alanı -->
+                <div class="form-group"><label for="destinationLink">Destination Link</label><input type="text" id="destinationLink" placeholder="https://example.com" required></div>
                 <div class="form-group">
                     <label>Media Files</label>
                     <div id="uppy-drag-drop-area"></div>
@@ -107,7 +84,7 @@
             debug: false,
             autoProceed: false,
             restrictions: {
-                maxFileSize: 100 * 1024 * 1024,
+                maxFileSize: 100 * 1024 * 1024, // 100 MB
                 allowedFileTypes: ['image/*', 'video/*'],
             },
         });
@@ -123,27 +100,19 @@
 
         uppy.use(AwsS3, {
             getUploadParameters: async (file) => {
+                // ... (Bu fonksiyon aynı kalıyor, değişiklik yok)
                 try {
                     const response = await fetch(PRESIGNER_API_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            fileName: file.name,
-                            contentType: file.type,
-                        }),
+                        body: JSON.stringify({ fileName: file.name, contentType: file.type, }),
                     });
                     if (!response.ok) {
                         const errorData = await response.json();
                         throw new Error(`Presigner error: ${errorData.error}`);
                     }
                     const presignData = await response.json();
-                    
-                    return {
-                        method: 'PUT',
-                        url: presignData.uploadUrl,
-                        fields: {},
-                        headers: { 'Content-Type': file.type }
-                    };
+                    return { method: 'PUT', url: presignData.uploadUrl, fields: {}, headers: { 'Content-Type': file.type } };
                 } catch (error) {
                     uppy.info(error.message, 'error', 5000);
                     throw error;
@@ -153,6 +122,7 @@
 
         // --- ANA FONKSİYONLAR ---
         const handleLogin = async (event) => {
+            // ... (Bu fonksiyon aynı kalıyor, değişiklik yok)
             event.preventDefault();
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
@@ -180,16 +150,11 @@
         };
 
         const showPanel = (role) => {
+            // ... (Bu fonksiyon aynı kalıyor, değişiklik yok)
             loginSection.style.display = "none";
-            if (role === "admin") {
-                adminPanel.style.display = "block";
-            } else if (role === "customer") {
-                welcomeMessage.textContent = `Welcome, ${state.currentUser}!`;
-                customerPanel.style.display = "block";
-            } else {
-                loginSection.style.display = "block";
-                setStatus(statusDiv, "Invalid user role.", "error");
-            }
+            if (role === "admin") { adminPanel.style.display = "block"; }
+            else if (role === "customer") { welcomeMessage.textContent = `Welcome, ${state.currentUser}!`; customerPanel.style.display = "block"; }
+            else { loginSection.style.display = "block"; setStatus(statusDiv, "Invalid user role.", "error"); }
         };
 
         const handlePostSubmit = async (event) => {
@@ -211,10 +176,12 @@
                 setStatus(postStatusDiv, 'All files uploaded. Submitting post...', 'success');
                 const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
                 
+                // ** DEĞİŞİKLİK: n8n'e gönderilecek veriye destinationLink eklendi
                 const postData = {
                     username: state.currentUser,
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
+                    destinationLink: document.getElementById('destinationLink').value, // YENİ
                     fileKeys: uploadedFileKeys,
                     fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`)
                 };
@@ -229,7 +196,7 @@
                 setStatus(postStatusDiv, 'Post submitted successfully!', 'success');
                 setTimeout(() => {
                     postForm.reset();
-                    uppy.reset();
+                    uppy.reset(); // ** DEĞİŞİKLİK: Formu ve Uppy'yi sıfırla
                     setStatus(postStatusDiv, '', 'info');
                     postFormSection.style.display = 'none';
                     customerPanel.style.display = 'block';
@@ -246,14 +213,8 @@
         // --- EVENT LISTENERS ---
         loginForm.addEventListener('submit', handleLogin);
         postForm.addEventListener('submit', handlePostSubmit);
-        showFormBtn.addEventListener('click', () => {
-            customerPanel.style.display = 'none';
-            postFormSection.style.display = 'block';
-        });
-        backToPanelBtn.addEventListener('click', () => {
-            postFormSection.style.display = 'none';
-            customerPanel.style.display = 'block';
-        });
+        showFormBtn.addEventListener('click', () => { customerPanel.style.display = 'none'; postFormSection.style.display = 'block'; });
+        backToPanelBtn.addEventListener('click', () => { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; });
     </script>
 </body>
 </html>
