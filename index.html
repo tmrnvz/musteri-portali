@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SynqBrand Müşteri Portalı</title>
+    <title>SynqBrand Customer Portal</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; box-sizing: border-box; }
         .container { background: white; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 600px; text-align: center; }
@@ -20,11 +20,9 @@
         .btn-upload:not(:disabled):hover { background-color: #F5A623; color: white; }
         .btn-secondary { border-color: #6c757d; color: #6c757d; }
         .btn-secondary:not(:disabled):hover { background-color: #6c757d; color: white; }
-        #post-status { margin-top: 1.5rem; font-weight: bold; min-height: 20px; }
+        #status, #post-status { margin-top: 1.5rem; font-weight: bold; min-height: 20px; }
         .error { color: #d9534f; }
         .success { color: #5cb85c; }
-        
-        /* YENİ EKLENEN STİLLER */
         #file-list { padding-left: 0; }
         .file-item { display: flex; align-items: center; justify-content: space-between; background: #f0f2f5; padding: 0.5rem 0.8rem; border-radius: 4px; margin-bottom: 8px; font-size: 0.9em; text-align: left; }
         .file-info { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%; }
@@ -35,55 +33,50 @@
 </head>
 <body>
     <div class="container">
-        <!-- Not: Login, Admin, Customer panelleri olduğu gibi bırakıldı. Değişiklikler sadece post formundadır. -->
-        <div id="login-section" style="display:none;"><h1>Portal Login</h1><form id="login-form"><div class="form-group"><label for="username">Username</label><input type="text" id="username" required></div><div class="form-group"><label for="password">Password</label><input type="password" id="password" required></div><button type="submit" id="login-btn" class="btn-primary">Log In</button></form><div id="status"></div></div>
+        <!-- RE-ADDED: Login, Admin, Customer Panels -->
+        <div id="login-section"><h1>Portal Login</h1><form id="login-form"><div class="form-group"><label for="username">Username</label><input type="text" id="username" required></div><div class="form-group"><label for="password">Password</label><input type="password" id="password" required></div><button type="submit" id="login-btn" class="btn-primary">Log In</button></form><div id="status"></div></div>
         <div id="admin-panel" style="display:none;"><h1>Admin Panel</h1><p>Welcome, Admin!</p></div>
+        <div id="customer-panel" style="display:none;"><h1>Customer Panel</h1><p id="welcome-message"></p><button id="show-form-btn" class="btn-primary">Create New Post</button></div>
         
-        <!-- Başlangıçta bu panel görünecek -->
-        <div id="customer-panel"> 
-            <h1>Müşteri Paneli</h1>
-            <p id="welcome-message">Hoş geldiniz! Yeni bir gönderi oluşturmak için butona tıklayın.</p>
-            <button id="show-form-btn" class="btn-primary">Yeni Gönderi Oluştur</button>
-        </div>
-        
-        <!-- Post Creation Form -->
+        <!-- Post Creation Form (Now in English) -->
         <div id="post-form-section" style="display:none;">
-            <h2>Yeni Gönderi Oluştur</h2>
+            <h2>Create New Post</h2>
             <form id="post-form">
+                <div class="form-group"><label for="postTitle">Title</label><input type="text" id="postTitle" required></div>
+                <div class="form-group"><label for="postContent">Content / Caption</label><textarea id="postContent" required></textarea></div>
                 <div class="form-group">
-                    <label for="postTitle">Başlık</label>
-                    <input type="text" id="postTitle" required>
-                </div>
-                <div class="form-group">
-                    <label for="postContent">Açıklama</label>
-                    <textarea id="postContent" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Medya Dosyaları</label>
-                    <!-- YENİ: Gerçek dosya input'u gizlendi, butona basınca tetiklenecek -->
+                    <label>Media Files</label>
                     <input type="file" id="file-input" multiple hidden accept="image/*,video/*">
-                    <button type="button" id="upload-btn" class="btn-upload">Dosya Seç</button>
+                    <button type="button" id="upload-btn" class="btn-upload">Select Files</button>
                     <ul id="file-list"></ul>
                 </div>
-                <button type="submit" id="submit-post-btn" class="btn-primary">Gönderiyi Oluştur</button>
-                <button type="button" id="back-to-panel-btn" class="btn-secondary">Geri Dön</button>
+                <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
+                <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
             </form>
             <div id="post-status"></div>
         </div>
     </div>
 
     <script>
-        // --- AYARLAR ---
-        // YENİ: Presigner servisimizin ve n8n webhook'umuzun URL'leri
+        // --- SETTINGS ---
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
-        const N8N_WEBHOOK_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d'; // Bu URL'i kendi n8n webhook URL'inizle güncelleyin
-        // YENİ: R2 bucket'ınızın herkese açık URL'sinin başlangıcı. Henüz public yapmadığımız için şimdilik bu şekilde.
-        const R2_PUBLIC_BASE_URL = 'https://pub-.....r2.dev'; // R2 bucket ayarlarından public URL'i alınca burayı güncelleyeceğiz.
+        const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/a918b35b-cb7c-40a3-8ab5-de47c6135c82';
+        const POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
+        const R2_PUBLIC_BASE_URL = 'https://media-synqbrand.pub-c8474344917d0d71678dffaae2031c52.r2.dev'; // UPDATED to a working temporary public URL.
 
+        // --- GLOBAL STATE ---
+        const state = { currentUser: null };
+        let filesToUpload = [];
 
-        // --- DOM ELEMENTLERİ ---
+        // --- DOM ELEMENTS ---
+        const loginSection = document.getElementById('login-section');
+        const adminPanel = document.getElementById('admin-panel');
         const customerPanel = document.getElementById('customer-panel');
         const postFormSection = document.getElementById('post-form-section');
+        const loginForm = document.getElementById('login-form');
+        const loginBtn = document.getElementById('login-btn');
+        const statusDiv = document.getElementById('status');
+        const welcomeMessage = document.getElementById('welcome-message');
         const showFormBtn = document.getElementById('show-form-btn');
         const postForm = document.getElementById('post-form');
         const submitPostBtn = document.getElementById('submit-post-btn');
@@ -93,17 +86,8 @@
         const fileInput = document.getElementById('file-input');
         const fileList = document.getElementById('file-list');
 
-        // --- GLOBAL STATE ---
-        // YENİ: Seçilen dosyaları tutmak için bir dizi (Array)
-        let filesToUpload = [];
-
-        // --- YARDIMCI FONKSİYONLAR ---
-        const setStatus = (message, type = 'info') => {
-            postStatusDiv.textContent = message;
-            postStatusDiv.className = type;
-        };
-
-        // YENİ: Dosya boyutunu okunabilir formata çevirir (örn: 1.5 MB)
+        // --- HELPER FUNCTIONS ---
+        const setStatus = (element, message, type = 'info') => { element.textContent = message; element.className = type; };
         const formatFileSize = (bytes) => {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -112,37 +96,64 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         };
         
-        // --- ANA FONKSİYONLAR (YENİDEN YAZILDI) ---
+        // --- CORE FUNCTIONS ---
 
-        // Dosya seçildiğinde listeyi günceller
+        // RE-ADDED: Login Handler
+        const handleLogin = async (event) => {
+            event.preventDefault();
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            setStatus(statusDiv, "Logging in...", "info");
+            loginBtn.disabled = true;
+            try {
+                const response = await fetch(LOGIN_WORKFLOW_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password }),
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || "Server error");
+                state.currentUser = username;
+                setStatus(statusDiv, "Login successful!", "success");
+                showPanel(data.role);
+            } catch (error) {
+                setStatus(statusDiv, error.message, "error");
+            } finally {
+                loginBtn.disabled = false;
+            }
+        };
+
+        // RE-ADDED: Panel Display Logic
+        const showPanel = (role) => {
+            loginSection.style.display = "none";
+            if (role === "admin") {
+                adminPanel.style.display = "block";
+            } else if (role === "customer") {
+                welcomeMessage.textContent = `Welcome, ${state.currentUser}!`;
+                customerPanel.style.display = "block";
+            } else {
+                loginSection.style.display = "block";
+                setStatus(statusDiv, "Invalid user role.", "error");
+            }
+        };
+        
         const handleFileSelection = (event) => {
-            const newFiles = Array.from(event.target.files);
-            filesToUpload.push(...newFiles);
+            filesToUpload.push(...Array.from(event.target.files));
             renderFileList();
-            // Aynı dosyaların tekrar seçilebilmesi için input'u sıfırla
             fileInput.value = '';
         };
         
-        // Seçilen dosyaları ekranda listeler
         const renderFileList = () => {
-            fileList.innerHTML = ''; // Listeyi temizle
+            fileList.innerHTML = '';
             filesToUpload.forEach((file, index) => {
                 const listItem = document.createElement('li');
                 listItem.className = 'file-item';
                 listItem.dataset.index = index;
-
-                listItem.innerHTML = `
-                    <span class="file-info">${file.name} (${formatFileSize(file.size)})</span>
-                    <div class="progress-bar-container" id="progress-container-${index}">
-                        <div class="progress-bar" id="progress-bar-${index}"></div>
-                    </div>
-                    <button type="button" class="file-remove-btn" title="Dosyayı kaldır">×</button>
-                `;
+                listItem.innerHTML = `<span class="file-info">${file.name} (${formatFileSize(file.size)})</span><div class="progress-bar-container" id="progress-container-${index}"><div class="progress-bar" id="progress-bar-${index}"></div></div><button type="button" class="file-remove-btn" title="Remove file">×</button>`;
                 fileList.appendChild(listItem);
             });
         };
         
-        // Listeden dosya silme
         const handleRemoveFile = (event) => {
             if (event.target.classList.contains('file-remove-btn')) {
                 const index = parseInt(event.target.closest('.file-item').dataset.index, 10);
@@ -151,22 +162,17 @@
             }
         };
 
-        // Ana gönderim (submit) fonksiyonu
         const handlePostSubmit = async (event) => {
             event.preventDefault();
-
             if (filesToUpload.length === 0) {
-                setStatus('Lütfen en az bir medya dosyası seçin.', 'error');
+                setStatus(postStatusDiv, 'Please select at least one media file.', 'error');
                 return;
             }
-
-            setStatus('Yükleme işlemi başlatılıyor...', 'info');
+            setStatus(postStatusDiv, 'Starting upload process...', 'info');
             submitPostBtn.disabled = true;
             uploadBtn.disabled = true;
 
-            // Her dosya için bir yükleme işlemi (promise) oluştur
             const uploadPromises = filesToUpload.map((file, index) => {
-                // Yükleme sırasında silme butonlarını gizle
                 const itemNode = fileList.querySelector(`[data-index='${index}']`);
                 itemNode.querySelector('.file-remove-btn').style.display = 'none';
                 itemNode.querySelector('.progress-bar-container').style.display = 'block';
@@ -174,117 +180,79 @@
             });
 
             try {
-                // Tüm yüklemelerin bitmesini bekle
                 const uploadedFileKeys = await Promise.all(uploadPromises);
+                setStatus(postStatusDiv, 'All files uploaded. Submitting post...', 'success');
 
-                setStatus('Tüm dosyalar yüklendi. Gönderi oluşturuluyor...', 'success');
-
-                // n8n'e gönderilecek veriyi hazırla
                 const postData = {
+                    username: state.currentUser, // MODIFIED: Added username
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
-                    // YENİ: Dosyaların kalıcı R2 yollarını gönderiyoruz
                     fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`)
                 };
                 
-                // n8n Webhook'una veriyi gönder
-                const response = await fetch(N8N_WEBHOOK_URL, {
+                const response = await fetch(POST_WORKFLOW_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(postData)
                 });
-
-                if (!response.ok) {
-                    throw new Error('Gönderi n8n\'e iletilemedi.');
-                }
-
-                setStatus('Gönderi başarıyla oluşturuldu!', 'success');
+                if (!response.ok) throw new Error('Failed to submit post to n8n.');
+                setStatus(postStatusDiv, 'Post submitted successfully!', 'success');
                 
-                // Formu temizle ve başlangıç ekranına dön
                 setTimeout(() => {
                     postForm.reset();
                     filesToUpload = [];
                     renderFileList();
-                    setStatus('');
+                    setStatus(postStatusDiv, '', 'info');
                     postFormSection.style.display = 'none';
                     customerPanel.style.display = 'block';
                 }, 2000);
 
             } catch (error) {
-                setStatus(`Bir hata oluştu: ${error.message}`, 'error');
+                setStatus(postStatusDiv, `An error occurred: ${error.message}`, 'error');
             } finally {
                 submitPostBtn.disabled = false;
                 uploadBtn.disabled = false;
             }
         };
 
-        // Tek bir dosyayı R2'ye yükleyen fonksiyon
         const uploadFileToR2 = async (file, index) => {
-            // 1. Adım: Presigner servisimizden güvenli URL al
             const presignResponse = await fetch(PRESIGNER_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    fileName: file.name,
-                    contentType: file.type
-                })
+                body: JSON.stringify({ fileName: file.name, contentType: file.type })
             });
-
-            if (!presignResponse.ok) {
-                throw new Error(`'${file.name}' için yükleme URL'i alınamadı.`);
-            }
-
+            if (!presignResponse.ok) throw new Error(`Could not get upload URL for '${file.name}'.`);
             const { uploadUrl, fileKey } = await presignResponse.json();
-
-            // 2. Adım: Aldığımız URL'e dosyayı direkt PUT isteği ile yükle
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('PUT', uploadUrl, true);
                 xhr.setRequestHeader('Content-Type', file.type);
-
-                // Yükleme ilerlemesini izle ve progress bar'ı güncelle
-                xhr.upload.onprogress = (event) => {
-                    if (event.lengthComputable) {
-                        const percentComplete = (event.loaded / event.total) * 100;
-                        document.getElementById(`progress-bar-${index}`).style.width = percentComplete + '%';
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable) {
+                        const percent = (e.loaded / e.total) * 100;
+                        document.getElementById(`progress-bar-${index}`).style.width = percent + '%';
                     }
                 };
-
-                xhr.onload = () => {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        // Başarılı olursa dosyanın kalıcı anahtarını (fileKey) döndür
-                        resolve(fileKey);
-                    } else {
-                        reject(new Error(`'${file.name}' yüklenemedi. Sunucu hatası.`));
-                    }
-                };
-                
-                xhr.onerror = () => {
-                    reject(new Error(`'${file.name}' yüklenirken bir ağ hatası oluştu.`));
-                };
-
+                xhr.onload = () => (xhr.status >= 200 && xhr.status < 300) ? resolve(fileKey) : reject(new Error(`Upload failed for '${file.name}'.`));
+                xhr.onerror = () => reject(new Error(`A network error occurred while uploading '${file.name}'.`));
                 xhr.send(file);
             });
         };
 
         // --- EVENT LISTENERS ---
+        loginForm.addEventListener('submit', handleLogin);
         postForm.addEventListener('submit', handlePostSubmit);
-        uploadBtn.addEventListener('click', () => fileInput.click()); // Butona tıklanınca gizli input'u tetikle
+        uploadBtn.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFileSelection);
         fileList.addEventListener('click', handleRemoveFile);
-
         showFormBtn.addEventListener('click', () => {
             customerPanel.style.display = 'none';
             postFormSection.style.display = 'block';
         });
-
         backToPanelBtn.addEventListener('click', () => {
             postFormSection.style.display = 'none';
             customerPanel.style.display = 'block';
         });
-
-        // Eski Login ve Google API ile ilgili tüm kodlar kaldırıldı.
-        // İhtiyaç duyulması halinde mevcut login mantığı buraya entegre edilebilir.
     </script>
 </body>
 </html>
