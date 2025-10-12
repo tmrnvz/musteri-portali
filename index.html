@@ -18,14 +18,12 @@
         .error { color: #d9534f; }
         .success { color: #5cb85c; }
         #uppy-drag-drop-area .uppy-Dashboard-inner { border: 2px dashed #dddfe2; }
-        .btn-primary, .btn-secondary, .btn-success { width: 100%; padding: 0.8rem; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease-in-out; margin-top: 1rem; border: 2px solid; background-color: transparent; }
+        .btn-primary, .btn-secondary { width: 100%; padding: 0.8rem; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease-in-out; margin-top: 1rem; border: 2px solid; background-color: transparent; }
         .btn-primary { border-color: #4A90E2; color: #4A90E2; }
         .btn-primary:not(:disabled):hover { background-color: #4A90E2; color: white; }
         .btn-secondary { border-color: #6c757d; color: #6c757d; }
         .btn-secondary:not(:disabled):hover { background-color: #6c757d; color: white; }
-        .btn-success { border-color: #5cb85c; color: #5cb85c; }
-        .btn-success:not(:disabled):hover { background-color: #5cb85c; color: white; }
-        .btn-primary:disabled, .btn-secondary:disabled, .btn-success:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
+        .btn-primary:disabled, .btn-secondary:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -46,22 +44,14 @@
                     <label class="required">Media Files</label>
                     <div id="uppy-drag-drop-area"></div>
                 </div>
-                <!-- Ana Form Butonları -->
-                <div id="form-actions">
-                    <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
-                    <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
-                </div>
-                <!-- Gönderim Sonrası Butonları (Başlangıçta Gizli) -->
-                <div id="success-actions" style="display: none;">
-                    <button type="button" id="create-new-btn" class="btn-success">Create Another Post</button>
-                    <button type="button" id="back-to-panel-success-btn" class="btn-secondary">Back to Panel</button>
-                </div>
+                <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
+                <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
             </form>
             <div id="post-status"></div>
         </div>
     </div>
 
-    <!-- ** SADECE TEK BİR SCRIPT BLOĞU ** -->
+    <!-- SADECE TEK BİR SCRIPT BLOĞU -->
     <script type="module">
         import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -84,11 +74,8 @@
         const welcomeMessage = document.getElementById('welcome-message');
         const showFormBtn = document.getElementById('show-form-btn');
         const postForm = document.getElementById('post-form');
+        const submitPostBtn = document.getElementById('submit-post-btn');
         const postStatusDiv = document.getElementById('post-status');
-        const formActions = document.getElementById('form-actions');
-        const successActions = document.getElementById('success-actions');
-        const createNewBtn = document.getElementById('create-new-btn');
-        const backToPanelSuccessBtn = document.getElementById('back-to-panel-success-btn');
         const backToPanelBtn = document.getElementById('back-to-panel-btn');
         
         const setStatus = (element, message, type = 'info') => { element.textContent = message; element.className = type; };
@@ -156,7 +143,7 @@
             const files = uppy.getFiles();
             if (files.length === 0) { setStatus(postStatusDiv, 'Please select at least one media file.', 'error'); return; }
             setStatus(postStatusDiv, 'Starting file upload... Please wait.', 'info');
-            document.getElementById('submit-post-btn').disabled = true;
+            submitPostBtn.disabled = true;
             try {
                 const result = await uppy.upload();
                 if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
@@ -171,31 +158,30 @@
                 };
                 const response = await fetch(POST_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(postData) });
                 if (!response.ok) throw new Error('Failed to submit post to n8n.');
+                
                 setStatus(postStatusDiv, 'Post submitted successfully!', 'success');
-                formActions.style.display = 'none';
-                successActions.style.display = 'block';
+                
+                // ** GERİ ALINAN KOD: Basit ve Güvenilir Sıfırlama **
+                setTimeout(() => {
+                    postForm.reset(); // Sadece metin alanlarını temizle
+                    setStatus(postStatusDiv, '', 'info');
+                    postFormSection.style.display = 'none';
+                    customerPanel.style.display = 'block';
+                }, 2000);
+
             } catch (error) {
                 setStatus(postStatusDiv, `An error occurred: ${error.message}`, 'error');
-                document.getElementById('submit-post-btn').disabled = false;
+                console.error(error);
+            } finally {
+                submitPostBtn.disabled = false;
             }
-        };
-
-        const resetFormForNewPost = () => {
-            uppy.reset();
-            postForm.reset();
-            setStatus(postStatusDiv, '', 'info');
-            successActions.style.display = 'none';
-            formActions.style.display = 'block';
-            document.getElementById('submit-post-btn').disabled = false;
         };
 
         // --- EVENT LISTENERS ---
         loginForm.addEventListener('submit', handleLogin);
         postForm.addEventListener('submit', handlePostSubmit);
-        showFormBtn.addEventListener('click', () => { customerPanel.style.display = 'none'; postFormSection.style.display = 'block'; resetFormForNewPost(); });
+        showFormBtn.addEventListener('click', () => { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; }); // `reset` kaldırıldı.
         backToPanelBtn.addEventListener('click', () => { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; });
-        createNewBtn.addEventListener('click', resetFormForNewPost);
-        backToPanelSuccessBtn.addEventListener('click', () => { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; });
     </script>
 </body>
 </html>
