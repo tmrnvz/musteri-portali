@@ -11,7 +11,6 @@
         h1, h2 { color: #1c1e21; margin-top: 0; margin-bottom: 2rem; }
         .form-group { margin-bottom: 1.5rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; color: #606770; font-weight: 600; }
-        /* DEĞİŞİKLİK: Zorunlu alanlar için yıldız stili */
         label.required::after { content: ' *'; color: #d9534f; }
         input[type="text"], input[type="password"], textarea { width: 100%; padding: 0.8rem; border: 1px solid #dddfe2; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         textarea { resize: vertical; min-height: 120px; }
@@ -38,10 +37,8 @@
         <div id="post-form-section" style="display:none;">
             <h2>Create New Post</h2>
             <form id="post-form">
-                <!-- DEĞİŞİKLİK: Zorunlu alanlara label.required sınıfı eklendi -->
                 <div class="form-group"><label for="postTitle" class="required">Title</label><input type="text" id="postTitle" required></div>
                 <div class="form-group"><label for="postContent" class="required">Content / Caption</label><textarea id="postContent" required></textarea></div>
-                <!-- DEĞİŞİKLİK: Destination Link artık zorunlu değil (required atribütü kaldırıldı) -->
                 <div class="form-group"><label for="destinationLink">Destination Link</label><input type="text" id="destinationLink" placeholder="https://example.com"></div>
                 <div class="form-group">
                     <label class="required">Media Files</label>
@@ -54,6 +51,7 @@
         </div>
     </div>
 
+    <!-- SADECE TEK BİR SCRIPT BLOĞU -->
     <script type="module">
         import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -61,12 +59,11 @@
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
         const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/a918b35b-cb7c-40a3-8ab5-de47c6135c82';
         const POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
-        const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com'; // Bu URL artık doğru ve kalıcı
+        const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 
-        const state = { currentUser: null };
+        let state = { currentUser: null };
 
         // --- DOM ELEMENTLERİ ---
-        // (Bu bölümde değişiklik yok)
         const loginSection = document.getElementById('login-section');
         const adminPanel = document.getElementById('admin-panel');
         const customerPanel = document.getElementById('customer-panel');
@@ -85,101 +82,88 @@
 
         // --- UPPY.js KURULUMU ---
         const uppy = new Uppy({
-            debug: false,
-            autoProceed: false,
-            restrictions: {
-                maxFileSize: 100 * 1024 * 1024,
-                allowedFileTypes: ['image/*', 'video/*'],
-                minNumberOfFiles: 1, // DEĞİŞİKLİK: En az 1 dosya zorunlu
-            },
+            debug: false, autoProceed: false,
+            restrictions: { maxFileSize: 100 * 1024 * 1024, allowedFileTypes: ['image/*', 'video/*'], minNumberOfFiles: 1 },
         });
-        
-        // DEĞİŞİKLİK: En az 1 dosya seçilmesi gerektiği mesajını ekle
-        uppy.on('restriction-failed', (file, error) => {
-            if (error.message.includes('You have to select at least')) {
-                uppy.info('Please select at least one media file.', 'error', 5000);
-            }
-        });
-
-        uppy.use(Dashboard, {
-            inline: true,
-            target: '#uppy-drag-drop-area',
-            proudlyDisplayPoweredByUppy: false,
-            theme: 'light',
-            height: 300,
-            hideUploadButton: true,
-        });
-
+        uppy.on('restriction-failed', (file, error) => { if (error.message.includes('You have to select at least')) uppy.info('Please select at least one media file.', 'error', 5000); });
+        uppy.use(Dashboard, { inline: true, target: '#uppy-drag-drop-area', proudlyDisplayPoweredByUppy: false, theme: 'light', height: 300, hideUploadButton: true });
         uppy.use(AwsS3, {
             getUploadParameters: async (file) => {
-                // (Bu bölümde değişiklik yok)
                 try {
                     const response = await fetch(PRESIGNER_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ fileName: file.name, contentType: file.type, }),
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fileName: file.name, contentType: file.type }),
                     });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`Presigner error: ${errorData.error}`);
-                    }
+                    if (!response.ok) { const errorData = await response.json(); throw new Error(`Presigner error: ${errorData.error}`); }
                     const presignData = await response.json();
                     return { method: 'PUT', url: presignData.uploadUrl, fields: {}, headers: { 'Content-Type': file.type } };
-                } catch (error) {
-                    uppy.info(error.message, 'error', 5000);
-                    throw error;
-                }
+                } catch (error) { uppy.info(error.message, 'error', 5000); throw error; }
             }
         });
 
         // --- ANA FONKSİYONLAR ---
-        const handleLogin = async (event) => { /* (Bu bölümde değişiklik yok) */ };
-        const showPanel = (role) => { /* (Bu bölümde değişiklik yok) */ };
+        const handleLogin = async (event) => {
+            event.preventDefault();
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            setStatus(statusDiv, "Logging in...", "info");
+            loginBtn.disabled = true;
+            try {
+                const response = await fetch(LOGIN_WORKFLOW_URL, {
+                    method: "POST", headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password }),
+                });
+                if (!response.ok) { const data = await response.json().catch(() => ({ message: "Server error" })); throw new Error(data.message); }
+                const data = await response.json();
+                state.currentUser = username;
+                setStatus(statusDiv, "Login successful!", "success");
+                showPanel(data.role);
+            } catch (error) {
+                setStatus(statusDiv, error.message, "error");
+            } finally {
+                loginBtn.disabled = false;
+            }
+        };
+
+        const showPanel = (role) => {
+            loginSection.style.display = "none";
+            if (role === "admin") {
+                adminPanel.style.display = "block";
+            } else if (role === "customer") {
+                welcomeMessage.textContent = `Welcome, ${state.currentUser}!`;
+                customerPanel.style.display = "block";
+            } else {
+                loginSection.style.display = "block";
+                setStatus(statusDiv, "Invalid user role.", "error");
+            }
+        };
 
         const handlePostSubmit = async (event) => {
             event.preventDefault();
-            
-            // DEĞİŞİKLİK: Dosya kontrolü artık Uppy'nin `minNumberOfFiles` ayarıyla yapılıyor.
-            // Bu JS kontrolü yine de bir güvenlik katmanı olarak kalabilir.
             const files = uppy.getFiles();
-            if (files.length === 0) {
-                setStatus(postStatusDiv, 'Please select at least one media file.', 'error');
-                return;
-            }
-            
+            if (files.length === 0) { setStatus(postStatusDiv, 'Please select at least one media file.', 'error'); return; }
             setStatus(postStatusDiv, 'Starting file upload... Please wait.', 'info');
             submitPostBtn.disabled = true;
-
             try {
-                // (Bu bölümün geri kalanında değişiklik yok)
                 const result = await uppy.upload();
-                if (result.failed.length > 0) {
-                    const failedFiles = result.failed.map(f => f.name).join(', ');
-                    throw new Error(`Failed to upload: ${failedFiles}`);
-                }
+                if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
                 setStatus(postStatusDiv, 'All files uploaded. Submitting post...', 'success');
                 const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
-                
                 const postData = {
                     username: state.currentUser,
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
                     destinationLink: document.getElementById('destinationLink').value,
-                    fileKeys: uploadedFileKeys,
-                    fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`)
+                    fileKeys: uploadedFileKeys, fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`)
                 };
-                
-                const response = await fetch(POST_WORKFLOW_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(postData)
-                });
+                const response = await fetch(POST_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(postData) });
                 if (!response.ok) throw new Error('Failed to submit post to n8n.');
                 
                 setStatus(postStatusDiv, 'Post submitted successfully!', 'success');
+                
                 setTimeout(() => {
-                    postForm.reset();
-                    uppy.reset();
+                    postForm.reset(); // Sadece metin alanlarını temizle
+                    // Uppy.reset() komutu yok.
                     setStatus(postStatusDiv, '', 'info');
                     postFormSection.style.display = 'none';
                     customerPanel.style.display = 'block';
@@ -194,56 +178,19 @@
         };
 
         // --- EVENT LISTENERS ---
-        // (Bu bölümde değişiklik yok)
         loginForm.addEventListener('submit', handleLogin);
         postForm.addEventListener('submit', handlePostSubmit);
-        showFormBtn.addEventListener('click', () => { customerPanel.style.display = 'none'; postFormSection.style.display = 'block'; });
-        backToPanelBtn.addEventListener('click', () => { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; });
+        
+        // ** DÜZELTİLMİŞ KOD: "Create New Post" butonu sadece panelleri değiştirir. **
+        showFormBtn.addEventListener('click', () => { 
+            customerPanel.style.display = 'none'; 
+            postFormSection.style.display = 'block'; 
+        });
 
-        // handleLogin ve showPanel fonksiyonlarının tam içeriğini buraya yapıştırın.
-        // Kısalık için çıkarıldı, bir önceki kodda mevcut.
-    </script>
-    <script>
-        // handleLogin ve showPanel'in tam kodunu buraya ekliyoruz ki eksik kalmasın.
-        const handleLogin = async (event) => {
-            event.preventDefault();
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-            document.getElementById('status').textContent = "Logging in...";
-            document.getElementById('login-btn').disabled = true;
-            try {
-                const response = await fetch(document.querySelector('script[type="module"]').text.match(/LOGIN_WORKFLOW_URL = '(.+)'/)[1], {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, password }),
-                });
-                if (!response.ok) {
-                    const data = await response.json().catch(() => ({ message: "Server error" }));
-                    throw new Error(data.message);
-                }
-                const data = await response.json();
-                window.state = { currentUser: username };
-                document.getElementById('status').textContent = "Login successful!";
-                showPanel(data.role);
-            } catch (error) {
-                document.getElementById('status').textContent = error.message;
-            } finally {
-                document.getElementById('login-btn').disabled = false;
-            }
-        };
-
-        const showPanel = (role) => {
-            document.getElementById('login-section').style.display = "none";
-            if (role === "admin") {
-                document.getElementById('admin-panel').style.display = "block";
-            } else if (role === "customer") {
-                document.getElementById('welcome-message').textContent = `Welcome, ${window.state.currentUser}!`;
-                document.getElementById('customer-panel').style.display = "block";
-            } else {
-                document.getElementById('login-section').style.display = "block";
-                document.getElementById('status').textContent = "Invalid user role.";
-            }
-        };
+        backToPanelBtn.addEventListener('click', () => { 
+            postFormSection.style.display = 'none'; 
+            customerPanel.style.display = 'block'; 
+        });
     </script>
 </body>
 </html>
