@@ -18,12 +18,14 @@
         .error { color: #d9534f; }
         .success { color: #5cb85c; }
         #uppy-drag-drop-area .uppy-Dashboard-inner { border: 2px dashed #dddfe2; }
-        .btn-primary, .btn-secondary { width: 100%; padding: 0.8rem; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease-in-out; margin-top: 1rem; border: 2px solid; background-color: transparent; }
+        .btn-primary, .btn-secondary, .btn-success { width: 100%; padding: 0.8rem; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.2s ease-in-out; margin-top: 1rem; border: 2px solid; background-color: transparent; }
         .btn-primary { border-color: #4A90E2; color: #4A90E2; }
         .btn-primary:not(:disabled):hover { background-color: #4A90E2; color: white; }
         .btn-secondary { border-color: #6c757d; color: #6c757d; }
         .btn-secondary:not(:disabled):hover { background-color: #6c757d; color: white; }
-        .btn-primary:disabled, .btn-secondary:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
+        .btn-success { border-color: #5cb85c; color: #5cb85c; }
+        .btn-success:not(:disabled):hover { background-color: #5cb85c; color: white; }
+        .btn-primary:disabled, .btn-secondary:disabled, .btn-success:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -44,8 +46,16 @@
                     <label class="required">Media Files</label>
                     <div id="uppy-drag-drop-area"></div>
                 </div>
-                <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
-                <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
+                <!-- Ana Form Butonları -->
+                <div id="form-actions">
+                    <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
+                    <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
+                </div>
+                <!-- Gönderim Sonrası Butonları (Başlangıçta Gizli) -->
+                <div id="success-actions" style="display: none;">
+                    <button type="button" id="create-new-btn" class="btn-success">Create Another Post</button>
+                    <button type="button" id="back-to-panel-success-btn" class="btn-secondary">Back to Panel</button>
+                </div>
             </form>
             <div id="post-status"></div>
         </div>
@@ -60,7 +70,6 @@
         const POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
         const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 
-        // --- GLOBAL STATE ---
         let state = { currentUser: null };
 
         // --- DOM ELEMENTLERİ ---
@@ -74,61 +83,100 @@
         const welcomeMessage = document.getElementById('welcome-message');
         const showFormBtn = document.getElementById('show-form-btn');
         const postForm = document.getElementById('post-form');
-        const submitPostBtn = document.getElementById('submit-post-btn');
         const postStatusDiv = document.getElementById('post-status');
+        // Yeni Buton Grupları
+        const formActions = document.getElementById('form-actions');
+        const successActions = document.getElementById('success-actions');
+        const createNewBtn = document.getElementById('create-new-btn');
+        const backToPanelSuccessBtn = document.getElementById('back-to-panel-success-btn');
         const backToPanelBtn = document.getElementById('back-to-panel-btn');
         
         const setStatus = (element, message, type = 'info') => { element.textContent = message; element.className = type; };
 
         // --- UPPY.js KURULUMU ---
         const uppy = new Uppy({
-            debug: false,
-            autoProceed: false,
-            restrictions: {
-                maxFileSize: 100 * 1024 * 1024,
-                allowedFileTypes: ['image/*', 'video/*'],
-                minNumberOfFiles: 1,
-            },
+            debug: false, autoProceed: false,
+            restrictions: { maxFileSize: 100 * 1024 * 1024, allowedFileTypes: ['image/*', 'video/*'], minNumberOfFiles: 1 },
         });
-        
-        uppy.on('restriction-failed', (file, error) => {
-            if (error.message.includes('You have to select at least')) {
-                uppy.info('Please select at least one media file.', 'error', 5000);
-            }
-        });
-
-        uppy.use(Dashboard, {
-            inline: true,
-            target: '#uppy-drag-drop-area',
-            proudlyDisplayPoweredByUppy: false,
-            theme: 'light',
-            height: 300,
-            hideUploadButton: true,
-        });
-
+        uppy.on('restriction-failed', (file, error) => { if (error.message.includes('You have to select at least')) uppy.info('Please select at least one media file.', 'error', 5000); });
+        uppy.use(Dashboard, { inline: true, target: '#uppy-drag-drop-area', proudlyDisplayPoweredByUppy: false, theme: 'light', height: 300, hideUploadButton: true });
         uppy.use(AwsS3, {
             getUploadParameters: async (file) => {
                 try {
                     const response = await fetch(PRESIGNER_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ fileName: file.name, contentType: file.type, }),
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ fileName: file.name, contentType: file.type }),
                     });
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(`Presigner error: ${errorData.error}`);
-                    }
+                    if (!response.ok) { const errorData = await response.json(); throw new Error(`Presigner error: ${errorData.error}`); }
                     const presignData = await response.json();
                     return { method: 'PUT', url: presignData.uploadUrl, fields: {}, headers: { 'Content-Type': file.type } };
-                } catch (error) {
-                    uppy.info(error.message, 'error', 5000);
-                    throw error;
-                }
+                } catch (error) { uppy.info(error.message, 'error', 5000); throw error; }
             }
         });
 
         // --- ANA FONKSİYONLAR ---
-        const handleLogin = async (event) => {
+        const handleLogin = async (event) => { /* ... (değişiklik yok) ... */ };
+        const showPanel = (role) => { /* ... (değişiklik yok) ... */ };
+
+        const handlePostSubmit = async (event) => {
+            event.preventDefault();
+            const files = uppy.getFiles();
+            if (files.length === 0) { setStatus(postStatusDiv, 'Please select at least one media file.', 'error'); return; }
+            setStatus(postStatusDiv, 'Starting file upload... Please wait.', 'info');
+            document.getElementById('submit-post-btn').disabled = true;
+
+            try {
+                const result = await uppy.upload();
+                if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
+                
+                setStatus(postStatusDiv, 'All files uploaded. Submitting post...', 'success');
+                const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
+                const postData = {
+                    username: state.currentUser,
+                    postTitle: document.getElementById('postTitle').value,
+                    postContent: document.getElementById('postContent').value,
+                    destinationLink: document.getElementById('destinationLink').value,
+                    fileKeys: uploadedFileKeys, fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`)
+                };
+                
+                const response = await fetch(POST_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(postData) });
+                if (!response.ok) throw new Error('Failed to submit post to n8n.');
+                
+                setStatus(postStatusDiv, 'Post submitted successfully!', 'success');
+                
+                // ** DEĞİŞİKLİK: Otomatik temizleme yerine butonları göster
+                formActions.style.display = 'none'; // "Submit" butonunu gizle
+                successActions.style.display = 'block'; // "Create New" butonunu göster
+                
+            } catch (error) {
+                setStatus(postStatusDiv, `An error occurred: ${error.message}`, 'error');
+                document.getElementById('submit-post-btn').disabled = false;
+            }
+        };
+
+        // ** YENİ FONKSİYON: Formu ve arayüzü sıfırlar
+        const resetFormForNewPost = () => {
+            uppy.reset();
+            postForm.reset();
+            setStatus(postStatusDiv, '', 'info');
+            successActions.style.display = 'none';
+            formActions.style.display = 'block';
+            document.getElementById('submit-post-btn').disabled = false;
+        };
+
+        // --- EVENT LISTENERS ---
+        loginForm.addEventListener('submit', handleLogin);
+        postForm.addEventListener('submit', handlePostSubmit);
+        showFormBtn.addEventListener('click', () => { customerPanel.style.display = 'none'; postFormSection.style.display = 'block'; resetFormForNewPost(); });
+        backToPanelBtn.addEventListener('click', () => { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; });
+        // ** YENİ EVENT LISTENERS **
+        createNewBtn.addEventListener('click', resetFormForNewPost);
+        backToPanelSuccessBtn.addEventListener('click', () => { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; });
+
+        // handleLogin ve showPanel fonksiyonlarının tam içeriğini buraya yapıştırın.
+        // Fonksiyonlar, modül kapsamı dışında olduğunda state gibi değişkenlere erişemez.
+        // Bu yüzden onları tekrar içeri alıyoruz.
+        window.handleLogin = async (event) => {
             event.preventDefault();
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
@@ -136,14 +184,10 @@
             loginBtn.disabled = true;
             try {
                 const response = await fetch(LOGIN_WORKFLOW_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    method: "POST", headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ username, password }),
                 });
-                if (!response.ok) {
-                    const data = await response.json().catch(() => ({ message: "Server error" }));
-                    throw new Error(data.message);
-                }
+                if (!response.ok) { const data = await response.json().catch(() => ({ message: "Server error" })); throw new Error(data.message); }
                 const data = await response.json();
                 state.currentUser = username;
                 setStatus(statusDiv, "Login successful!", "success");
@@ -154,78 +198,14 @@
                 loginBtn.disabled = false;
             }
         };
-
-        const showPanel = (role) => {
+        window.showPanel = (role) => {
             loginSection.style.display = "none";
-            if (role === "admin") {
-                adminPanel.style.display = "block";
-            } else if (role === "customer") {
-                welcomeMessage.textContent = `Welcome, ${state.currentUser}!`;
-                customerPanel.style.display = "block";
-            } else {
-                loginSection.style.display = "block";
-                setStatus(statusDiv, "Invalid user role.", "error");
-            }
+            if (role === "admin") { adminPanel.style.display = "block"; }
+            else if (role === "customer") { welcomeMessage.textContent = `Welcome, ${state.currentUser}!`; customerPanel.style.display = "block"; }
+            else { loginSection.style.display = "block"; setStatus(statusDiv, "Invalid user role.", "error"); }
         };
+        loginForm.addEventListener('submit', window.handleLogin);
 
-        const handlePostSubmit = async (event) => {
-            event.preventDefault();
-            const files = uppy.getFiles();
-            if (files.length === 0) {
-                setStatus(postStatusDiv, 'Please select at least one media file.', 'error');
-                return;
-            }
-            setStatus(postStatusDiv, 'Starting file upload... Please wait.', 'info');
-            submitPostBtn.disabled = true;
-
-            try {
-                const result = await uppy.upload();
-                if (result.failed.length > 0) {
-                    const failedFiles = result.failed.map(f => f.name).join(', ');
-                    throw new Error(`Failed to upload: ${failedFiles}`);
-                }
-                setStatus(postStatusDiv, 'All files uploaded. Submitting post...', 'success');
-                const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
-                
-                const postData = {
-                    username: state.currentUser,
-                    postTitle: document.getElementById('postTitle').value,
-                    postContent: document.getElementById('postContent').value,
-                    destinationLink: document.getElementById('destinationLink').value,
-                    fileKeys: uploadedFileKeys,
-                    fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`)
-                };
-                
-                const response = await fetch(POST_WORKFLOW_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(postData)
-                });
-                if (!response.ok) throw new Error('Failed to submit post to n8n.');
-                
-                setStatus(postStatusDiv, 'Post submitted successfully!', 'success');
-                
-                setTimeout(() => {
-                    uppy.reset();
-                    postForm.reset();
-                    setStatus(postStatusDiv, '', 'info');
-                    postFormSection.style.display = 'none';
-                    customerPanel.style.display = 'block';
-                }, 2000);
-
-            } catch (error) {
-                setStatus(postStatusDiv, `An error occurred: ${error.message}`, 'error');
-                console.error(error);
-            } finally {
-                submitPostBtn.disabled = false;
-            }
-        };
-
-        // --- EVENT LISTENERS ---
-        loginForm.addEventListener('submit', handleLogin);
-        postForm.addEventListener('submit', handlePostSubmit);
-        showFormBtn.addEventListener('click', () => { customerPanel.style.display = 'none'; postFormSection.style.display = 'block'; });
-        backToPanelBtn.addEventListener('click', () => { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; });
     </script>
 </body>
 </html>
