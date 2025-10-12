@@ -83,7 +83,6 @@
         </div>
     </div>
 
-    <!-- Tek script -->
     <script type="module">
         import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -179,8 +178,8 @@
                 setStatus(postStatusDiv,'Post submitted successfully!','success');
 
                 setTimeout(()=>{
-                    postForm.reset();  // Form alanları temiz
-                    uppy.reset();      // Uppy dosyalarını temizle
+                    postForm.reset();  
+                    uppy.getFiles().forEach(file => uppy.removeFile(file.id)); // Dosyaları temizle
                     setStatus(postStatusDiv,'','info');
                     postFormSection.style.display='none';
                     customerPanel.style.display='block';
@@ -200,8 +199,8 @@
         showFormBtn.addEventListener('click', ()=>{
             customerPanel.style.display='none';
             postFormSection.style.display='block';
-            postForm.reset();   // Form alanları temiz
-            uppy.reset();       // Dosyaları temiz
+            postForm.reset();  
+            uppy.getFiles().forEach(file => uppy.removeFile(file.id)); // Dosyaları temizle
         });
 
         backToPanelBtn.addEventListener('click', ()=>{
