@@ -11,6 +11,7 @@
         h1, h2 { color: #1c1e21; margin-top: 0; margin-bottom: 2rem; }
         .form-group { margin-bottom: 1.5rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; color: #606770; font-weight: 600; }
+        label.required::after { content: ' *'; color: #d9534f; }
         input[type="text"], input[type="password"], textarea { width: 100%; padding: 0.8rem; border: 1px solid #dddfe2; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         textarea { resize: vertical; min-height: 120px; }
         #status, #post-status { margin-top: 1.5rem; font-weight: bold; min-height: 20px; }
@@ -36,12 +37,11 @@
         <div id="post-form-section" style="display:none;">
             <h2>Create New Post</h2>
             <form id="post-form">
-                <div class="form-group"><label for="postTitle">Title</label><input type="text" id="postTitle" required></div>
-                <div class="form-group"><label for="postContent">Content / Caption</label><textarea id="postContent" required></textarea></div>
-                <!-- YENİ EKLENDİ: Destination Link Alanı -->
-                <div class="form-group"><label for="destinationLink">Destination Link</label><input type="text" id="destinationLink" placeholder="https://example.com" required></div>
+                <div class="form-group"><label for="postTitle" class="required">Title</label><input type="text" id="postTitle" required></div>
+                <div class="form-group"><label for="postContent" class="required">Content / Caption</label><textarea id="postContent" required></textarea></div>
+                <div class="form-group"><label for="destinationLink">Destination Link</label><input type="text" id="destinationLink" placeholder="https://example.com"></div>
                 <div class="form-group">
-                    <label>Media Files</label>
+                    <label class="required">Media Files</label>
                     <div id="uppy-drag-drop-area"></div>
                 </div>
                 <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
@@ -60,7 +60,8 @@
         const POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
         const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 
-        const state = { currentUser: null };
+        // --- GLOBAL STATE ---
+        let state = { currentUser: null };
 
         // --- DOM ELEMENTLERİ ---
         const loginSection = document.getElementById('login-section');
@@ -84,9 +85,16 @@
             debug: false,
             autoProceed: false,
             restrictions: {
-                maxFileSize: 100 * 1024 * 1024, // 100 MB
+                maxFileSize: 100 * 1024 * 1024,
                 allowedFileTypes: ['image/*', 'video/*'],
+                minNumberOfFiles: 1,
             },
+        });
+        
+        uppy.on('restriction-failed', (file, error) => {
+            if (error.message.includes('You have to select at least')) {
+                uppy.info('Please select at least one media file.', 'error', 5000);
+            }
         });
 
         uppy.use(Dashboard, {
@@ -100,7 +108,6 @@
 
         uppy.use(AwsS3, {
             getUploadParameters: async (file) => {
-                // ... (Bu fonksiyon aynı kalıyor, değişiklik yok)
                 try {
                     const response = await fetch(PRESIGNER_API_URL, {
                         method: 'POST',
@@ -122,7 +129,6 @@
 
         // --- ANA FONKSİYONLAR ---
         const handleLogin = async (event) => {
-            // ... (Bu fonksiyon aynı kalıyor, değişiklik yok)
             event.preventDefault();
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
@@ -150,11 +156,16 @@
         };
 
         const showPanel = (role) => {
-            // ... (Bu fonksiyon aynı kalıyor, değişiklik yok)
             loginSection.style.display = "none";
-            if (role === "admin") { adminPanel.style.display = "block"; }
-            else if (role === "customer") { welcomeMessage.textContent = `Welcome, ${state.currentUser}!`; customerPanel.style.display = "block"; }
-            else { loginSection.style.display = "block"; setStatus(statusDiv, "Invalid user role.", "error"); }
+            if (role === "admin") {
+                adminPanel.style.display = "block";
+            } else if (role === "customer") {
+                welcomeMessage.textContent = `Welcome, ${state.currentUser}!`;
+                customerPanel.style.display = "block";
+            } else {
+                loginSection.style.display = "block";
+                setStatus(statusDiv, "Invalid user role.", "error");
+            }
         };
 
         const handlePostSubmit = async (event) => {
@@ -176,12 +187,11 @@
                 setStatus(postStatusDiv, 'All files uploaded. Submitting post...', 'success');
                 const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
                 
-                // ** DEĞİŞİKLİK: n8n'e gönderilecek veriye destinationLink eklendi
                 const postData = {
                     username: state.currentUser,
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
-                    destinationLink: document.getElementById('destinationLink').value, // YENİ
+                    destinationLink: document.getElementById('destinationLink').value,
                     fileKeys: uploadedFileKeys,
                     fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`)
                 };
@@ -194,9 +204,10 @@
                 if (!response.ok) throw new Error('Failed to submit post to n8n.');
                 
                 setStatus(postStatusDiv, 'Post submitted successfully!', 'success');
+                
                 setTimeout(() => {
+                    uppy.reset();
                     postForm.reset();
-                    uppy.reset(); // ** DEĞİŞİKLİK: Formu ve Uppy'yi sıfırla
                     setStatus(postStatusDiv, '', 'info');
                     postFormSection.style.display = 'none';
                     customerPanel.style.display = 'block';
