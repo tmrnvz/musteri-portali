@@ -83,13 +83,11 @@
             </form>
             <div id="status"></div>
         </div>
-
         <div id="customer-panel" style="display:none;">
             <h1>Customer Panel</h1>
             <p id="welcome-message"></p>
             <button id="show-form-btn" class="btn-primary">Create New Post</button>
         </div>
-
         <div id="post-form-section" style="display:none;">
             <h2>Create New Post</h2>
             <form id="post-form">
@@ -152,12 +150,17 @@
                 const url = `${GET_PLATFORMS_URL}?username=${encodeURIComponent(username)}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
+
                 const data = await response.json();
 
+                // *** GERİ GETİRİLEN VE ÇALIŞAN VERİ AYRIŞTIRMA MANTIĞI ***
                 let platforms = [];
                 if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].platforms)) {
                     platforms = data[0].platforms;
+                } else if (data.platforms && Array.isArray(data.platforms)) {
+                    platforms = data.platforms;
                 }
+                // *** MANTIK SONU ***
 
                 if (!platforms.length) {
                     container.innerHTML = '<p class="error">No platforms configured for this account.</p>';
