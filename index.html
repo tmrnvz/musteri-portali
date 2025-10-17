@@ -87,7 +87,6 @@
     <script type="module">
         import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
-        // --- YENİ URL'ler ---
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
         const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/a918b35b-cb7c-40a3-8ab5-de47c6135c82';
         const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
@@ -158,8 +157,6 @@
             }
         };
 
-        // --- YENİ ASENKRON POST GÖNDERİM MANTIĞI ---
-
         const handlePostSubmit = async (event) => {
             event.preventDefault();
             const files = uppy.getFiles();
@@ -179,8 +176,6 @@
                 setStatus(postStatusDiv, 'Files uploaded. Submitting post to the queue...', 'info');
 
                 const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
-                
-                // 1. Benzersiz bir Submission ID oluştur
                 const submissionID = crypto.randomUUID();
 
                 const postData = {
@@ -190,16 +185,13 @@
                     destinationLink: document.getElementById('destinationLink').value,
                     fileKeys: uploadedFileKeys,
                     fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`),
-                    submissionID: submissionID // Oluşturduğumuz ID'yi ekle
+                    submissionID: submissionID
                 };
                 
-                // 2. Ana workflow'u tetikle (yanıt bekleme)
                 const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(postData) });
                 if (!response.ok) throw new Error('Failed to submit post to n8n queue.');
 
                 setStatus(postStatusDiv, 'Your post has been queued. We are now processing it. This may take a moment...', 'info');
-
-                // 3. Durumu sorgulamaya başla
                 pollForStatus(submissionID);
 
             } catch (error) {
@@ -212,22 +204,20 @@
 
         const pollForStatus = (submissionID) => {
             const checkStatusUrl = `${STATUS_CHECK_BASE_URL}${submissionID}`;
-
             const intervalId = setInterval(async () => {
                 try {
                     const response = await fetch(checkStatusUrl);
-                    if (!response.ok) return; // Henüz sonuç yoksa veya hata varsa devam et
+                    if (!response.ok) return;
                     
                     const result = await response.json();
-
                     if (result && result.Status && result.Status !== 'processing') {
-                        clearInterval(intervalId); // Sorgulamayı durdur
-                        showFinalResult(result); // Nihai sonucu göster
+                        clearInterval(intervalId);
+                        showFinalResult(result);
                     }
                 } catch (error) {
                     console.error('Polling error:', error);
                 }
-            }, 5000); // Her 5 saniyede bir kontrol et
+            }, 5000);
         };
 
         const showFinalResult = (result) => {
@@ -235,21 +225,30 @@
             let summaryHtml = `<h4>Post Processing Complete!</h4>`;
             
             try {
-                const platformResults = JSON.parse(result.Results);
-                summaryHtml += '<ul>';
-                platformResults.forEach(platform => {
-                    const icon = platform.status === 'success' ? '✅' : '❌';
-                    summaryHtml += `<li>${icon} ${platform.platform}: ${platform.status}</li>`;
-                });
-                summaryHtml += '</ul>';
+                const platformResults = typeof result.Results === 'string' ? JSON.parse(result.Results) : result.Results;
+                
+                if (Array.isArray(platformResults)) {
+                    summaryHtml += '<ul>';
+                    platformResults.forEach(platform => {
+                        const icon = platform.status === 'success' ? '✅' : '❌';
+                        summaryHtml += `<li>${icon} ${platform.platform}: ${platform.status}</li>`;
+                    });
+                    summaryHtml += '</ul>';
+                } else if (typeof platformResults === 'object' && platformResults !== null && platformResults.error) {
+                    summaryHtml = `<h4>Submission Failed!</h4>`;
+                    summaryHtml += `<p><strong>Reason:</strong> ${platformResults.message || 'An unexpected error occurred.'}</p>`;
+                } else {
+                    summaryHtml += '<p>The results could not be displayed due to an unknown format.</p>';
+                }
+
             } catch (e) {
-                summaryHtml += '<p>Could not parse the results.</p>';
+                console.error("Error processing final result:", e);
+                summaryHtml += '<p>An error occurred while displaying the results.</p>';
             }
 
             setStatus(postStatusDiv, summaryHtml, isOverallSuccess ? 'success' : 'error', true);
 
-            // Butonları tekrar aktif et ve işlevlerini değiştir
-            submitPostBtn.style.display = 'none'; // Gönder butonunu gizle
+            submitPostBtn.style.display = 'none';
             backToPanelBtn.textContent = 'Create Another Post';
             backToPanelBtn.disabled = false;
         };
