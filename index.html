@@ -25,8 +25,6 @@
         .btn-secondary { border-color: #6c757d; color: #6c757d; }
         .btn-secondary:not(:disabled):hover { background-color: #6c757d; color: white; }
         .btn-primary:disabled, .btn-secondary:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
-
-        /* --- MODERN BİLDİRİM STİLLERİ --- */
         .status-block { border: 1px solid; border-radius: 8px; padding: 1.25rem; margin-top: 1rem; }
         .status-block h4 { margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600; }
         .status-block p { margin: 0; line-height: 1.5; }
@@ -42,7 +40,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Paneller -->
         <div id="login-section">
             <h1>Portal Login</h1>
             <form id="login-form">
@@ -58,19 +55,11 @@
             </form>
             <div id="status"></div>
         </div>
-
-        <div id="admin-panel" style="display:none;">
-            <h1>Admin Panel</h1>
-            <p>Welcome, Admin!</p>
-        </div>
-
         <div id="customer-panel" style="display:none;">
             <h1>Customer Panel</h1>
             <p id="welcome-message"></p>
             <button id="show-form-btn" class="btn-primary">Create New Post</button>
         </div>
-
-        <!-- Post Formu -->
         <div id="post-form-section" style="display:none;">
             <h2>Create New Post</h2>
             <form id="post-form">
@@ -90,15 +79,12 @@
                     <label class="required">Media Files</label>
                     <div id="uppy-drag-drop-area"></div>
                 </div>
-
-                <!-- Platform Seçim Alanı -->
                 <div class="form-group">
                     <label class="required">Select Platforms to Post</label>
                     <div id="platform-selection-container" style="display: flex; flex-wrap: wrap; gap: 1rem; padding-top: 0.5rem;">
                         <p><em>Loading available platforms...</em></p>
                     </div>
                 </div>
-
                 <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
                 <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
             </form>
@@ -118,41 +104,61 @@
 
         let state = { currentUser: null };
 
-        // NİHAİ DÜZELTİLMİŞ FONKSİYON: Platformları çeken ve checkbox'ları oluşturan fonksiyon
+        // ChatGPT'NİN ANALİZİNE GÖRE DÜZENLENMİŞ, DAHA DAYANIKLI FONKSİYON
         const fetchAndRenderPlatforms = async (username) => {
             const container = document.getElementById('platform-selection-container');
+            container.innerHTML = '<p><em>Loading available platforms...</em></p>';
+
             try {
-                const response = await fetch(`${GET_PLATFORMS_URL}?username=${username}`);
-                if (!response.ok) throw new Error('Could not fetch platforms.');
+                const url = `${GET_PLATFORMS_URL}?username=${encodeURIComponent(username)}`;
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
                 
                 const responseData = await response.json();
-                
-                // --- AKILLI VERİ BULMA MEKANİZMASI ---
-                let platforms;
-                if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].platforms) {
-                    // Durum 1: Gelen veri [{ platforms: [...] }] formatında ise
-                    platforms = responseData[0].platforms;
-                } else if (responseData.platforms) {
-                    // Durum 2: Gelen veri { platforms: [...] } formatında ise
-                    platforms = responseData.platforms;
-                } else {
-                    // Hiçbir format uymuyorsa, hata olarak kabul et
-                    platforms = []; 
-                }
-                // --- MEKANİZMA SONU ---
 
-                container.innerHTML = ''; // "Loading..." mesajını temizle
+                const extractPlatforms = (data) => {
+                    if (!data) return null;
+                    if (Array.isArray(data) && data.length > 0) {
+                        const first = data[0];
+                        if (first && first.platforms && Array.isArray(first.platforms)) return first.platforms;
+                        if (Array.isArray(first)) return first;
+                    }
+                    if (typeof data === 'object' && data.platforms && Array.isArray(data.platforms)) return data.platforms;
+                    if (typeof data === 'string') {
+                        try {
+                            const parsed = JSON.parse(data);
+                            return extractPlatforms(parsed);
+                        } catch (err) { return null; }
+                    }
+                    const possibleWrappers = ['data', 'body', 'result', 'output'];
+                    for (const key of possibleWrappers) {
+                        if (data[key]) {
+                            const candidate = extractPlatforms(data[key]);
+                            if (candidate) return candidate;
+                        }
+                    }
+                    return null;
+                };
+
+                let platforms = extractPlatforms(responseData);
+
+                if (typeof platforms === 'string') {
+                    try {
+                        const parsed = JSON.parse(platforms);
+                        if (Array.isArray(parsed)) platforms = parsed;
+                    } catch (err) { /* ignore */ }
+                }
 
                 if (!Array.isArray(platforms) || platforms.length === 0) {
                     container.innerHTML = '<p class="error">No platforms configured for this account.</p>';
-                    console.error("Received data from n8n did not contain a valid platforms array.", responseData); // Hata ayıklama için konsola yazdır
+                    console.error("Received data from n8n did not contain a valid platforms array.", responseData);
                     return;
                 }
 
+                container.innerHTML = '';
                 platforms.forEach(platform => {
                     const wrapper = document.createElement('div');
                     wrapper.style.cssText = 'display: flex; align-items: center;';
-                    
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = `platform-${platform}`;
@@ -160,13 +166,10 @@
                     checkbox.value = platform;
                     checkbox.checked = true;
                     checkbox.style.marginRight = '8px';
-
                     const label = document.createElement('label');
                     label.htmlFor = `platform-${platform}`;
                     label.textContent = platform;
-                    label.classList.remove('required'); 
-                    label.style.marginBottom = '0'; 
-
+                    label.style.marginBottom = '0';
                     wrapper.appendChild(checkbox);
                     wrapper.appendChild(label);
                     container.appendChild(wrapper);
@@ -174,7 +177,7 @@
 
             } catch (error) {
                 console.error('Platform fetch error:', error);
-                container.innerHTML = `<p class="error">${error.message}</p>`;
+                container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`;
             }
         };
 
