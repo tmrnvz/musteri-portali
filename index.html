@@ -98,13 +98,13 @@
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
         const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/a918b35b-cb7c-40a3-8ab5-de47c6135c82';
         const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
-        const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-4718a2205852/check-status/';
+        const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-478a2205852/check-status/';
         const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
         const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
 
         let state = { currentUser: null };
 
-        // ChatGPT'NİN ANALİZİNE GÖRE DÜZENLENMİŞ, DAHA DAYANIKLI FONKSİYON
+        // BASİTLEŞTİRİLMİŞ VE DOĞRUDAN ÇALIŞAN FONKSİYON
         const fetchAndRenderPlatforms = async (username) => {
             const container = document.getElementById('platform-selection-container');
             container.innerHTML = '<p><em>Loading available platforms...</em></p>';
@@ -113,52 +113,30 @@
                 const url = `${GET_PLATFORMS_URL}?username=${encodeURIComponent(username)}`;
                 const response = await fetch(url);
                 if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
-                
-                const responseData = await response.json();
 
-                const extractPlatforms = (data) => {
-                    if (!data) return null;
-                    if (Array.isArray(data) && data.length > 0) {
-                        const first = data[0];
-                        if (first && first.platforms && Array.isArray(first.platforms)) return first.platforms;
-                        if (Array.isArray(first)) return first;
-                    }
-                    if (typeof data === 'object' && data.platforms && Array.isArray(data.platforms)) return data.platforms;
-                    if (typeof data === 'string') {
-                        try {
-                            const parsed = JSON.parse(data);
-                            return extractPlatforms(parsed);
-                        } catch (err) { return null; }
-                    }
-                    const possibleWrappers = ['data', 'body', 'result', 'output'];
-                    for (const key of possibleWrappers) {
-                        if (data[key]) {
-                            const candidate = extractPlatforms(data[key]);
-                            if (candidate) return candidate;
-                        }
-                    }
-                    return null;
-                };
+                const data = await response.json();
 
-                let platforms = extractPlatforms(responseData);
-
-                if (typeof platforms === 'string') {
-                    try {
-                        const parsed = JSON.parse(platforms);
-                        if (Array.isArray(parsed)) platforms = parsed;
-                    } catch (err) { /* ignore */ }
+                // Normalize: Gelen veriden "platforms" dizisini güvenli bir şekilde çıkar
+                let platforms = [];
+                if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].platforms)) {
+                    platforms = data[0].platforms;
+                } else if (data.platforms && Array.isArray(data.platforms)) {
+                    // Fallback: Eğer veri { platforms: [...] } şeklinde gelirse
+                    platforms = data.platforms;
                 }
 
-                if (!Array.isArray(platforms) || platforms.length === 0) {
+                if (!platforms.length) {
                     container.innerHTML = '<p class="error">No platforms configured for this account.</p>';
-                    console.error("Received data from n8n did not contain a valid platforms array.", responseData);
+                    console.error("Invalid response structure or no platforms found:", data);
                     return;
                 }
 
+                // Checkbox'ları oluştur
                 container.innerHTML = '';
                 platforms.forEach(platform => {
                     const wrapper = document.createElement('div');
                     wrapper.style.cssText = 'display: flex; align-items: center;';
+
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = `platform-${platform}`;
@@ -166,10 +144,12 @@
                     checkbox.value = platform;
                     checkbox.checked = true;
                     checkbox.style.marginRight = '8px';
+
                     const label = document.createElement('label');
                     label.htmlFor = `platform-${platform}`;
                     label.textContent = platform;
                     label.style.marginBottom = '0';
+
                     wrapper.appendChild(checkbox);
                     wrapper.appendChild(label);
                     container.appendChild(wrapper);
