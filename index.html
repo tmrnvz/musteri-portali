@@ -40,6 +40,7 @@
 </head>
 <body>
     <div class="container">
+        <!-- ... (tüm HTML içeriği aynı) ... -->
         <div id="login-section">
             <h1>Portal Login</h1>
             <form id="login-form">
@@ -104,7 +105,7 @@
 
         let state = { currentUser: null };
 
-        // BASİTLEŞTİRİLMİŞ VE DOĞRUDAN ÇALIŞAN FONKSİYON
+        // DEBUG İÇİN CONSOLE.LOG EKLENMİŞ FONKSİYON
         const fetchAndRenderPlatforms = async (username) => {
             const container = document.getElementById('platform-selection-container');
             container.innerHTML = '<p><em>Loading available platforms...</em></p>';
@@ -116,27 +117,30 @@
 
                 const data = await response.json();
 
-                // Normalize: Gelen veriden "platforms" dizisini güvenli bir şekilde çıkar
+                // ================== DEBUG ADIMI 1 ==================
+                console.log('[DEBUG] n8n\'den gelen ham veri:', data);
+                // ===================================================
+
                 let platforms = [];
                 if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].platforms)) {
                     platforms = data[0].platforms;
                 } else if (data.platforms && Array.isArray(data.platforms)) {
-                    // Fallback: Eğer veri { platforms: [...] } şeklinde gelirse
                     platforms = data.platforms;
                 }
+                
+                // ================== DEBUG ADIMI 2 ==================
+                console.log('[DEBUG] İşlenmiş platforms dizisi:', platforms);
+                // ===================================================
 
-                if (!platforms.length) {
+                if (!platforms || !platforms.length) { // Daha güvenli kontrol
                     container.innerHTML = '<p class="error">No platforms configured for this account.</p>';
-                    console.error("Invalid response structure or no platforms found:", data);
                     return;
                 }
 
-                // Checkbox'ları oluştur
                 container.innerHTML = '';
                 platforms.forEach(platform => {
                     const wrapper = document.createElement('div');
                     wrapper.style.cssText = 'display: flex; align-items: center;';
-
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = `platform-${platform}`;
@@ -144,23 +148,22 @@
                     checkbox.value = platform;
                     checkbox.checked = true;
                     checkbox.style.marginRight = '8px';
-
                     const label = document.createElement('label');
                     label.htmlFor = `platform-${platform}`;
                     label.textContent = platform;
                     label.style.marginBottom = '0';
-
                     wrapper.appendChild(checkbox);
                     wrapper.appendChild(label);
                     container.appendChild(wrapper);
                 });
 
             } catch (error) {
-                console.error('Platform fetch error:', error);
+                console.error('Platform fetch hatası:', error);
                 container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`;
             }
         };
 
+        // ... (geri kalan tüm JavaScript kodu aynı)
         const loginSection = document.getElementById('login-section');
         const adminPanel = document.getElementById('admin-panel');
         const customerPanel = document.getElementById('customer-panel');
