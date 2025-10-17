@@ -15,7 +15,7 @@
         input[type="text"], input[type="password"], textarea { width: 100%; padding: 0.8rem; border: 1px solid #dddfe2; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
         textarea { resize: vertical; min-height: 120px; }
         #status { margin-top: 1.5rem; font-weight: bold; min-height: 20px; }
-        #post-status { margin-top: 1.5rem; text-align: left; font-weight: bold; min-height: 20px; line-height: 1.6; }
+        #post-status { margin-top: 1.5rem; text-align: left; min-height: 20px; line-height: 1.6; }
         .error { color: #d9534f; }
         .success { color: #5cb85c; }
         #uppy-drag-drop-area .uppy-Dashboard-inner { border: 2px dashed #dddfe2; }
@@ -25,6 +25,57 @@
         .btn-secondary { border-color: #6c757d; color: #6c757d; }
         .btn-secondary:not(:disabled):hover { background-color: #6c757d; color: white; }
         .btn-primary:disabled, .btn-secondary:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
+
+        /* --- YENİ MODERN BİLDİRİM STİLLERİ --- */
+        .status-block {
+            border: 1px solid;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-top: 1rem;
+        }
+        .status-block h4 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .status-block p {
+            margin: 0;
+            line-height: 1.5;
+        }
+        .status-block ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .status-block li {
+            display: flex;
+            align-items: center;
+            padding: 0.4rem 0;
+        }
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+        }
+
+        /* Başarı Renkleri (Soft Mavi/Turkuaz) */
+        .status-success {
+            background-color: #e7f5ff;
+            border-color: #b3d9ff;
+            color: #004085;
+        }
+        .icon-success { color: #28a745; }
+
+        /* Hata Renkleri (Soft Kırmızı) */
+        .status-error {
+            background-color: #fdecea;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .status-error h4 { text-transform: uppercase; }
+        .icon-error { color: #dc3545; }
+
     </style>
 </head>
 <body>
@@ -109,15 +160,12 @@
         const postStatusDiv = document.getElementById('post-status');
         const backToPanelBtn = document.getElementById('back-to-panel-btn');
 
-        const setStatus = (element, message, type = 'info', isHtml = false) => {
+        // setStatus artık sadece metin tabanlı ilk bildirimler için kullanılacak
+        const setStatus = (element, message, type = 'info') => {
             element.className = type;
-            if (isHtml) {
-                element.innerHTML = message;
-            } else {
-                element.textContent = message;
-            }
+            element.innerHTML = message;
         };
-
+        
         const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } });
         uppy.use(Dashboard, { inline:true, target:'#uppy-drag-drop-area', proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true });
         uppy.use(AwsS3, {
@@ -132,7 +180,7 @@
             event.preventDefault();
             const username = document.getElementById("username").value;
             const password = document.getElementById("password").value;
-            setStatus(statusDiv, "Logging in...", "info");
+            setStatus(statusDiv, "Logging in...");
             loginBtn.disabled = true;
             try {
                 const response = await fetch(LOGIN_WORKFLOW_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ username, password }) });
@@ -161,20 +209,17 @@
             event.preventDefault();
             const files = uppy.getFiles();
             if (files.length === 0) {
-                setStatus(postStatusDiv, 'Please select at least one media file.', 'error');
+                postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`;
                 return;
             }
-            setStatus(postStatusDiv, 'Starting file upload... Please wait.', 'info');
+            setStatus(postStatusDiv, 'Your post has been queued. We are now processing it...');
             submitPostBtn.disabled = true;
             backToPanelBtn.disabled = true;
 
             try {
                 const result = await uppy.upload();
-                if (result.failed.length > 0) {
-                    throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
-                }
-                setStatus(postStatusDiv, 'Files uploaded. Submitting post to the queue...', 'info');
-
+                if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
+                
                 const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
                 const submissionID = crypto.randomUUID();
 
@@ -190,13 +235,12 @@
                 
                 const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(postData) });
                 if (!response.ok) throw new Error('Failed to submit post to n8n queue.');
-
-                setStatus(postStatusDiv, 'Your post has been queued. We are now processing it. This may take a moment...', 'info');
+                
                 pollForStatus(submissionID);
 
             } catch (error) {
-                setStatus(postStatusDiv, `An error occurred: ${error.message}`, 'error');
-                console.error(error);
+                const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`;
+                postStatusDiv.innerHTML = errorHtml;
                 submitPostBtn.disabled = false;
                 backToPanelBtn.disabled = false;
             }
@@ -214,39 +258,49 @@
                         clearInterval(intervalId);
                         showFinalResult(result);
                     }
-                } catch (error) {
-                    console.error('Polling error:', error);
-                }
+                } catch (error) { console.error('Polling error:', error); }
             }, 5000);
         };
-
+        
+        // --- YENİ showFinalResult FONKSİYONU ---
         const showFinalResult = (result) => {
             const isOverallSuccess = result.Status === 'completed';
-            let summaryHtml = `<h4>Post Processing Complete!</h4>`;
             
+            // Daha estetik SVG ikonları
+            const successIcon = `<svg class="status-icon icon-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
+            const errorIcon = `<svg class="status-icon icon-error" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+            
+            let finalHtml = '';
+
             try {
                 const platformResults = typeof result.Results === 'string' ? JSON.parse(result.Results) : result.Results;
                 
                 if (Array.isArray(platformResults)) {
-                    summaryHtml += '<ul>';
+                    let listItems = '';
                     platformResults.forEach(platform => {
-                        const icon = platform.status === 'success' ? '✅' : '❌';
-                        summaryHtml += `<li>${icon} ${platform.platform}: ${platform.status}</li>`;
+                        const icon = platform.status === 'success' ? successIcon : errorIcon;
+                        listItems += `<li>${icon} ${platform.platform}: ${platform.status}</li>`;
                     });
-                    summaryHtml += '</ul>';
+                    finalHtml = `
+                        <div class="status-block ${isOverallSuccess ? 'status-success' : 'status-error'}">
+                            <h4>Post Processing Complete!</h4>
+                            <ul>${listItems}</ul>
+                        </div>`;
                 } else if (typeof platformResults === 'object' && platformResults !== null && platformResults.error) {
-                    summaryHtml = `<h4>Submission Failed!</h4>`;
-                    summaryHtml += `<p><strong>Reason:</strong> ${platformResults.message || 'An unexpected error occurred.'}</p>`;
+                    finalHtml = `
+                        <div class="status-block status-error">
+                            <h4>SUBMISSION FAILED!</h4>
+                            <p><strong>Reason:</strong> ${platformResults.message || 'An unexpected error occurred.'}</p>
+                        </div>`;
                 } else {
-                    summaryHtml += '<p>The results could not be displayed due to an unknown format.</p>';
+                     finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>The results could not be displayed.</p></div>`;
                 }
-
             } catch (e) {
                 console.error("Error processing final result:", e);
-                summaryHtml += '<p>An error occurred while displaying the results.</p>';
+                finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>An error occurred while displaying the results.</p></div>`;
             }
-
-            setStatus(postStatusDiv, summaryHtml, isOverallSuccess ? 'success' : 'error', true);
+            
+            postStatusDiv.innerHTML = finalHtml;
 
             submitPostBtn.style.display = 'none';
             backToPanelBtn.textContent = 'Create Another Post';
@@ -256,7 +310,7 @@
         const resetPostForm = () => {
             postForm.reset();
             uppy.getFiles().forEach(file => uppy.removeFile(file.id));
-            setStatus(postStatusDiv, '', 'info');
+            postStatusDiv.innerHTML = '';
             submitPostBtn.style.display = 'block';
             submitPostBtn.disabled = false;
             backToPanelBtn.textContent = 'Back to Panel';
