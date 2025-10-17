@@ -121,18 +121,23 @@
 
         let state = { currentUser: null };
 
-        // YENİ: Platformları çeken ve checkbox'ları oluşturan fonksiyon
+        // YENİ ve DÜZELTİLMİŞ: Platformları çeken ve checkbox'ları oluşturan fonksiyon
         const fetchAndRenderPlatforms = async (username) => {
             const container = document.getElementById('platform-selection-container');
             try {
                 const response = await fetch(`${GET_PLATFORMS_URL}?username=${username}`);
                 if (!response.ok) throw new Error('Could not fetch platforms.');
                 
-                const platforms = await response.json();
+                // n8n'den gelen { "platforms": [...] } yapısını al
+                const responseData = await response.json(); 
                 
+                // *** DÜZELTME: responseData.platforms diyerek asıl diziye ulaşıyoruz ***
+                const platforms = responseData.platforms;
+
                 container.innerHTML = ''; // "Loading..." mesajını temizle
 
-                if (!platforms || platforms.length === 0) {
+                // Güvenlik kontrolü: platforms'un gerçekten bir dizi olduğundan emin ol
+                if (!Array.isArray(platforms) || platforms.length === 0) {
                     container.innerHTML = '<p class="error">No platforms configured for this account.</p>';
                     return;
                 }
