@@ -91,15 +91,13 @@
                     <div id="uppy-drag-drop-area"></div>
                 </div>
 
-                <!-- YENİ: Platform Seçim Alanı -->
+                <!-- Platform Seçim Alanı -->
                 <div class="form-group">
                     <label class="required">Select Platforms to Post</label>
                     <div id="platform-selection-container" style="display: flex; flex-wrap: wrap; gap: 1rem; padding-top: 0.5rem;">
-                        <!-- Checkbox'lar buraya JavaScript ile dinamik olarak eklenecek -->
                         <p><em>Loading available platforms...</em></p>
                     </div>
                 </div>
-                <!-- YENİ ALAN SONU -->
 
                 <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
                 <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
@@ -116,29 +114,38 @@
         const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
         const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-4718a2205852/check-status/';
         const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
-        // YENİ: Platformları getirecek iş akışının URL'si
         const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
 
         let state = { currentUser: null };
 
-        // YENİ ve DÜZELTİLMİŞ: Platformları çeken ve checkbox'ları oluşturan fonksiyon
+        // NİHAİ DÜZELTİLMİŞ FONKSİYON: Platformları çeken ve checkbox'ları oluşturan fonksiyon
         const fetchAndRenderPlatforms = async (username) => {
             const container = document.getElementById('platform-selection-container');
             try {
                 const response = await fetch(`${GET_PLATFORMS_URL}?username=${username}`);
                 if (!response.ok) throw new Error('Could not fetch platforms.');
                 
-                // n8n'den gelen { "platforms": [...] } yapısını al
-                const responseData = await response.json(); 
+                const responseData = await response.json();
                 
-                // *** DÜZELTME: responseData.platforms diyerek asıl diziye ulaşıyoruz ***
-                const platforms = responseData.platforms;
+                // --- AKILLI VERİ BULMA MEKANİZMASI ---
+                let platforms;
+                if (Array.isArray(responseData) && responseData.length > 0 && responseData[0].platforms) {
+                    // Durum 1: Gelen veri [{ platforms: [...] }] formatında ise
+                    platforms = responseData[0].platforms;
+                } else if (responseData.platforms) {
+                    // Durum 2: Gelen veri { platforms: [...] } formatında ise
+                    platforms = responseData.platforms;
+                } else {
+                    // Hiçbir format uymuyorsa, hata olarak kabul et
+                    platforms = []; 
+                }
+                // --- MEKANİZMA SONU ---
 
                 container.innerHTML = ''; // "Loading..." mesajını temizle
 
-                // Güvenlik kontrolü: platforms'un gerçekten bir dizi olduğundan emin ol
                 if (!Array.isArray(platforms) || platforms.length === 0) {
                     container.innerHTML = '<p class="error">No platforms configured for this account.</p>';
+                    console.error("Received data from n8n did not contain a valid platforms array.", responseData); // Hata ayıklama için konsola yazdır
                     return;
                 }
 
@@ -151,13 +158,13 @@
                     checkbox.id = `platform-${platform}`;
                     checkbox.name = 'platforms';
                     checkbox.value = platform;
-                    checkbox.checked = true; // Varsayılan olarak tümü seçili gelsin
+                    checkbox.checked = true;
                     checkbox.style.marginRight = '8px';
 
                     const label = document.createElement('label');
                     label.htmlFor = `platform-${platform}`;
                     label.textContent = platform;
-                    label.classList.remove('required'); // Label'daki * işaretini kaldır
+                    label.classList.remove('required'); 
                     label.style.marginBottom = '0'; 
 
                     wrapper.appendChild(checkbox);
@@ -211,7 +218,6 @@
                 const data = await response.json();
                 state.currentUser = username;
                 
-                // YENİ: Başarılı giriş sonrası platformları yükle
                 await fetchAndRenderPlatforms(username); 
 
                 setStatus(statusDiv, "Login successful!", "success");
@@ -241,7 +247,6 @@
                 return;
             }
 
-            // YENİ: Seçili platformları al ve en az bir tane seçildi mi diye kontrol et
             const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
             if (selectedPlatforms.length === 0) {
                 postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`;
@@ -267,7 +272,6 @@
                     fileKeys: uploadedFileKeys,
                     fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`),
                     submissionID: submissionID,
-                    // YENİ: Seçilen platformları dizi olarak gönder
                     selectedPlatforms: selectedPlatforms
                 };
                 
