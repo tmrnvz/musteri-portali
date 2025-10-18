@@ -36,14 +36,32 @@
         .status-error { background-color: #fdecea; border-color: #f5c6cb; color: #721c24; }
         .status-error h4 { text-transform: uppercase; }
         .icon-error { color: #dc3545; }
+
+        /* MODERN CHECKBOX STİLLERİ */
         .platform-options { display: flex; flex-direction: column; gap: 0.5rem; }
         .checkbox-wrapper { display: inline-flex; align-items: center; cursor: pointer; user-select: none; }
         .checkbox-wrapper input[type="checkbox"] { display: none; }
         .checkbox-wrapper .checkbox-label { display: flex; align-items: center; }
-        .checkbox-wrapper .checkbox-custom { width: 20px; height: 20px; border: 2px solid #dddfe2; border-radius: 4px; margin-right: 10px; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; }
+        .checkbox-wrapper .checkbox-custom {
+            width: 20px; height: 20px;
+            border: 2px solid #dddfe2;
+            border-radius: 4px;
+            margin-right: 10px;
+            transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
         .checkbox-wrapper .checkbox-label-text { font-weight: 500; color: #333; }
-        .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-label .checkbox-custom { background-color: #4A90E2; border-color: #4A90E2; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23fff' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: center; background-size: 60%; }
-        .select-all-wrapper { padding-bottom: 1rem; border-bottom: 1px solid #eee; margin-bottom: 1rem; }
+        .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-label .checkbox-custom {
+            background-color: #4A90E2;
+            border-color: #4A90E2;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23fff' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e");
+            background-repeat: no-repeat; background-position: center; background-size: 60%;
+        }
+        .select-all-wrapper {
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 1rem;
+        }
         .select-all-wrapper .checkbox-label-text { font-weight: 700; }
         #platform-selection-container { display: flex; flex-wrap: wrap; gap: 1.5rem; padding-top: 0.5rem; }
     </style>
@@ -123,27 +141,21 @@
 
         let state = { currentUser: null, loadingIntervalId: null };
 
-        const fetchAndRenderPlatforms = async () => {
+        const fetchAndRenderPlatforms = async (username) => {
             const container = document.getElementById('platform-selection-container');
             const selectAllCheckbox = document.getElementById('select-all-platforms');
             container.innerHTML = '<p><em>Loading available platforms...</em></p>';
 
-            const token = sessionStorage.getItem('token');
-            if (!token) {
-                container.innerHTML = '<p class="error">Authentication error: No token found. Please log in again.</p>';
-                return;
-            }
-            
             try {
-                const response = await fetch(GET_PLATFORMS_URL, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
+                const url = `${GET_PLATFORMS_URL}?username=${encodeURIComponent(username)}`;
+                const response = await fetch(url);
                 if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
+
                 const data = await response.json();
+
                 let platforms = [];
-                if (Array.isArray(data) && data.length > 0 && data[0].json && Array.isArray(data[0].json.platforms)) {
-                    platforms = data[0].json.platforms;
+                if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].platforms)) {
+                    platforms = data[0].platforms;
                 } else if (data.platforms && Array.isArray(data.platforms)) {
                     platforms = data.platforms;
                 }
@@ -159,16 +171,19 @@
                     const id = `platform-${platform}`;
                     const wrapper = document.createElement('div');
                     wrapper.className = 'checkbox-wrapper';
+                    
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.id = id;
                     checkbox.name = 'platforms';
                     checkbox.value = platform;
                     checkbox.checked = true;
+
                     const label = document.createElement('label');
                     label.htmlFor = id;
                     label.className = 'checkbox-label';
                     label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`;
+
                     wrapper.appendChild(checkbox);
                     wrapper.appendChild(label);
                     container.appendChild(wrapper);
@@ -186,16 +201,22 @@
         const setupSelectAllLogic = () => {
             const selectAllCheckbox = document.getElementById('select-all-platforms');
             const platformCheckboxes = document.querySelectorAll('input[name="platforms"]');
+            
             const syncSelectAllState = () => {
                 const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked);
                 selectAllCheckbox.checked = allChecked;
             };
+
             selectAllCheckbox.addEventListener('change', () => {
-                platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+                platformCheckboxes.forEach(cb => {
+                    cb.checked = selectAllCheckbox.checked;
+                });
             });
+
             platformCheckboxes.forEach(cb => {
                 cb.addEventListener('change', syncSelectAllState);
             });
+
             syncSelectAllState();
         };
 
@@ -236,26 +257,16 @@
             loginBtn.disabled = true;
             try {
                 const response = await fetch(LOGIN_WORKFLOW_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ username, password }) });
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(errorText || `Login failed with status: ${response.status}`);
-                }
                 const data = await response.json();
-                const tokenData = data.json || data;
-                if (tokenData.token) {
-                    sessionStorage.setItem('token', tokenData.token);
-                    state.currentUser = username;
-                    await fetchAndRenderPlatforms();
-                    setStatus(statusDiv, "Login successful!", "success");
-                    showPanel(tokenData.role || "customer");
-                } else {
-                    throw new Error("Login successful, but no token was received.");
-                }
+                state.currentUser = username;
+                
+                await fetchAndRenderPlatforms(username); 
+
+                setStatus(statusDiv, "Login successful!", "success");
+                showPanel(data.role);
             } catch(error) {
                 setStatus(statusDiv, error.message || "Login failed", "error");
-            } finally { 
-                loginBtn.disabled = false; 
-            }
+            } finally { loginBtn.disabled = false; }
         };
 
         const showPanel = (role) => {
@@ -277,16 +288,13 @@
                 postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`;
                 return;
             }
+
             const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
             if (selectedPlatforms.length === 0) {
                 postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`;
                 return;
             }
-            const token = sessionStorage.getItem('token');
-            if (!token) {
-                postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>AUTHENTICATION ERROR!</h4><p>Your session has expired. Please log in again.</p></div>`;
-                return;
-            }
+
             const messages = [
                 "Your post has been queued. We are now processing it...",
                 "Uploading media files to secure storage...",
@@ -296,19 +304,25 @@
             ];
             let messageIndex = 0;
             postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
+            
             if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
             state.loadingIntervalId = setInterval(() => {
                 messageIndex = (messageIndex + 1) % messages.length;
                 postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
             }, 4000);
+
             submitPostBtn.disabled = true;
             backToPanelBtn.disabled = true;
+
             try {
                 const result = await uppy.upload();
                 if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
+                
                 const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
                 const submissionID = crypto.randomUUID();
+
                 const postData = {
+                    username: state.currentUser,
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
                     destinationLink: document.getElementById('destinationLink').value,
@@ -317,13 +331,12 @@
                     submissionID: submissionID,
                     selectedPlatforms: selectedPlatforms
                 };
-                const response = await fetch(MAIN_POST_WORKFLOW_URL, { 
-                    method: 'POST', 
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, 
-                    body: JSON.stringify(postData) 
-                });
+                
+                const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(postData) });
                 if (!response.ok) throw new Error('Failed to submit post to n8n queue.');
+                
                 pollForStatus(submissionID);
+
             } catch (error) {
                 if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
                 const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`;
@@ -335,8 +348,10 @@
 
         const pollForStatus = (submissionID) => {
             const checkStatusUrl = `${STATUS_CHECK_BASE_URL}${submissionID}`;
+            
             let pollCount = 0;
-            const maxPolls = 180;
+            const maxPolls = 180; // 180 * 5 saniye = 15 dakika
+
             const intervalId = setInterval(async () => {
                 pollCount++;
                 if (pollCount > maxPolls) {
@@ -345,16 +360,20 @@
                     postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>TIMEOUT</h4><p>The process is taking longer than expected. Please check back later or contact support.</p></div>`;
                     return;
                 }
+
                 try {
                     const response = await fetch(checkStatusUrl);
                     if (!response.ok) return;
+                    
                     const responseData = await response.json();
+                    
                     let result = null;
                     if (Array.isArray(responseData) && responseData.length > 0) {
                         result = responseData[0];
                     } else if (typeof responseData === 'object' && responseData !== null) {
                         result = responseData;
                     }
+
                     if (result && result.Status && result.Status !== 'processing') {
                         clearInterval(intervalId);
                         if (state.loadingIntervalId) {
@@ -376,20 +395,32 @@
         
         const showFinalResult = (result) => {
             const isOverallSuccess = result.Status === 'completed';
+            
             const successIcon = `<svg class="status-icon icon-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
             const errorIcon = `<svg class="status-icon icon-error" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
+            
             let finalHtml = '';
+
             try {
                 const platformResults = typeof result.Results === 'string' ? JSON.parse(result.Results) : result.Results;
+                
                 if (Array.isArray(platformResults)) {
                     let listItems = '';
                     platformResults.forEach(platform => {
                         const icon = platform.status === 'success' ? successIcon : errorIcon;
                         listItems += `<li>${icon} ${platform.platform}: ${platform.status}</li>`;
                     });
-                    finalHtml = `<div class="status-block ${isOverallSuccess ? 'status-success' : 'status-error'}"><h4>Post Processing Complete!</h4><ul>${listItems}</ul></div>`;
+                    finalHtml = `
+                        <div class="status-block ${isOverallSuccess ? 'status-success' : 'status-error'}">
+                            <h4>Post Processing Complete!</h4>
+                            <ul>${listItems}</ul>
+                        </div>`;
                 } else if (typeof platformResults === 'object' && platformResults !== null && platformResults.error) {
-                    finalHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p><strong>Reason:</strong> ${platformResults.message || 'An unexpected error occurred.'}</p></div>`;
+                    finalHtml = `
+                        <div class="status-block status-error">
+                            <h4>SUBMISSION FAILED!</h4>
+                            <p><strong>Reason:</strong> ${platformResults.message || 'An unexpected error occurred.'}</p>
+                        </div>`;
                 } else {
                      finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>The results could not be displayed.</p></div>`;
                 }
@@ -397,7 +428,9 @@
                 console.error("Error processing final result:", e);
                 finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>An error occurred while displaying the results.</p></div>`;
             }
+            
             postStatusDiv.innerHTML = finalHtml;
+
             submitPostBtn.style.display = 'none';
             backToPanelBtn.textContent = 'Create Another Post';
             backToPanelBtn.disabled = false;
