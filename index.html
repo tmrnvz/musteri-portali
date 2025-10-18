@@ -141,8 +141,7 @@
 
         let state = { currentUser: null, loadingIntervalId: null };
 
-        // --- DEĞİŞİKLİK BAŞLANGICI ---
-        const fetchAndRenderPlatforms = async () => { // Artık 'username' parametresi almıyor
+        const fetchAndRenderPlatforms = async () => {
             const container = document.getElementById('platform-selection-container');
             const selectAllCheckbox = document.getElementById('select-all-platforms');
             container.innerHTML = '<p><em>Loading available platforms...</em></p>';
@@ -154,7 +153,6 @@
             }
             
             try {
-                // URL'den "?username=" kısmı kaldırıldı ve fetch'e headers objesi eklendi
                 const response = await fetch(GET_PLATFORMS_URL, {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -166,7 +164,6 @@
                 const data = await response.json();
 
                 let platforms = [];
-                // API yanıtı artık [ { json: { platforms: [...] } } ] şeklinde gelebilir.
                 if (Array.isArray(data) && data.length > 0 && data[0].json && Array.isArray(data[0].json.platforms)) {
                     platforms = data[0].json.platforms;
                 } else if (data.platforms && Array.isArray(data.platforms)) {
@@ -210,7 +207,6 @@
                 container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`;
             }
         };
-        // --- DEĞİŞİKLİK SONU ---
 
         const setupSelectAllLogic = () => {
             const selectAllCheckbox = document.getElementById('select-all-platforms');
@@ -263,7 +259,6 @@
             }
         });
 
-        // --- DEĞİŞİKLİK BAŞLANGICI ---
         const handleLogin = async (event) => {
             event.preventDefault();
             const username = document.getElementById("username").value;
@@ -280,14 +275,16 @@
 
                 const data = await response.json();
                 
-                if (data.token) {
-                    sessionStorage.setItem('token', data.token); // Token'ı sakla
-                    state.currentUser = username; // Hoş geldiniz mesajı için sakla
+                // n8n'den dönen yanıt { json: { token: '...' } } şeklinde olabilir.
+                const token = data.token || (data.json && data.json.token);
+
+                if (token) {
+                    sessionStorage.setItem('token', token);
+                    state.currentUser = username;
                     
-                    await fetchAndRenderPlatforms(); // Artık username göndermeye gerek yok
+                    await fetchAndRenderPlatforms();
 
                     setStatus(statusDiv, "Login successful!", "success");
-                    // Şimdilik rolü varsayılan olarak "customer" kabul ediyoruz.
                     showPanel("customer"); 
                 } else {
                     throw new Error("Login successful, but no token was received.");
@@ -299,7 +296,6 @@
                 loginBtn.disabled = false; 
             }
         };
-        // --- DEĞİŞİKLİK SONU ---
 
         const showPanel = (role) => {
             loginSection.style.display = "none";
@@ -324,6 +320,12 @@
             const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
             if (selectedPlatforms.length === 0) {
                 postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`;
+                return;
+            }
+            
+            const token = sessionStorage.getItem('token');
+            if (!token) {
+                postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>AUTHENTICATION ERROR!</h4><p>Your session has expired. Please log in again.</p></div>`;
                 return;
             }
 
@@ -354,7 +356,6 @@
                 const submissionID = crypto.randomUUID();
 
                 const postData = {
-                    username: state.currentUser, // BU BİR SONRAKİ ADIMDA DEĞİŞECEK
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
                     destinationLink: document.getElementById('destinationLink').value,
@@ -364,7 +365,15 @@
                     selectedPlatforms: selectedPlatforms
                 };
                 
-                const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(postData) });
+                const response = await fetch(MAIN_POST_WORKFLOW_URL, { 
+                    method: 'POST', 
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }, 
+                    body: JSON.stringify(postData) 
+                });
+
                 if (!response.ok) throw new Error('Failed to submit post to n8n queue.');
                 
                 pollForStatus(submissionID);
@@ -382,7 +391,7 @@
             const checkStatusUrl = `${STATUS_CHECK_BASE_URL}${submissionID}`;
             
             let pollCount = 0;
-            const maxPolls = 180; // 180 * 5 saniye = 15 dakika
+            const maxPolls = 180;
 
             const intervalId = setInterval(async () => {
                 pollCount++;
