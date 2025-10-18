@@ -25,6 +25,7 @@
         .btn-secondary { border-color: #6c757d; color: #6c757d; }
         .btn-secondary:not(:disabled):hover { background-color: #6c757d; color: white; }
         .btn-primary:disabled, .btn-secondary:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
+        .panel-buttons { display: flex; flex-direction: column; gap: 0.5rem; }
         .status-block { border: 1px solid; border-radius: 8px; padding: 1.25rem; margin-top: 1rem; }
         .status-block h4 { margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600; }
         .status-block p { margin: 0; line-height: 1.5; }
@@ -83,11 +84,16 @@
             </form>
             <div id="status"></div>
         </div>
+
         <div id="customer-panel" style="display:none;">
             <h1>Customer Panel</h1>
             <p id="welcome-message"></p>
-            <button id="show-form-btn" class="btn-primary">Create New Post</button>
+            <div class="panel-buttons">
+                <button id="show-form-btn" class="btn-primary">Create New Post</button>
+                <button id="logout-btn" class="btn-secondary">Log Out</button>
+            </div>
         </div>
+
         <div id="post-form-section" style="display:none;">
             <h2>Create New Post</h2>
             <form id="post-form">
@@ -132,33 +138,53 @@
     <script type="module">
         import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
+        // !!! --- ÖNEMLİ --- !!!
+        // YENİ OLUŞTURDUĞUNUZ 'CONF-AUTH-Login' İŞ AKIŞININ WEBHOOK URL'SİNİ BURAYA YAPIŞTIRIN
+        const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login'; // <--- BU SATIRI DEĞİŞTİRİN
+
+        // Bu URL'ler aynı kalıyor
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
-        const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/a918b35b-cb7c-40a3-8ab5-de47c6135c82';
         const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
         const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-4718a2205852/check-status/';
         const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
         const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
 
-        let state = { currentUser: null, loadingIntervalId: null };
+        let state = { loadingIntervalId: null };
 
-        const fetchAndRenderPlatforms = async (username) => {
+        // --- YENİ YARDIMCI FONKSİYONLAR ---
+        const parseJwt = (token) => {
+            try {
+                return JSON.parse(atob(token.split('.')[1]));
+            } catch (e) {
+                return null;
+            }
+        };
+
+        const getAuthHeaders = () => {
+            const token = localStorage.getItem('jwtToken');
+            if (!token) return null;
+            return { 'Authorization': `Bearer ${token}` };
+        };
+        // --- BİTİŞ ---
+
+        const fetchAndRenderPlatforms = async () => {
             const container = document.getElementById('platform-selection-container');
             const selectAllCheckbox = document.getElementById('select-all-platforms');
             container.innerHTML = '<p><em>Loading available platforms...</em></p>';
 
+            const headers = getAuthHeaders();
+            if (!headers) {
+                // Token yoksa logout yap
+                handleLogout();
+                return;
+            }
+
             try {
-                const url = `${GET_PLATFORMS_URL}?username=${encodeURIComponent(username)}`;
-                const response = await fetch(url);
+                const response = await fetch(GET_PLATFORMS_URL, { headers });
                 if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
 
                 const data = await response.json();
-
-                let platforms = [];
-                if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].platforms)) {
-                    platforms = data[0].platforms;
-                } else if (data.platforms && Array.isArray(data.platforms)) {
-                    platforms = data.platforms;
-                }
+                let platforms = data.platforms || [];
 
                 if (!platforms.length) {
                     container.innerHTML = '<p class="error">No platforms configured for this account.</p>';
@@ -216,12 +242,10 @@
             platformCheckboxes.forEach(cb => {
                 cb.addEventListener('change', syncSelectAllState);
             });
-
             syncSelectAllState();
         };
 
         const loginSection = document.getElementById('login-section');
-        const adminPanel = document.getElementById('admin-panel');
         const customerPanel = document.getElementById('customer-panel');
         const postFormSection = document.getElementById('post-form-section');
         const loginForm = document.getElementById('login-form');
@@ -233,6 +257,7 @@
         const submitPostBtn = document.getElementById('submit-post-btn');
         const postStatusDiv = document.getElementById('post-status');
         const backToPanelBtn = document.getElementById('back-to-panel-btn');
+        const logoutBtn = document.getElementById('logout-btn');
 
         const setStatus = (element, message, type = 'info') => {
             element.className = type;
@@ -255,34 +280,58 @@
             const password = document.getElementById("password").value;
             setStatus(statusDiv, "Logging in...");
             loginBtn.disabled = true;
+
             try {
                 const response = await fetch(LOGIN_WORKFLOW_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ username, password }) });
-                const data = await response.json();
-                state.currentUser = username;
-                
-                await fetchAndRenderPlatforms(username); 
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Login failed with status: ${response.status}`);
+                }
 
-                setStatus(statusDiv, "Login successful!", "success");
-                showPanel(data.role);
+                const data = await response.json();
+                localStorage.setItem('jwtToken', data.token);
+
+                const userData = parseJwt(data.token);
+                await initializeUserPanel(userData);
+
             } catch(error) {
-                setStatus(statusDiv, error.message || "Login failed", "error");
-            } finally { loginBtn.disabled = false; }
+                setStatus(statusDiv, error.message, "error");
+            } finally { 
+                loginBtn.disabled = false; 
+            }
+        };
+        
+        const initializeUserPanel = async (userData) => {
+             if (!userData) {
+                handleLogout();
+                return;
+            }
+            await fetchAndRenderPlatforms();
+            setStatus(statusDiv, "", "success"); // Clear login status
+            showPanel(userData);
         };
 
-        const showPanel = (role) => {
+        const showPanel = (userData) => {
             loginSection.style.display = "none";
-            if(role==="admin") adminPanel.style.display = "block";
-            else if(role==="customer") {
-                welcomeMessage.textContent = `Welcome, ${state.currentUser}!`;
-                customerPanel.style.display = "block";
-            } else {
-                loginSection.style.display = "block";
-                setStatus(statusDiv, "Invalid user role.", "error");
-            }
+            // Admin paneli mantığı şimdilik kaldırıldı, sadece customer var
+            welcomeMessage.textContent = `Welcome, ${userData.username}!`;
+            customerPanel.style.display = "block";
+        };
+
+        const handleLogout = () => {
+            localStorage.removeItem('jwtToken');
+            location.reload();
         };
 
         const handlePostSubmit = async (event) => {
             event.preventDefault();
+
+            const authHeaders = getAuthHeaders();
+            if (!authHeaders) {
+                handleLogout();
+                return;
+            }
+
             const files = uppy.getFiles();
             if (files.length === 0) {
                 postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`;
@@ -296,11 +345,8 @@
             }
 
             const messages = [
-                "Your post has been queued. We are now processing it...",
-                "Uploading media files to secure storage...",
-                "AI is generating content for each platform...",
-                "Publishing posts to selected social media channels...",
-                "Finalizing the report, please wait a moment..."
+                "Your post has been queued. We are now processing it...", "Uploading media files to secure storage...", "AI is generating content for each platform...",
+                "Publishing posts to selected social media channels...", "Finalizing the report, please wait a moment..."
             ];
             let messageIndex = 0;
             postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
@@ -322,7 +368,6 @@
                 const submissionID = crypto.randomUUID();
 
                 const postData = {
-                    username: state.currentUser,
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
                     destinationLink: document.getElementById('destinationLink').value,
@@ -332,7 +377,12 @@
                     selectedPlatforms: selectedPlatforms
                 };
                 
-                const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(postData) });
+                // --- İSTEK GÜNCELLENDİ: Authorization başlığı eklendi ---
+                const response = await fetch(MAIN_POST_WORKFLOW_URL, { 
+                    method: 'POST', 
+                    headers: { ...authHeaders, 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(postData) 
+                });
                 if (!response.ok) throw new Error('Failed to submit post to n8n queue.');
                 
                 pollForStatus(submissionID);
@@ -452,6 +502,7 @@
 
         loginForm.addEventListener('submit', handleLogin);
         postForm.addEventListener('submit', handlePostSubmit);
+        logoutBtn.addEventListener('click', handleLogout);
         
         showFormBtn.addEventListener('click', () => {
             resetPostForm();
@@ -468,6 +519,20 @@
                 customerPanel.style.display = 'block';
             }
         });
+
+        // --- Sayfa Yüklendiğinde Oturumu Kontrol Et ---
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('jwtToken');
+            if (token) {
+                const userData = parseJwt(token);
+                // Token'ın süresinin dolup dolmadığını kontrol etmek daha da iyi olur,
+                // ama şimdilik varlığı yeterli.
+                if (userData) {
+                    initializeUserPanel(userData);
+                }
+            }
+        });
+
     </script>
 </body>
 </html>
