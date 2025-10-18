@@ -135,11 +135,11 @@
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
         const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/a918b35b-cb7c-40a3-8ab5-de47c6135c82';
         const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
-        const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-478a2205852/check-status/';
+        const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-4718a2205852/check-status/';
         const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
         const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
 
-        let state = { currentUser: null };
+        let state = { currentUser: null, loadingIntervalId: null };
 
         const fetchAndRenderPlatforms = async (username) => {
             const container = document.getElementById('platform-selection-container');
@@ -153,14 +153,12 @@
 
                 const data = await response.json();
 
-                // *** GERİ GETİRİLEN VE ÇALIŞAN VERİ AYRIŞTIRMA MANTIĞI ***
                 let platforms = [];
                 if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].platforms)) {
                     platforms = data[0].platforms;
                 } else if (data.platforms && Array.isArray(data.platforms)) {
                     platforms = data.platforms;
                 }
-                // *** MANTIK SONU ***
 
                 if (!platforms.length) {
                     container.innerHTML = '<p class="error">No platforms configured for this account.</p>';
@@ -297,7 +295,22 @@
                 return;
             }
 
-            setStatus(postStatusDiv, 'Your post has been queued. We are now processing it...');
+            const messages = [
+                "Your post has been queued. We are now processing it...",
+                "Uploading media files to secure storage...",
+                "AI is generating content for each platform...",
+                "Publishing posts to selected social media channels...",
+                "Finalizing the report, please wait a moment..."
+            ];
+            let messageIndex = 0;
+            postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
+            
+            if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
+            state.loadingIntervalId = setInterval(() => {
+                messageIndex = (messageIndex + 1) % messages.length;
+                postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
+            }, 4000);
+
             submitPostBtn.disabled = true;
             backToPanelBtn.disabled = true;
 
@@ -325,6 +338,7 @@
                 pollForStatus(submissionID);
 
             } catch (error) {
+                if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
                 const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`;
                 postStatusDiv.innerHTML = errorHtml;
                 submitPostBtn.disabled = false;
@@ -334,17 +348,48 @@
 
         const pollForStatus = (submissionID) => {
             const checkStatusUrl = `${STATUS_CHECK_BASE_URL}${submissionID}`;
+            
+            let pollCount = 0;
+            const maxPolls = 180; // 180 * 5 saniye = 15 dakika
+
             const intervalId = setInterval(async () => {
+                pollCount++;
+                if (pollCount > maxPolls) {
+                    clearInterval(intervalId);
+                    if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
+                    postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>TIMEOUT</h4><p>The process is taking longer than expected. Please check back later or contact support.</p></div>`;
+                    return;
+                }
+
                 try {
                     const response = await fetch(checkStatusUrl);
                     if (!response.ok) return;
                     
-                    const result = await response.json();
+                    const responseData = await response.json();
+                    
+                    let result = null;
+                    if (Array.isArray(responseData) && responseData.length > 0) {
+                        result = responseData[0];
+                    } else if (typeof responseData === 'object' && responseData !== null) {
+                        result = responseData;
+                    }
+
                     if (result && result.Status && result.Status !== 'processing') {
                         clearInterval(intervalId);
+                        if (state.loadingIntervalId) {
+                            clearInterval(state.loadingIntervalId);
+                            state.loadingIntervalId = null;
+                        }
                         showFinalResult(result);
                     }
-                } catch (error) { console.error('Polling error:', error); }
+                } catch (error) { 
+                    console.error('Polling error:', error); 
+                    clearInterval(intervalId);
+                    if (state.loadingIntervalId) {
+                        clearInterval(state.loadingIntervalId);
+                        state.loadingIntervalId = null;
+                    }
+                }
             }, 5000);
         };
         
@@ -392,6 +437,10 @@
         };
 
         const resetPostForm = () => {
+            if (state.loadingIntervalId) {
+                clearInterval(state.loadingIntervalId);
+                state.loadingIntervalId = null;
+            }
             postForm.reset();
             uppy.getFiles().forEach(file => uppy.removeFile(file.id));
             postStatusDiv.innerHTML = '';
