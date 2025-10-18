@@ -141,21 +141,34 @@
 
         let state = { currentUser: null, loadingIntervalId: null };
 
-        const fetchAndRenderPlatforms = async (username) => {
+        // --- DEĞİŞİKLİK BAŞLANGICI ---
+        const fetchAndRenderPlatforms = async () => { // Artık 'username' parametresi almıyor
             const container = document.getElementById('platform-selection-container');
             const selectAllCheckbox = document.getElementById('select-all-platforms');
             container.innerHTML = '<p><em>Loading available platforms...</em></p>';
 
+            const token = sessionStorage.getItem('token');
+            if (!token) {
+                container.innerHTML = '<p class="error">Authentication error: No token found. Please log in again.</p>';
+                return;
+            }
+            
             try {
-                const url = `${GET_PLATFORMS_URL}?username=${encodeURIComponent(username)}`;
-                const response = await fetch(url);
+                // URL'den "?username=" kısmı kaldırıldı ve fetch'e headers objesi eklendi
+                const response = await fetch(GET_PLATFORMS_URL, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
                 if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
 
                 const data = await response.json();
 
                 let platforms = [];
-                if (Array.isArray(data) && data.length > 0 && Array.isArray(data[0].platforms)) {
-                    platforms = data[0].platforms;
+                // API yanıtı artık [ { json: { platforms: [...] } } ] şeklinde gelebilir.
+                if (Array.isArray(data) && data.length > 0 && data[0].json && Array.isArray(data[0].json.platforms)) {
+                    platforms = data[0].json.platforms;
                 } else if (data.platforms && Array.isArray(data.platforms)) {
                     platforms = data.platforms;
                 }
@@ -197,6 +210,7 @@
                 container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`;
             }
         };
+        // --- DEĞİŞİKLİK SONU ---
 
         const setupSelectAllLogic = () => {
             const selectAllCheckbox = document.getElementById('select-all-platforms');
@@ -249,6 +263,7 @@
             }
         });
 
+        // --- DEĞİŞİKLİK BAŞLANGICI ---
         const handleLogin = async (event) => {
             event.preventDefault();
             const username = document.getElementById("username").value;
@@ -257,17 +272,34 @@
             loginBtn.disabled = true;
             try {
                 const response = await fetch(LOGIN_WORKFLOW_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ username, password }) });
-                const data = await response.json();
-                state.currentUser = username;
                 
-                await fetchAndRenderPlatforms(username); 
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(errorText || `Login failed with status: ${response.status}`);
+                }
 
-                setStatus(statusDiv, "Login successful!", "success");
-                showPanel(data.role);
+                const data = await response.json();
+                
+                if (data.token) {
+                    sessionStorage.setItem('token', data.token); // Token'ı sakla
+                    state.currentUser = username; // Hoş geldiniz mesajı için sakla
+                    
+                    await fetchAndRenderPlatforms(); // Artık username göndermeye gerek yok
+
+                    setStatus(statusDiv, "Login successful!", "success");
+                    // Şimdilik rolü varsayılan olarak "customer" kabul ediyoruz.
+                    showPanel("customer"); 
+                } else {
+                    throw new Error("Login successful, but no token was received.");
+                }
+
             } catch(error) {
                 setStatus(statusDiv, error.message || "Login failed", "error");
-            } finally { loginBtn.disabled = false; }
+            } finally { 
+                loginBtn.disabled = false; 
+            }
         };
+        // --- DEĞİŞİKLİK SONU ---
 
         const showPanel = (role) => {
             loginSection.style.display = "none";
@@ -322,7 +354,7 @@
                 const submissionID = crypto.randomUUID();
 
                 const postData = {
-                    username: state.currentUser,
+                    username: state.currentUser, // BU BİR SONRAKİ ADIMDA DEĞİŞECEK
                     postTitle: document.getElementById('postTitle').value,
                     postContent: document.getElementById('postContent').value,
                     destinationLink: document.getElementById('destinationLink').value,
