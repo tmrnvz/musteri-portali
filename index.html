@@ -138,11 +138,7 @@
     <script type="module">
         import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
-        // !!! --- ÖNEMLİ --- !!!
-        // YENİ OLUŞTURDUĞUNUZ 'CONF-AUTH-Login' İŞ AKIŞININ WEBHOOK URL'SİNİ BURAYA YAPIŞTIRIN
-        const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login'; // <--- BU SATIRI DEĞİŞTİRİN
-
-        // Bu URL'ler aynı kalıyor
+        const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
         const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
         const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-4718a2205852/check-status/';
@@ -151,21 +147,12 @@
 
         let state = { loadingIntervalId: null };
 
-        // --- YENİ YARDIMCI FONKSİYONLAR ---
-        const parseJwt = (token) => {
-            try {
-                return JSON.parse(atob(token.split('.')[1]));
-            } catch (e) {
-                return null;
-            }
-        };
-
+        // --- YARDIMCI FONKSİYONLAR ---
         const getAuthHeaders = () => {
             const token = localStorage.getItem('jwtToken');
             if (!token) return null;
             return { 'Authorization': `Bearer ${token}` };
         };
-        // --- BİTİŞ ---
 
         const fetchAndRenderPlatforms = async () => {
             const container = document.getElementById('platform-selection-container');
@@ -174,7 +161,6 @@
 
             const headers = getAuthHeaders();
             if (!headers) {
-                // Token yoksa logout yap
                 handleLogout();
                 return;
             }
@@ -274,6 +260,7 @@
             }
         });
 
+        // DEĞİŞİKLİK 1: handleLogin fonksiyonu n8n'den gelen hazır 'username'i kullanacak şekilde güncellendi.
         const handleLogin = async (event) => {
             event.preventDefault();
             const username = document.getElementById("username").value;
@@ -282,44 +269,45 @@
             loginBtn.disabled = true;
 
             try {
-                const response = await fetch(LOGIN_WORKFLOW_URL, { method:"POST", headers:{ "Content-Type":"application/json" }, body: JSON.stringify({ username, password }) });
+                const response = await fetch(LOGIN_WORKFLOW_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) });
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.message || `Login failed with status: ${response.status}`);
                 }
 
-                const data = await response.json();
+                const data = await response.json(); // data = { token: "...", username: "..." }
+
                 localStorage.setItem('jwtToken', data.token);
+                localStorage.setItem('username', data.username); // Gelen username'i de kaydediyoruz!
 
-                const userData = parseJwt(data.token);
-                await initializeUserPanel(userData);
+                await initializeUserPanel({ username: data.username });
 
-            } catch(error) {
+            } catch (error) {
                 setStatus(statusDiv, error.message, "error");
-            } finally { 
-                loginBtn.disabled = false; 
+            } finally {
+                loginBtn.disabled = false;
             }
         };
         
         const initializeUserPanel = async (userData) => {
-             if (!userData) {
+             if (!userData || !userData.username) {
                 handleLogout();
                 return;
             }
             await fetchAndRenderPlatforms();
-            setStatus(statusDiv, "", "success"); // Clear login status
+            setStatus(statusDiv, "", "success");
             showPanel(userData);
         };
 
         const showPanel = (userData) => {
             loginSection.style.display = "none";
-            // Admin paneli mantığı şimdilik kaldırıldı, sadece customer var
             welcomeMessage.textContent = `Welcome, ${userData.username}!`;
             customerPanel.style.display = "block";
         };
 
         const handleLogout = () => {
             localStorage.removeItem('jwtToken');
+            localStorage.removeItem('username'); // Çıkış yaparken username'i de temizle
             location.reload();
         };
 
@@ -377,10 +365,9 @@
                     selectedPlatforms: selectedPlatforms
                 };
                 
-                // --- İSTEK GÜNCELLENDİ: Authorization başlığı eklendi ---
                 const response = await fetch(MAIN_POST_WORKFLOW_URL, { 
                     method: 'POST', 
-                    headers: { ...authHeaders, 'Content-Type': 'application/json' }, 
+                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, 
                     body: JSON.stringify(postData) 
                 });
                 if (!response.ok) throw new Error('Failed to submit post to n8n queue.');
@@ -400,7 +387,7 @@
             const checkStatusUrl = `${STATUS_CHECK_BASE_URL}${submissionID}`;
             
             let pollCount = 0;
-            const maxPolls = 180; // 180 * 5 saniye = 15 dakika
+            const maxPolls = 180;
 
             const intervalId = setInterval(async () => {
                 pollCount++;
@@ -520,16 +507,12 @@
             }
         });
 
-        // --- Sayfa Yüklendiğinde Oturumu Kontrol Et ---
+        // DEĞİŞİKLİK 2: Sayfa yüklendiğinde oturumu kontrol eden kısım, localStorage'daki 'username'i kullanacak şekilde güncellendi.
         window.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('jwtToken');
-            if (token) {
-                const userData = parseJwt(token);
-                // Token'ın süresinin dolup dolmadığını kontrol etmek daha da iyi olur,
-                // ama şimdilik varlığı yeterli.
-                if (userData) {
-                    initializeUserPanel(userData);
-                }
+            const username = localStorage.getItem('username');
+            if (token && username) {
+                initializeUserPanel({ username: username });
             }
         });
 
