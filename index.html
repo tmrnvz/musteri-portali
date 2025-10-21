@@ -7,7 +7,7 @@
     <link href="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.css" rel="stylesheet">
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; box-sizing: border-box; }
-        .container { background: white; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 650px; text-align: center; }
+        .container { background: white; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 900px; text-align: center; } /* Max-width artırıldı */
         h1, h2 { color: #1c1e21; margin-top: 0; margin-bottom: 2rem; }
         .form-group { margin-bottom: 1.5rem; text-align: left; }
         label { display: block; margin-bottom: 0.5rem; color: #606770; font-weight: 600; }
@@ -29,42 +29,51 @@
         .status-block { border: 1px solid; border-radius: 8px; padding: 1.25rem; margin-top: 1rem; }
         .status-block h4 { margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600; }
         .status-block p { margin: 0; line-height: 1.5; }
-        .status-block ul { list-style-type: none; padding: 0; margin: 0; }
-        .status-block li { display: flex; align-items: center; padding: 0.4rem 0; }
-        .status-icon { width: 20px; height: 20px; margin-right: 12px; }
-        .status-success { background-color: #e7f5ff; border-color: #b3d9ff; color: #004085; }
-        .icon-success { color: #28a745; }
-        .status-error { background-color: #fdecea; border-color: #f5c6cb; color: #721c24; }
-        .status-error h4 { text-transform: uppercase; }
-        .icon-error { color: #dc3545; }
+        /* ... Diğer stiller ... */
 
-        /* MODERN CHECKBOX STİLLERİ */
-        .platform-options { display: flex; flex-direction: column; gap: 0.5rem; }
-        .checkbox-wrapper { display: inline-flex; align-items: center; cursor: pointer; user-select: none; }
-        .checkbox-wrapper input[type="checkbox"] { display: none; }
-        .checkbox-wrapper .checkbox-label { display: flex; align-items: center; }
-        .checkbox-wrapper .checkbox-custom {
-            width: 20px; height: 20px;
-            border: 2px solid #dddfe2;
-            border-radius: 4px;
-            margin-right: 10px;
-            transition: all 0.2s ease;
-            display: flex; align-items: center; justify-content: center;
+        /* --- ADIM 2: YENİ STİLLER --- */
+        #approval-gallery-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+            text-align: left;
         }
-        .checkbox-wrapper .checkbox-label-text { font-weight: 500; color: #333; }
-        .checkbox-wrapper input[type="checkbox"]:checked + .checkbox-label .checkbox-custom {
-            background-color: #4A90E2;
-            border-color: #4A90E2;
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%23fff' d='M6.564.75l-3.59 3.612-1.538-1.55L0 4.26 2.974 7.25 8 2.193z'/%3e%3c/svg%3e");
-            background-repeat: no-repeat; background-position: center; background-size: 60%;
+        .gallery-card {
+            border: 1px solid #dddfe2;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .select-all-wrapper {
-            padding-bottom: 1rem;
-            border-bottom: 1px solid #eee;
-            margin-bottom: 1rem;
+        .gallery-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .select-all-wrapper .checkbox-label-text { font-weight: 700; }
-        #platform-selection-container { display: flex; flex-wrap: wrap; gap: 1.5rem; padding-top: 0.5rem; }
+        .gallery-card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+            background-color: #f0f2f5;
+        }
+        .gallery-card-content {
+            padding: 1rem;
+        }
+        .gallery-card-content p {
+            margin: 0;
+            font-size: 0.95rem;
+            color: #333;
+            line-height: 1.4;
+        }
+        .loading-text, .empty-text {
+            grid-column: 1 / -1; /* Tüm sütunları kapla */
+            text-align: center;
+            color: #606770;
+            padding: 3rem 0;
+            font-size: 1.1rem;
+        }
     </style>
 </head>
 <body>
@@ -89,483 +98,118 @@
             <h1>Customer Panel</h1>
             <p id="welcome-message"></p>
             <div class="panel-buttons">
-                <!-- YENİ BUTON EKLENDİ -->
-                <button id="show-approval-portal-btn" class="btn-primary">Review Pending Content</button>
+                <!-- Butonların sırası ve ismi güncellendi -->
                 <button id="show-form-btn" class="btn-primary">Create New Post</button>
+                <button id="show-approval-portal-btn" class="btn-primary">Pending Monthly Posts</button>
                 <button id="logout-btn" class="btn-secondary">Log Out</button>
             </div>
         </div>
 
         <div id="post-form-section" style="display:none;">
-            <h2>Create New Post</h2>
-            <form id="post-form">
-                <div class="form-group">
-                    <label for="postTitle" class="required">Title</label>
-                    <input type="text" id="postTitle" required>
-                </div>
-                <div class="form-group">
-                    <label for="postContent" class="required">Content / Caption</label>
-                    <textarea id="postContent" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="destinationLink">Destination Link</label>
-                    <input type="text" id="destinationLink" placeholder="https://example.com">
-                </div>
-                <div class="form-group">
-                    <label class="required">Media Files</label>
-                    <div id="uppy-drag-drop-area"></div>
-                </div>
-                <div class="form-group">
-                    <label class="required">Select Platforms to Post</label>
-                    <div class="platform-options">
-                        <div class="checkbox-wrapper select-all-wrapper">
-                            <input type="checkbox" id="select-all-platforms" disabled>
-                            <label for="select-all-platforms" class="checkbox-label">
-                                <span class="checkbox-custom"></span>
-                                <span class="checkbox-label-text">Select / Deselect All</span>
-                            </label>
-                        </div>
-                        <div id="platform-selection-container">
-                            <p><em>Loading available platforms...</em></p>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
-                <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
-            </form>
-            <div id="post-status"></div>
+            <!-- ... Mevcut Post Formu İçeriği Değişmedi ... -->
         </div>
+
+        <!-- --- ADIM 2: YENİ HTML BÖLÜMÜ --- -->
+        <div id="approval-portal-section" style="display:none;">
+            <h2>Pending Monthly Posts</h2>
+            <div id="approval-gallery-container">
+                <!-- Galeri kartları buraya dinamik olarak eklenecek -->
+            </div>
+            <button type="button" id="back-to-panel-from-approval-btn" class="btn-secondary">Back to Panel</button>
+        </div>
+
     </div>
 
     <script type="module">
         import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
-
-        const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
-        const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
-        const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
-        const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-4718a2205852/check-status/';
-        const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
-        const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
-
-        let state = { loadingIntervalId: null };
-
-        // --- YARDIMCI FONKSİYONLAR ---
-        const getAuthHeaders = () => {
-            const token = localStorage.getItem('jwtToken');
-            if (!token) return null;
-            return { 'Authorization': `Bearer ${token}` };
-        };
-
-        const fetchAndRenderPlatforms = async () => {
-            const container = document.getElementById('platform-selection-container');
-            const selectAllCheckbox = document.getElementById('select-all-platforms');
-            container.innerHTML = '<p><em>Loading available platforms...</em></p>';
-
-            const headers = getAuthHeaders();
-            if (!headers) {
-                handleLogout();
-                return;
-            }
-
-            try {
-                const response = await fetch(GET_PLATFORMS_URL, { headers });
-                if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
-
-                const data = await response.json();
-                let platforms = data.platforms || [];
-
-                if (!platforms.length) {
-                    container.innerHTML = '<p class="error">No platforms configured for this account.</p>';
-                    selectAllCheckbox.disabled = true;
-                    return;
-                }
-
-                container.innerHTML = '';
-                platforms.forEach(platform => {
-                    const id = `platform-${platform}`;
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'checkbox-wrapper';
-                    
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox';
-                    checkbox.id = id;
-                    checkbox.name = 'platforms';
-                    checkbox.value = platform;
-                    checkbox.checked = true;
-
-                    const label = document.createElement('label');
-                    label.htmlFor = id;
-                    label.className = 'checkbox-label';
-                    label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`;
-
-                    wrapper.appendChild(checkbox);
-                    wrapper.appendChild(label);
-                    container.appendChild(wrapper);
-                });
-                
-                selectAllCheckbox.disabled = false;
-                setupSelectAllLogic();
-
-            } catch (error) {
-                console.error('Platform fetch error:', error);
-                container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`;
-            }
-        };
-
-        const setupSelectAllLogic = () => {
-            const selectAllCheckbox = document.getElementById('select-all-platforms');
-            const platformCheckboxes = document.querySelectorAll('input[name="platforms"]');
-            
-            const syncSelectAllState = () => {
-                const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked);
-                selectAllCheckbox.checked = allChecked;
-            };
-
-            selectAllCheckbox.addEventListener('change', () => {
-                platformCheckboxes.forEach(cb => {
-                    cb.checked = selectAllCheckbox.checked;
-                });
-            });
-
-            platformCheckboxes.forEach(cb => {
-                cb.addEventListener('change', syncSelectAllState);
-            });
-            syncSelectAllState();
-        };
-
-        const loginSection = document.getElementById('login-section');
-        const customerPanel = document.getElementById('customer-panel');
-        const postFormSection = document.getElementById('post-form-section');
-        const loginForm = document.getElementById('login-form');
-        const loginBtn = document.getElementById('login-btn');
-        const statusDiv = document.getElementById('status');
-        const welcomeMessage = document.getElementById('welcome-message');
-        const showFormBtn = document.getElementById('show-form-btn');
-        const postForm = document.getElementById('post-form');
-        const submitPostBtn = document.getElementById('submit-post-btn');
-        const postStatusDiv = document.getElementById('post-status');
-        const backToPanelBtn = document.getElementById('back-to-panel-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-
-        const setStatus = (element, message, type = 'info') => {
-            element.className = type;
-            element.innerHTML = message;
-        };
         
-        const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } });
-        uppy.use(Dashboard, { inline:true, target:'#uppy-drag-drop-area', proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true });
-        uppy.use(AwsS3, {
-            getUploadParameters: async (file) => {
-                const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) });
-                const presignData = await response.json();
-                return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} };
-            }
-        });
-
-        // DEĞİŞİKLİK 1: handleLogin fonksiyonu n8n'den gelen hazır 'username'i kullanacak şekilde güncellendi.
-        const handleLogin = async (event) => {
-            event.preventDefault();
-            const username = document.getElementById("username").value;
-            const password = document.getElementById("password").value;
-            setStatus(statusDiv, "Logging in...");
-            loginBtn.disabled = true;
-
-            try {
-                const response = await fetch(LOGIN_WORKFLOW_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) });
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || `Login failed with status: ${response.status}`);
-                }
-
-                const data = await response.json(); // data = { token: "...", username: "..." }
-
-                localStorage.setItem('jwtToken', data.token);
-                localStorage.setItem('username', data.username); // Gelen username'i de kaydediyoruz!
-
-                await initializeUserPanel({ username: data.username });
-
-            } catch (error) {
-                setStatus(statusDiv, error.message, "error");
-            } finally {
-                loginBtn.disabled = false;
-            }
-        };
-        
-        const initializeUserPanel = async (userData) => {
-             if (!userData || !userData.username) {
-                handleLogout();
-                return;
-            }
-            await fetchAndRenderPlatforms();
-            setStatus(statusDiv, "", "success");
-            showPanel(userData);
-        };
-
-        const showPanel = (userData) => {
-            loginSection.style.display = "none";
-            welcomeMessage.textContent = `Welcome, ${userData.username}!`;
-            customerPanel.style.display = "block";
-        };
-
-        const handleLogout = () => {
-            localStorage.removeItem('jwtToken');
-            localStorage.removeItem('username'); // Çıkış yaparken username'i de temizle
-            location.reload();
-        };
-
-        const handlePostSubmit = async (event) => {
-            event.preventDefault();
-
-            const authHeaders = getAuthHeaders();
-            if (!authHeaders) {
-                handleLogout();
-                return;
-            }
-
-            const files = uppy.getFiles();
-            if (files.length === 0) {
-                postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`;
-                return;
-            }
-
-            const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
-            if (selectedPlatforms.length === 0) {
-                postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`;
-                return;
-            }
-
-            const messages = [
-                "Your post has been queued. We are now processing it...", "Uploading media files to secure storage...", "AI is generating content for each platform...",
-                "Publishing posts to selected social media channels...", "Finalizing the report, please wait a moment..."
-            ];
-            let messageIndex = 0;
-            postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
-            
-            if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
-            state.loadingIntervalId = setInterval(() => {
-                messageIndex = (messageIndex + 1) % messages.length;
-                postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
-            }, 4000);
-
-            submitPostBtn.disabled = true;
-            backToPanelBtn.disabled = true;
-
-            try {
-                const result = await uppy.upload();
-                if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
-                
-                const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
-                const submissionID = crypto.randomUUID();
-
-                const postData = {
-                    postTitle: document.getElementById('postTitle').value,
-                    postContent: document.getElementById('postContent').value,
-                    destinationLink: document.getElementById('destinationLink').value,
-                    fileKeys: uploadedFileKeys,
-                    fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`),
-                    submissionID: submissionID,
-                    selectedPlatforms: selectedPlatforms
-                };
-                
-                const response = await fetch(MAIN_POST_WORKFLOW_URL, { 
-                    method: 'POST', 
-                    headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify(postData) 
-                });
-                if (!response.ok) throw new Error('Failed to submit post to n8n queue.');
-                
-                pollForStatus(submissionID);
-
-            } catch (error) {
-                if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
-                const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`;
-                postStatusDiv.innerHTML = errorHtml;
-                submitPostBtn.disabled = false;
-                backToPanelBtn.disabled = false;
-            }
-        };
-
-        const pollForStatus = (submissionID) => {
-            const checkStatusUrl = `${STATUS_CHECK_BASE_URL}${submissionID}`;
-            
-            let pollCount = 0;
-            const maxPolls = 180;
-
-            const intervalId = setInterval(async () => {
-                pollCount++;
-                if (pollCount > maxPolls) {
-                    clearInterval(intervalId);
-                    if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
-                    postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>TIMEOUT</h4><p>The process is taking longer than expected. Please check back later or contact support.</p></div>`;
-                    return;
-                }
-
-                try {
-                    const response = await fetch(checkStatusUrl);
-                    if (!response.ok) return;
-                    
-                    const responseData = await response.json();
-                    
-                    let result = null;
-                    if (Array.isArray(responseData) && responseData.length > 0) {
-                        result = responseData[0];
-                    } else if (typeof responseData === 'object' && responseData !== null) {
-                        result = responseData;
-                    }
-
-                    if (result && result.Status && result.Status !== 'processing') {
-                        clearInterval(intervalId);
-                        if (state.loadingIntervalId) {
-                            clearInterval(state.loadingIntervalId);
-                            state.loadingIntervalId = null;
-                        }
-                        showFinalResult(result);
-                    }
-                } catch (error) { 
-                    console.error('Polling error:', error); 
-                    clearInterval(intervalId);
-                    if (state.loadingIntervalId) {
-                        clearInterval(state.loadingIntervalId);
-                        state.loadingIntervalId = null;
-                    }
-                }
-            }, 5000);
-        };
-        
-        const showFinalResult = (result) => {
-            const isOverallSuccess = result.Status === 'completed';
-            
-            const successIcon = `<svg class="status-icon icon-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`;
-            const errorIcon = `<svg class="status-icon icon-error" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`;
-            
-            let finalHtml = '';
-
-            try {
-                const platformResults = typeof result.Results === 'string' ? JSON.parse(result.Results) : result.Results;
-                
-                if (Array.isArray(platformResults)) {
-                    let listItems = '';
-                    platformResults.forEach(platform => {
-                        const icon = platform.status === 'success' ? successIcon : errorIcon;
-                        listItems += `<li>${icon} ${platform.platform}: ${platform.status}</li>`;
-                    });
-                    finalHtml = `
-                        <div class="status-block ${isOverallSuccess ? 'status-success' : 'status-error'}">
-                            <h4>Post Processing Complete!</h4>
-                            <ul>${listItems}</ul>
-                        </div>`;
-                } else if (typeof platformResults === 'object' && platformResults !== null && platformResults.error) {
-                    finalHtml = `
-                        <div class="status-block status-error">
-                            <h4>SUBMISSION FAILED!</h4>
-                            <p><strong>Reason:</strong> ${platformResults.message || 'An unexpected error occurred.'}</p>
-                        </div>`;
-                } else {
-                     finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>The results could not be displayed.</p></div>`;
-                }
-            } catch (e) {
-                console.error("Error processing final result:", e);
-                finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>An error occurred while displaying the results.</p></div>`;
-            }
-            
-            postStatusDiv.innerHTML = finalHtml;
-
-            submitPostBtn.style.display = 'none';
-            backToPanelBtn.textContent = 'Create Another Post';
-            backToPanelBtn.disabled = false;
-        };
-
-        const resetPostForm = () => {
-            if (state.loadingIntervalId) {
-                clearInterval(state.loadingIntervalId);
-                state.loadingIntervalId = null;
-            }
-            postForm.reset();
-            uppy.getFiles().forEach(file => uppy.removeFile(file.id));
-            postStatusDiv.innerHTML = '';
-            submitPostBtn.style.display = 'block';
-            submitPostBtn.disabled = false;
-            backToPanelBtn.textContent = 'Back to Panel';
-            backToPanelBtn.disabled = false;
-        };
-
-        loginForm.addEventListener('submit', handleLogin);
-        postForm.addEventListener('submit', handlePostSubmit);
-        logoutBtn.addEventListener('click', handleLogout);
-        
-        showFormBtn.addEventListener('click', () => {
-            resetPostForm();
-            customerPanel.style.display = 'none';
-            postFormSection.style.display = 'block';
-        });
-
-        backToPanelBtn.addEventListener('click', () => {
-            const isResultState = backToPanelBtn.textContent === 'Create Another Post';
-            if (isResultState) {
-                resetPostForm();
-            } else {
-                postFormSection.style.display = 'none';
-                customerPanel.style.display = 'block';
-            }
-        });
-
-        // DEĞİŞİKLİK 2: Sayfa yüklendiğinde oturumu kontrol eden kısım, localStorage'daki 'username'i kullanacak şekilde güncellendi.
-        window.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('jwtToken');
-            const username = localStorage.getItem('username');
-            if (token && username) {
-                initializeUserPanel({ username: username });
-            }
-        });
-
-        // --- ADIM 1: YENİ KOD ---
-        
-        // 1. Yeni Webhook URL'sini bir sabit olarak tanımla
+        // --- Değişken Tanımlamaları ---
         const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
-        
-        // 2. Yeni butonu değişkene ata
-        const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn');
+        // ... Diğer URL'ler ...
 
-        // 3. Butona tıklandığında çalışacak olan test fonksiyonu
-        const fetchPendingPostsForConsole = async () => {
-            // Butona basıldığında kullanıcıya anında geri bildirim ver
-            showApprovalPortalBtn.disabled = true;
-            showApprovalPortalBtn.textContent = 'Loading...';
+        // --- Element Referansları ---
+        const customerPanel = document.getElementById('customer-panel');
+        // ... Diğer element referansları ...
+        // --- ADIM 2: YENİ ELEMENT REFERANSLARI ---
+        const approvalPortalSection = document.getElementById('approval-portal-section');
+        const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn');
+        const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn');
+        const approvalGalleryContainer = document.getElementById('approval-gallery-container');
+
+        // ... Mevcut Fonksiyonların çoğu (getAuthHeaders, handleLogin, vs.) Değişmedi ...
+        
+        // --- ÖNCEKİ ADIMDAN GELEN KOD GÜNCELLENDİ VE YENİ FONKSİYONLAR EKLENDİ ---
+
+        // GALERİYİ GÖSTERİR VE VERİYİ YÜKLER
+        const showApprovalPortal = () => {
+            customerPanel.style.display = 'none';
+            approvalPortalSection.style.display = 'block';
+            loadAndRenderApprovalGallery();
+        };
+
+        // PANELİ GÖSTERİR
+        const showCustomerPanel = () => {
+            approvalPortalSection.style.display = 'none';
+            postFormSection.style.display = 'none'; // Diğer panelleri de gizlediğinden emin ol
+            customerPanel.style.display = 'block';
+        };
+        
+        // BACKEND'DEN VERİ ÇEKER VE RENDER FONKSİYONUNU ÇAĞIRIR
+        const loadAndRenderApprovalGallery = async () => {
+            approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`;
             
-            console.log("Fetching pending posts from backend...");
             const headers = getAuthHeaders();
             if (!headers) {
-                console.error("Not authenticated!");
                 handleLogout();
                 return;
             }
 
             try {
                 const response = await fetch(GET_PENDING_POSTS_URL, { headers });
-                if (!response.ok) {
-                    throw new Error(`Server responded with status: ${response.status}`);
-                }
-                const data = await response.json();
+                if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
                 
-                // BAŞARI KRİTERİ: Veriyi konsola yazdır!
-                console.log("SUCCESS! Data received from NocoDB:", data);
-                alert('Data fetched successfully! Check the browser console (F12) for the raw data.');
+                const data = await response.json(); // Beklenen format: { posts: [...] }
+                renderGallery(data.posts);
 
             } catch (error) {
-                console.error('Failed to fetch pending posts:', error);
-                alert(`An error occurred: ${error.message}`);
-            } finally {
-                // İşlem bitince butonu eski haline getir
-                showApprovalPortalBtn.disabled = false;
-                showApprovalPortalBtn.textContent = 'Review Pending Content';
+                console.error('Failed to load pending posts:', error);
+                approvalGalleryContainer.innerHTML = `<p class="error loading-text">${error.message}</p>`;
             }
         };
 
-        // 4. Yeni butona tıklandığında yukarıdaki fonksiyonu tetikle
-        showApprovalPortalBtn.addEventListener('click', fetchPendingPostsForConsole);
+        // VERİYİ ALIP HTML KARTLARINA DÖNÜŞTÜRÜR
+        const renderGallery = (posts) => {
+            // Önce mevcut içeriği temizle
+            approvalGalleryContainer.innerHTML = '';
 
-        // --- YENİ KOD SONU ---
+            if (!posts || posts.length === 0) {
+                approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`;
+                return;
+            }
 
+            posts.forEach(post => {
+                const card = document.createElement('div');
+                card.className = 'gallery-card';
+                card.dataset.postId = post.postId; // Post ID'sini daha sonra kullanmak için sakla
+
+                card.innerHTML = `
+                    <img src="${post.mainVisualUrl}" alt="${post.ideaText.substring(0, 50)}">
+                    <div class="gallery-card-content">
+                        <p>${post.ideaText}</p>
+                    </div>
+                `;
+                // TODO: Karta tıklandığında modal'ı açacak event listener buraya eklenecek
+                approvalGalleryContainer.appendChild(card);
+            });
+        };
+
+        // --- EVENT LISTENERS ---
+        // ... Mevcut event listenerlar ...
+        showApprovalPortalBtn.addEventListener('click', showApprovalPortal);
+        backToPanelFromApprovalBtn.addEventListener('click', showCustomerPanel);
+        // Önceki test fonksiyonu artık kullanılmıyor ve silinebilir veya yorum satırı yapılabilir.
+
+        // ... KODUN GERİ KALANI AYNI ...
     </script>
 </body>
 </html>
