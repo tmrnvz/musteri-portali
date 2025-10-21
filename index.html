@@ -89,6 +89,8 @@
             <h1>Customer Panel</h1>
             <p id="welcome-message"></p>
             <div class="panel-buttons">
+                <!-- YENİ BUTON EKLENDİ -->
+                <button id="show-approval-portal-btn" class="btn-primary">Review Pending Content</button>
                 <button id="show-form-btn" class="btn-primary">Create New Post</button>
                 <button id="logout-btn" class="btn-secondary">Log Out</button>
             </div>
@@ -515,6 +517,54 @@
                 initializeUserPanel({ username: username });
             }
         });
+
+        // --- ADIM 1: YENİ KOD ---
+        
+        // 1. Yeni Webhook URL'sini bir sabit olarak tanımla
+        const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
+        
+        // 2. Yeni butonu değişkene ata
+        const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn');
+
+        // 3. Butona tıklandığında çalışacak olan test fonksiyonu
+        const fetchPendingPostsForConsole = async () => {
+            // Butona basıldığında kullanıcıya anında geri bildirim ver
+            showApprovalPortalBtn.disabled = true;
+            showApprovalPortalBtn.textContent = 'Loading...';
+            
+            console.log("Fetching pending posts from backend...");
+            const headers = getAuthHeaders();
+            if (!headers) {
+                console.error("Not authenticated!");
+                handleLogout();
+                return;
+            }
+
+            try {
+                const response = await fetch(GET_PENDING_POSTS_URL, { headers });
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
+                }
+                const data = await response.json();
+                
+                // BAŞARI KRİTERİ: Veriyi konsola yazdır!
+                console.log("SUCCESS! Data received from NocoDB:", data);
+                alert('Data fetched successfully! Check the browser console (F12) for the raw data.');
+
+            } catch (error) {
+                console.error('Failed to fetch pending posts:', error);
+                alert(`An error occurred: ${error.message}`);
+            } finally {
+                // İşlem bitince butonu eski haline getir
+                showApprovalPortalBtn.disabled = false;
+                showApprovalPortalBtn.textContent = 'Review Pending Content';
+            }
+        };
+
+        // 4. Yeni butona tıklandığında yukarıdaki fonksiyonu tetikle
+        showApprovalPortalBtn.addEventListener('click', fetchPendingPostsForConsole);
+
+        // --- YENİ KOD SONU ---
 
     </script>
 </body>
