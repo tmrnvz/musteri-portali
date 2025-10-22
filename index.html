@@ -37,8 +37,6 @@
         .status-error { background-color: #fdecea; border-color: #f5c6cb; color: #721c24; }
         .status-error h4 { text-transform: uppercase; }
         .icon-error { color: #dc3545; }
-
-        /* MODERN CHECKBOX STİLLERİ */
         .platform-options { display: flex; flex-direction: column; gap: 0.5rem; }
         .checkbox-wrapper { display: inline-flex; align-items: center; cursor: pointer; user-select: none; }
         .checkbox-wrapper input[type="checkbox"] { display: none; }
@@ -59,121 +57,72 @@
         .gallery-card-content p { margin: 0; font-size: 0.95rem; color: #333; line-height: 1.4; }
         .loading-text, .empty-text { grid-column: 1 / -1; text-align: center; color: #606770; padding: 3rem 0; font-size: 1.1rem; }
         
-        /* --- ADIM 4: MODAL STİLLERİ --- */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+        /* GÜNCELLENMİŞ MODAL STİLLERİ */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; padding: 1rem; box-sizing: border-box; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
-        .modal-content { background: white; border-radius: 8px; padding: 2.5rem; width: 90%; max-width: 700px; max-height: 90vh; overflow-y: auto; text-align: left; transform: scale(0.9); transition: transform 0.3s ease; }
+        .modal-content { background: white; border-radius: 8px; width: 100%; max-width: 850px; display: flex; flex-direction: column; max-height: 95vh; text-align: left; transform: scale(0.9); transition: transform 0.3s ease; overflow: hidden; }
         .modal-overlay.active .modal-content { transform: scale(1); }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem; }
-        .modal-header h3 { margin: 0; font-size: 1.5rem; }
-        .modal-close-btn { background: none; border: none; font-size: 2rem; cursor: pointer; color: #888; line-height: 1; }
+        .modal-header { padding: 1.5rem 2rem; border-bottom: 1px solid #eee; position: relative; }
+        .modal-header h3 { margin: 0; font-size: 1.3rem; line-height: 1.4; padding-right: 3rem; }
+        .modal-close-btn { position: absolute; top: 50%; right: 1.5rem; transform: translateY(-50%); background: none; border: none; font-size: 2.5rem; cursor: pointer; color: #888; line-height: 1; padding: 0; }
         
-        .platform-tabs { display: flex; border-bottom: 1px solid #ddd; margin-bottom: 1.5rem; }
-        .platform-tab { padding: 0.8rem 1.2rem; cursor: pointer; border: none; background: none; font-size: 1rem; font-weight: 600; color: #606770; border-bottom: 3px solid transparent; }
-        .platform-tab.active { color: #4A90E2; border-bottom-color: #4A90E2; }
+        .modal-body-grid { display: grid; grid-template-columns: 300px 1fr; gap: 2rem; padding: 1.5rem 2rem; overflow-y: auto; }
+        .modal-visual-column { position: sticky; top: 0; align-self: start; }
+        .modal-visual-column img { width: 100%; border-radius: 6px; }
         
-        .platform-pane { display: none; }
-        .platform-pane.active { display: block; }
-        .platform-pane-content { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 1.5rem; min-height: 150px; white-space: pre-wrap; /* Satır sonlarını korur */ line-height: 1.6; }
-
-        .approval-buttons { display: flex; gap: 1rem; margin-top: 1.5rem; justify-content: flex-end; }
-        .approval-buttons .btn { width: auto; padding: 0.6rem 1.2rem; font-size: 1rem; }
+        .modal-platforms-column h4 { margin-top: 0; margin-bottom: 1rem; color: #333; }
+        
+        /* AKORDİYON STİLLERİ */
+        .accordion-item { border-bottom: 1px solid #eee; }
+        .accordion-item:last-child { border-bottom: none; }
+        .accordion-header { background: #fff; cursor: pointer; padding: 1rem 0; display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: #1c1e21; }
+        .accordion-header::after { content: '▼'; font-size: 0.8rem; transition: transform 0.2s ease; }
+        .accordion-item.active .accordion-header::after { transform: rotate(180deg); }
+        .accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease-out; }
+        .accordion-item.active .accordion-content { max-height: 1000px; padding-bottom: 1.5rem; }
+        
+        .content-section { margin-bottom: 1rem; }
+        .content-section h5 { margin: 0 0 0.5rem 0; font-size: 0.8rem; color: #606770; text-transform: uppercase; }
+        .content-text, .content-hashtags { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 1rem; white-space: pre-wrap; line-height: 1.6; font-size: 0.95rem; }
+        .content-hashtags { color: #4A90E2; word-break: break-word; }
+        
+        .approval-buttons { display: flex; gap: 1rem; margin-top: 1rem; }
+        .btn-decision { flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.6rem; font-size: 0.9rem; border-width: 2px; }
         .btn-approve { border-color: #28a745; color: #28a745; }
-        .btn-approve:hover { background-color: #28a745; color: white; }
+        .btn-approve:not(.disabled):hover { background-color: #28a745; color: white; }
         .btn-reject { border-color: #dc3545; color: #dc3545; }
-        .btn-reject:hover { background-color: #dc3545; color: white; }
-        
-        .overall-approval-section { padding: 1rem; background-color: #e7f5ff; border: 1px solid #b3d9ff; border-radius: 8px; margin-bottom: 2rem; }
-        .overall-approval-section .btn-primary { width: 100%; margin-top: 0; }
+        .btn-reject:not(.disabled):hover { background-color: #dc3545; color: white; }
+
+        .btn-decision.approved { background-color: #28a745; color: white; border-color: #28a745;}
+        .btn-decision.rejected { background-color: #dc3545; color: white; border-color: #dc3545;}
+        .btn-decision.disabled { border-color: #ccc !important; color: #ccc !important; background-color: #f8f8f8 !important; cursor: not-allowed; }
+
+        @media (max-width: 768px) {
+            .modal-content { max-width: 100%; max-height: 90vh;}
+            .modal-body-grid { grid-template-columns: 1fr; }
+            .modal-visual-column { position: static; margin-bottom: 1.5rem; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div id="login-section">
-            <h1>Portal Login</h1>
-            <form id="login-form">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required>
-                </div>
-                <button type="submit" id="login-btn" class="btn-primary">Log In</button>
-            </form>
-            <div id="status"></div>
-        </div>
-
-        <div id="customer-panel" style="display:none;">
-            <h1>Customer Panel</h1>
-            <p id="welcome-message"></p>
-            <div class="panel-buttons">
-                <button id="show-form-btn" class="btn-primary">Create New Post</button>
-                <button id="show-approval-portal-btn" class="btn-primary">Pending Monthly Posts</button>
-                <button id="logout-btn" class="btn-secondary">Log Out</button>
-            </div>
-        </div>
-
-        <div id="post-form-section" style="display:none;">
-            <h2>Create New Post</h2>
-            <form id="post-form">
-                <div class="form-group">
-                    <label for="postTitle" class="required">Title</label>
-                    <input type="text" id="postTitle" required>
-                </div>
-                <div class="form-group">
-                    <label for="postContent" class="required">Content / Caption</label>
-                    <textarea id="postContent" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="destinationLink">Destination Link</label>
-                    <input type="text" id="destinationLink" placeholder="https://example.com">
-                </div>
-                <div class="form-group">
-                    <label class="required">Media Files</label>
-                    <div id="uppy-drag-drop-area"></div>
-                </div>
-                <div class="form-group">
-                    <label class="required">Select Platforms to Post</label>
-                    <div class="platform-options">
-                        <div class="checkbox-wrapper select-all-wrapper">
-                            <input type="checkbox" id="select-all-platforms" disabled>
-                            <label for="select-all-platforms" class="checkbox-label">
-                                <span class="checkbox-custom"></span>
-                                <span class="checkbox-label-text">Select / Deselect All</span>
-                            </label>
-                        </div>
-                        <div id="platform-selection-container">
-                            <p><em>Loading available platforms...</em></p>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
-                <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
-            </form>
-            <div id="post-status"></div>
-        </div>
-        
-        <div id="approval-portal-section" style="display:none;">
-            <h2>Pending Monthly Posts</h2>
-            <div id="approval-gallery-container"></div>
-            <button type="button" id="back-to-panel-from-approval-btn" class="btn-secondary">Back to Panel</button>
-        </div>
+        <div id="login-section"><h1>Portal Login</h1><form id="login-form"><div class="form-group"><label for="username">Username</label><input type="text" id="username" required></div><div class="form-group"><label for="password">Password</label><input type="password" id="password" required></div><button type="submit" id="login-btn" class="btn-primary">Log In</button></form><div id="status"></div></div>
+        <div id="customer-panel" style="display:none;"><h1>Customer Panel</h1><p id="welcome-message"></p><div class="panel-buttons"><button id="show-form-btn" class="btn-primary">Create New Post</button><button id="show-approval-portal-btn" class="btn-primary">Pending Monthly Posts</button><button id="logout-btn" class="btn-secondary">Log Out</button></div></div>
+        <div id="post-form-section" style="display:none;"><h2>Create New Post</h2><form id="post-form"><div class="form-group"><label for="postTitle" class="required">Title</label><input type="text" id="postTitle" required></div><div class="form-group"><label for="postContent" class="required">Content / Caption</label><textarea id="postContent" required></textarea></div><div class="form-group"><label for="destinationLink">Destination Link</label><input type="text" id="destinationLink" placeholder="https://example.com"></div><div class="form-group"><label class="required">Media Files</label><div id="uppy-drag-drop-area"></div></div><div class="form-group"><label class="required">Select Platforms to Post</label><div class="platform-options"><div class="checkbox-wrapper select-all-wrapper"><input type="checkbox" id="select-all-platforms" disabled><label for="select-all-platforms" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Select / Deselect All</span></label></div><div id="platform-selection-container"><p><em>Loading available platforms...</em></p></div></div></div><button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button><button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button></form><div id="post-status"></div></div>
+        <div id="approval-portal-section" style="display:none;"><h2>Pending Monthly Posts</h2><div id="approval-gallery-container"></div><button type="button" id="back-to-panel-from-approval-btn" class="btn-secondary">Back to Panel</button></div>
     </div>
-
+    
     <div class="modal-overlay" id="approval-modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h3 id="modal-title">Review Post</h3>
                 <button class="modal-close-btn" id="modal-close-btn">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="overall-approval-section">
-                    <button id="approve-all-btn" class="btn-primary">✅ Approve All Platforms for This Post</button>
+            <div class="modal-body-grid">
+                <div class="modal-visual-column">
+                    <img id="modal-visual" src="" alt="Post Visual">
                 </div>
-                <div class="platform-tabs" id="modal-tabs"></div>
-                <div class="platform-panes" id="modal-panes"></div>
+                <div class="modal-platforms-column" id="modal-platforms"></div>
             </div>
         </div>
     </div>
@@ -189,119 +138,61 @@
         const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
         const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
 
-        let state = {
-            loadingIntervalId: null,
-            pendingPosts: []
-        };
+        let state = { loadingIntervalId: null, pendingPosts: [] };
 
-        const getAuthHeaders = () => {
-            const token = localStorage.getItem('jwtToken');
-            if (!token) return null;
-            return { 'Authorization': `Bearer ${token}` };
-        };
+        const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms');
+        
+        const getAuthHeaders = () => { const token = localStorage.getItem('jwtToken'); if (!token) return null; return { 'Authorization': `Bearer ${token}` }; };
+        const setStatus = (element, message, type = 'info') => { element.className = type; element.innerHTML = message; };
+        const handleLogout = () => { localStorage.removeItem('jwtToken'); localStorage.removeItem('username'); location.reload(); };
 
         const fetchAndRenderPlatforms = async () => {
-            const container = document.getElementById('platform-selection-container');
-            const selectAllCheckbox = document.getElementById('select-all-platforms');
+            const container = document.getElementById('platform-selection-container'); const selectAllCheckbox = document.getElementById('select-all-platforms');
             container.innerHTML = '<p><em>Loading available platforms...</em></p>';
-            const headers = getAuthHeaders();
-            if (!headers) { handleLogout(); return; }
+            const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; }
             try {
                 const response = await fetch(GET_PLATFORMS_URL, { headers });
                 if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
-                const data = await response.json();
-                let platforms = data.platforms || [];
+                const data = await response.json(); let platforms = data.platforms || [];
                 if (!platforms.length) { container.innerHTML = '<p class="error">No platforms configured for this account.</p>'; selectAllCheckbox.disabled = true; return; }
                 container.innerHTML = '';
                 platforms.forEach(platform => {
-                    const id = `platform-${platform}`;
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'checkbox-wrapper';
-                    const checkbox = document.createElement('input');
-                    checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true;
-                    const label = document.createElement('label');
-                    label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`;
+                    const id = `platform-${platform}`; const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper';
+                    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true;
+                    const label = document.createElement('label'); label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`;
                     wrapper.appendChild(checkbox); wrapper.appendChild(label); container.appendChild(wrapper);
                 });
-                selectAllCheckbox.disabled = false;
-                setupSelectAllLogic();
+                selectAllCheckbox.disabled = false; setupSelectAllLogic();
             } catch (error) { console.error('Platform fetch error:', error); container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`; }
         };
 
         const setupSelectAllLogic = () => {
-            const selectAllCheckbox = document.getElementById('select-all-platforms');
-            const platformCheckboxes = document.querySelectorAll('input[name="platforms"]');
+            const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]');
             const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; };
             selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); });
-            platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); });
-            syncSelectAllState();
+            platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState();
         };
-
-        const loginSection = document.getElementById('login-section');
-        const customerPanel = document.getElementById('customer-panel');
-        const postFormSection = document.getElementById('post-form-section');
-        const loginForm = document.getElementById('login-form');
-        const loginBtn = document.getElementById('login-btn');
-        const statusDiv = document.getElementById('status');
-        const welcomeMessage = document.getElementById('welcome-message');
-        const showFormBtn = document.getElementById('show-form-btn');
-        const postForm = document.getElementById('post-form');
-        const submitPostBtn = document.getElementById('submit-post-btn');
-        const postStatusDiv = document.getElementById('post-status');
-        const backToPanelBtn = document.getElementById('back-to-panel-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const approvalPortalSection = document.getElementById('approval-portal-section');
-        const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn');
-        const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn');
-        const approvalGalleryContainer = document.getElementById('approval-gallery-container');
-        const approvalModal = document.getElementById('approval-modal');
-        const modalTitle = document.getElementById('modal-title');
-        const modalCloseBtn = document.getElementById('modal-close-btn');
-        const modalTabs = document.getElementById('modal-tabs');
-        const modalPanes = document.getElementById('modal-panes');
-
-        const setStatus = (element, message, type = 'info') => { element.className = type; element.innerHTML = message; };
         
         const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } });
         uppy.use(Dashboard, { inline:true, target:'#uppy-drag-drop-area', proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true });
-        uppy.use(AwsS3, {
-            getUploadParameters: async (file) => {
-                const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) });
-                const presignData = await response.json();
-                return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} };
-            }
-        });
+        uppy.use(AwsS3, { getUploadParameters: async (file) => { const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) }); const presignData = await response.json(); return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} }; } });
 
         const handleLogin = async (event) => {
-            event.preventDefault();
-            const username = document.getElementById("username").value; const password = document.getElementById("password").value;
+            event.preventDefault(); const username = document.getElementById("username").value; const password = document.getElementById("password").value;
             setStatus(statusDiv, "Logging in..."); loginBtn.disabled = true;
             try {
                 const response = await fetch(LOGIN_WORKFLOW_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Login failed with status: ${response.status}`); }
-                const data = await response.json();
-                localStorage.setItem('jwtToken', data.token); localStorage.setItem('username', data.username);
+                const data = await response.json(); localStorage.setItem('jwtToken', data.token); localStorage.setItem('username', data.username);
                 await initializeUserPanel({ username: data.username });
             } catch (error) { setStatus(statusDiv, error.message, "error"); } finally { loginBtn.disabled = false; }
         };
         
-        const initializeUserPanel = async (userData) => {
-             if (!userData || !userData.username) { handleLogout(); return; }
-            await fetchAndRenderPlatforms();
-            setStatus(statusDiv, "", "success"); showPanel(userData);
-        };
-
-        const showPanel = (userData) => {
-            loginSection.style.display = "none";
-            welcomeMessage.textContent = `Welcome, ${userData.username}!`;
-            customerPanel.style.display = "block";
-        };
-
-        const handleLogout = () => { localStorage.removeItem('jwtToken'); localStorage.removeItem('username'); location.reload(); };
+        const initializeUserPanel = async (userData) => { if (!userData || !userData.username) { handleLogout(); return; } await fetchAndRenderPlatforms(); setStatus(statusDiv, "", "success"); showPanel(userData); };
+        const showPanel = (userData) => { loginSection.style.display = "none"; welcomeMessage.textContent = `Welcome, ${userData.username}!`; customerPanel.style.display = "block"; };
 
         const handlePostSubmit = async (event) => {
-            event.preventDefault();
-            const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; }
+            event.preventDefault(); const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; }
             const files = uppy.getFiles(); if (files.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`; return; }
             const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
             if (selectedPlatforms.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`; return; }
@@ -315,16 +206,14 @@
                 const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1)); const submissionID = crypto.randomUUID();
                 const postData = { postTitle: document.getElementById('postTitle').value, postContent: document.getElementById('postContent').value, destinationLink: document.getElementById('destinationLink').value, fileKeys: uploadedFileKeys, fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`), submissionID: submissionID, selectedPlatforms: selectedPlatforms };
                 const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(postData) });
-                if (!response.ok) throw new Error('Failed to submit post to n8n queue.');
-                pollForStatus(submissionID);
+                if (!response.ok) throw new Error('Failed to submit post to n8n queue.'); pollForStatus(submissionID);
             } catch (error) { if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`; postStatusDiv.innerHTML = errorHtml; submitPostBtn.disabled = false; backToPanelBtn.disabled = false; }
         };
 
         const pollForStatus = (submissionID) => {
             const checkStatusUrl = `${STATUS_CHECK_BASE_URL}${submissionID}`; let pollCount = 0; const maxPolls = 180;
             const intervalId = setInterval(async () => {
-                pollCount++;
-                if (pollCount > maxPolls) { clearInterval(intervalId); if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>TIMEOUT</h4><p>The process is taking longer than expected. Please check back later or contact support.</p></div>`; return; }
+                pollCount++; if (pollCount > maxPolls) { clearInterval(intervalId); if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>TIMEOUT</h4><p>The process is taking longer than expected. Please check back later or contact support.</p></div>`; return; }
                 try {
                     const response = await fetch(checkStatusUrl); if (!response.ok) return;
                     const responseData = await response.json(); let result = null;
@@ -348,24 +237,9 @@
             postStatusDiv.innerHTML = finalHtml; submitPostBtn.style.display = 'none'; backToPanelBtn.textContent = 'Create Another Post'; backToPanelBtn.disabled = false;
         };
 
-        const resetPostForm = () => {
-            if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; }
-            postForm.reset(); uppy.getFiles().forEach(file => uppy.removeFile(file.id));
-            postStatusDiv.innerHTML = ''; submitPostBtn.style.display = 'block'; submitPostBtn.disabled = false;
-            backToPanelBtn.textContent = 'Back to Panel'; backToPanelBtn.disabled = false;
-        };
-
-        const showApprovalPortal = () => {
-            customerPanel.style.display = 'none';
-            approvalPortalSection.style.display = 'block';
-            loadAndRenderApprovalGallery();
-        };
-
-        const showCustomerPanel = () => {
-            approvalPortalSection.style.display = 'none';
-            postFormSection.style.display = 'none';
-            customerPanel.style.display = 'block';
-        };
+        const resetPostForm = () => { if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } postForm.reset(); uppy.getFiles().forEach(file => uppy.removeFile(file.id)); postStatusDiv.innerHTML = ''; submitPostBtn.style.display = 'block'; submitPostBtn.disabled = false; backToPanelBtn.textContent = 'Back to Panel'; backToPanelBtn.disabled = false; };
+        const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; loadAndRenderApprovalGallery(); };
+        const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; };
         
         const loadAndRenderApprovalGallery = async () => {
             approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`;
@@ -373,14 +247,12 @@
             try {
                 const response = await fetch(GET_PENDING_POSTS_URL, { headers });
                 if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
-                const data = await response.json();
-                renderGallery(data.posts);
+                const data = await response.json(); renderGallery(data.posts);
             } catch (error) { console.error('Failed to load pending posts:', error); approvalGalleryContainer.innerHTML = `<p class="error loading-text">${error.message}</p>`; }
         };
 
         const renderGallery = (posts) => {
-            approvalGalleryContainer.innerHTML = '';
-            state.pendingPosts = posts;
+            approvalGalleryContainer.innerHTML = ''; state.pendingPosts = posts;
             if (!posts || posts.length === 0) { approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`; return; }
             posts.forEach(post => {
                 const card = document.createElement('div'); card.className = 'gallery-card'; card.dataset.postId = post.postId;
@@ -393,25 +265,38 @@
         const openApprovalModal = (postId) => {
             const post = state.pendingPosts.find(p => p.postId === postId);
             if (!post) { console.error("Post not found!"); return; }
-            modalTitle.textContent = `Review: ${post.ideaText.substring(0, 40)}...`;
-            modalTabs.innerHTML = ''; modalPanes.innerHTML = '';
+            modalTitle.textContent = post.ideaText; modalVisual.src = post.mainVisualUrl; modalPlatforms.innerHTML = '';
             post.platformDetails.forEach((platform, index) => {
-                const isActive = index === 0 ? 'active' : '';
-                const tab = document.createElement('button');
-                tab.className = `platform-tab ${isActive}`; tab.dataset.platform = platform.platform;
-                tab.textContent = platform.platform.charAt(0).toUpperCase() + platform.platform.slice(1);
-                modalTabs.appendChild(tab);
-                const pane = document.createElement('div');
-                pane.className = `platform-pane ${isActive}`; pane.dataset.platform = platform.platform;
-                pane.innerHTML = `<div class="platform-pane-content">${platform.text}</div> <div class="approval-buttons"> <button class="btn btn-reject" data-post-id="${postId}" data-platform="${platform.platform}" data-decision="rejected">❌ Reject</button> <button class="btn btn-approve" data-post-id="${postId}" data-platform="${platform.platform}" data-decision="approved">✅ Approve</button> </div>`;
-                modalPanes.appendChild(pane);
+                const item = document.createElement('div');
+                item.className = 'accordion-item'; if (index === 0) { item.classList.add('active'); }
+                item.innerHTML = `
+                    <div class="accordion-header"><span>${platform.platform.charAt(0).toUpperCase() + platform.platform.slice(1)}</span></div>
+                    <div class="accordion-content">
+                        <div class="content-section"><h5>Caption</h5><div class="content-text">${platform.caption}</div></div>
+                        ${platform.hashtags ? `<div class="content-section"><h5>Hashtags</h5><div class="content-hashtags">${platform.hashtags}</div></div>` : ''}
+                        <div class="approval-buttons">
+                            <button class="btn-decision btn-reject" data-post-id="${postId}" data-platform="${platform.platform}" data-decision="rejected">❌ Reject</button>
+                            <button class="btn-decision btn-approve" data-post-id="${postId}" data-platform="${platform.platform}" data-decision="approved">✅ Approve</button>
+                        </div>
+                    </div>`;
+                modalPlatforms.appendChild(item);
             });
-            modalTabs.querySelectorAll('.platform-tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    modalTabs.querySelector('.active').classList.remove('active');
-                    modalPanes.querySelector('.active').classList.remove('active');
-                    tab.classList.add('active');
-                    modalPanes.querySelector(`.platform-pane[data-platform="${tab.dataset.platform}"]`).classList.add('active');
+            modalPlatforms.querySelectorAll('.accordion-header').forEach(header => {
+                header.addEventListener('click', () => {
+                    const activeItem = modalPlatforms.querySelector('.accordion-item.active');
+                    const clickedItem = header.parentElement;
+                    if (activeItem && activeItem !== clickedItem) { activeItem.classList.remove('active'); }
+                    clickedItem.classList.toggle('active');
+                });
+            });
+            modalPlatforms.querySelectorAll('.btn-decision').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const targetButton = e.currentTarget;
+                    const { postId, platform, decision } = targetButton.dataset;
+                    const parent = targetButton.parentElement;
+                    parent.querySelectorAll('.btn-decision').forEach(btn => { btn.classList.remove('approved', 'rejected'); btn.classList.add('disabled'); });
+                    targetButton.classList.remove('disabled'); targetButton.classList.add(decision);
+                    console.log(`Decision Recorded (but not sent yet): PostID=${postId}, Platform=${platform}, Decision=${decision}`);
                 });
             });
             approvalModal.classList.add('active');
