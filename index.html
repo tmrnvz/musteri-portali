@@ -97,6 +97,13 @@
         .btn-decision.rejected { background-color: #dc3545; color: white; border-color: #dc3545;}
         .btn-decision.disabled { border-color: #ccc !important; color: #ccc !important; background-color: #f8f8f8 !important; cursor: not-allowed; }
 
+        /* YENİ EKLENEN MODAL FOOTER STİLLERİ */
+        .modal-footer { padding: 1rem 2rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; align-items: center; gap: 1rem; background-color: #f8f9fa; }
+        .modal-footer .btn-primary, .modal-footer .btn-secondary { width: auto; font-size: 1rem; padding: 0.7rem 1.5rem; margin-top: 0; }
+        .modal-status-text { margin-right: auto; font-weight: 600; }
+        .modal-status-text.error { color: #dc3545; }
+        .modal-status-text.success { color: #28a745; }
+
         @media (max-width: 768px) {
             .modal-content { max-width: 100%; max-height: 90vh;}
             .modal-body-grid { grid-template-columns: 1fr; }
@@ -124,12 +131,19 @@
                 </div>
                 <div class="modal-platforms-column" id="modal-platforms"></div>
             </div>
+            <!-- YENİ EKLENEN MODAL FOOTER -->
+            <div class="modal-footer">
+                <span id="modal-status" class="modal-status-text"></span>
+                <button id="modal-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="modal-save-btn" class="btn-primary">Save Changes</button>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
+        // GÜNCELLENMİŞ WORKFLOW URL'LERİ
         const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
         const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
         const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
@@ -137,10 +151,14 @@
         const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
         const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
         const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
+        const PROCESS_APPROVAL_URL = 'https://ops.synqbrand.com/webhook/ef89b9df-469d-4329-9194-6805b12a6dc5'; // <-- YENİ EKLENDİ
 
-        let state = { loadingIntervalId: null, pendingPosts: [] };
+        // GÜNCELLENMİŞ STATE OBJESİ
+        let state = { loadingIntervalId: null, pendingPosts: [], modalDecisions: [] };
 
         const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms');
+        // YENİ EKLENEN MODAL ELEMENTLERİ
+        const modalSaveBtn = document.getElementById('modal-save-btn'); const modalCancelBtn = document.getElementById('modal-cancel-btn'); const modalStatus = document.getElementById('modal-status');
         
         const getAuthHeaders = () => { const token = localStorage.getItem('jwtToken'); if (!token) return null; return { 'Authorization': `Bearer ${token}` }; };
         const setStatus = (element, message, type = 'info') => { element.className = type; element.innerHTML = message; };
@@ -265,6 +283,14 @@
         const openApprovalModal = (postId) => {
             const post = state.pendingPosts.find(p => p.postId === postId);
             if (!post) { console.error("Post not found!"); return; }
+
+            // GÜNCELLENDİ: Modal açıldığında geçici karar dizisini sıfırla
+            state.modalDecisions = [];
+            modalStatus.textContent = '';
+            modalStatus.className = 'modal-status-text';
+            modalSaveBtn.disabled = false;
+            modalCancelBtn.disabled = false;
+
             modalTitle.textContent = post.ideaText; modalVisual.src = post.mainVisualUrl; modalPlatforms.innerHTML = '';
             post.platformDetails.forEach((platform, index) => {
                 const item = document.createElement('div');
@@ -293,16 +319,71 @@
                 button.addEventListener('click', (e) => {
                     const targetButton = e.currentTarget;
                     const { postId, platform, decision } = targetButton.dataset;
+                    
+                    // Görsel geri bildirim için butonları güncelle
                     const parent = targetButton.parentElement;
-                    parent.querySelectorAll('.btn-decision').forEach(btn => { btn.classList.remove('approved', 'rejected'); btn.classList.add('disabled'); });
-                    targetButton.classList.remove('disabled'); targetButton.classList.add(decision);
-                    console.log(`Decision Recorded (but not sent yet): PostID=${postId}, Platform=${platform}, Decision=${decision}`);
+                    parent.querySelectorAll('.btn-decision').forEach(btn => btn.classList.remove('approved', 'rejected'));
+                    targetButton.classList.add(decision);
+
+                    // GÜNCELLENDİ: Kararı state'deki diziye kaydet
+                    const decisionData = { postId: parseInt(postId), platform, decision };
+                    state.modalDecisions = state.modalDecisions.filter(d => d.platform !== platform); // Varsa eski kararı kaldır
+                    state.modalDecisions.push(decisionData); // Yeni kararı ekle
+                    console.log('Current decisions buffered:', state.modalDecisions);
                 });
             });
             approvalModal.classList.add('active');
         };
 
         const closeApprovalModal = () => { approvalModal.classList.remove('active'); };
+
+        // YENİ EKLENDİ: Değişiklikleri Kaydetme Fonksiyonu
+        const handleSaveChanges = async () => {
+            if (state.modalDecisions.length === 0) {
+                closeApprovalModal();
+                return;
+            }
+
+            modalStatus.textContent = 'Saving...';
+            modalStatus.className = 'modal-status-text';
+            modalSaveBtn.disabled = true;
+            modalCancelBtn.disabled = true;
+
+            const headers = getAuthHeaders();
+            if (!headers) { handleLogout(); return; }
+
+            try {
+                const response = await fetch(PROCESS_APPROVAL_URL, {
+                    method: 'POST',
+                    headers: { ...headers, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ decisions: state.modalDecisions })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Failed to save changes.');
+                }
+                
+                const result = await response.json();
+                console.log('Backend response:', result);
+
+                modalStatus.textContent = 'Saved!';
+                modalStatus.className = 'modal-status-text success';
+                
+                setTimeout(() => {
+                    closeApprovalModal();
+                    loadAndRenderApprovalGallery(); // Değişiklikler sonrası galeriyi yenile
+                }, 1000);
+
+            } catch (error) {
+                console.error('Save changes error:', error);
+                modalStatus.textContent = `Error: ${error.message}`;
+                modalStatus.className = 'modal-status-text error';
+                modalSaveBtn.disabled = false;
+                modalCancelBtn.disabled = false;
+            }
+        };
+
 
         loginForm.addEventListener('submit', handleLogin);
         postForm.addEventListener('submit', handlePostSubmit);
@@ -313,6 +394,11 @@
         backToPanelFromApprovalBtn.addEventListener('click', showCustomerPanel);
         modalCloseBtn.addEventListener('click', closeApprovalModal);
         approvalModal.addEventListener('click', (event) => { if (event.target === approvalModal) { closeApprovalModal(); } });
+
+        // YENİ EKLENDİ: Modal butonları için event listener'lar
+        modalSaveBtn.addEventListener('click', handleSaveChanges);
+        modalCancelBtn.addEventListener('click', closeApprovalModal);
+
 
         window.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('jwtToken');
