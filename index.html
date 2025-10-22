@@ -170,6 +170,33 @@
         const setStatus = (element, message, type = 'info') => { element.className = type; element.innerHTML = message; };
         const handleLogout = () => { localStorage.removeItem('jwtToken'); localStorage.removeItem('username'); location.reload(); };
 
+        const fetchAndRenderPlatforms = async () => {
+            const container = document.getElementById('platform-selection-container'); const selectAllCheckbox = document.getElementById('select-all-platforms');
+            container.innerHTML = '<p><em>Loading available platforms...</em></p>';
+            const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; }
+            try {
+                const response = await fetch(GET_PLATFORMS_URL, { headers });
+                if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
+                const data = await response.json(); let platforms = data.platforms || [];
+                if (!platforms.length) { container.innerHTML = '<p class="error">No platforms configured for this account.</p>'; selectAllCheckbox.disabled = true; return; }
+                container.innerHTML = '';
+                platforms.forEach(platform => {
+                    const id = `platform-${platform}`; const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper';
+                    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true;
+                    const label = document.createElement('label'); label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`;
+                    wrapper.appendChild(checkbox); wrapper.appendChild(label); container.appendChild(wrapper);
+                });
+                selectAllCheckbox.disabled = false; setupSelectAllLogic();
+            } catch (error) { console.error('Platform fetch error:', error); container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`; }
+        };
+
+        const setupSelectAllLogic = () => {
+            const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]');
+            const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; };
+            selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); });
+            platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState();
+        };
+
         const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
         const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; };
         
@@ -427,13 +454,6 @@
                 initializeUserPanel({ username: username });
             }
         });
-
-        const setupSelectAllLogic = () => {
-            const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]');
-            const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; };
-            selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); });
-            platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState();
-        };
     </script>
 </body>
 </html>
