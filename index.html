@@ -26,6 +26,11 @@
         .btn-secondary:not(:disabled):hover { background-color: #6c757d; color: white; }
         .btn-primary:disabled, .btn-secondary:disabled { border-color: #ccc; color: #ccc; background-color: #f8f8f8; cursor: not-allowed; }
         .panel-buttons { display: flex; flex-direction: column; gap: 0.5rem; }
+        .status-block { border: 1px solid; border-radius: 8px; padding: 1.25rem; margin-top: 1rem; }
+        .status-block h4 { margin-top: 0; margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600; }
+        .status-block p { margin: 0; line-height: 1.5; }
+        .status-block ul { list-style-type: none; padding: 0; margin: 0; }
+        .status-block li { display: flex; align-items: center; padding: 0.4rem 0; }
 
         /* LİSTE GÖRÜNÜMÜ STİLLERİ */
         #approval-gallery-container { display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; margin-bottom: 2rem; text-align: left; }
@@ -181,7 +186,6 @@
                 item.className = 'post-list-item';
                 item.dataset.postId = post.postId;
 
-                // GÜNCELLENDİ: Daha affedici ve sağlam bir durum kontrolü
                 const isActionable = !post.status || post.status === 'Awaiting Approval';
 
                 if (!isActionable) {
@@ -230,7 +234,7 @@
             modalCancelBtn.disabled = false;
 
             modalTitle.textContent = post.ideaText;
-            modalVisual.src = post.highResVisualUrl || post.mainVisualUrl; // Yüksek çözünürlüklü görseli kullan
+            modalVisual.src = post.highResVisualUrl || post.mainVisualUrl;
             modalPlatforms.innerHTML = '';
             
             post.platformDetails.forEach((platform, index) => {
@@ -373,11 +377,61 @@
             } catch (error) { if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`; postStatusDiv.innerHTML = errorHtml; submitPostBtn.disabled = false; backToPanelBtn.disabled = false; }
         };
 
-        const pollForStatus = (submissionID) => { /* ... pollForStatus logic ... */ };
-        const showFinalResult = (result) => { /* ... showFinalResult logic ... */ };
-        const resetPostForm = () => { /* ... resetPostForm logic ... */ };
-        const fetchAndRenderPlatforms = async () => { /* ... fetchAndRenderPlatforms logic ... */ };
-        const setupSelectAllLogic = () => { /* ... setupSelectAllLogic logic ... */ };
+        const pollForStatus = (submissionID) => {
+            const checkStatusUrl = `${STATUS_CHECK_BASE_URL}${submissionID}`; let pollCount = 0; const maxPolls = 180;
+            const intervalId = setInterval(async () => {
+                pollCount++; if (pollCount > maxPolls) { clearInterval(intervalId); if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>TIMEOUT</h4><p>The process is taking longer than expected.</p></div>`; return; }
+                try {
+                    const response = await fetch(checkStatusUrl); if (!response.ok) return;
+                    const responseData = await response.json(); let result = null;
+                    if (Array.isArray(responseData) && responseData.length > 0) { result = responseData[0]; } else if (typeof responseData === 'object' && responseData !== null) { result = responseData; }
+                    if (result && result.Status && result.Status !== 'processing') { clearInterval(intervalId); if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } showFinalResult(result); }
+                } catch (error) { console.error('Polling error:', error); clearInterval(intervalId); if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } }
+            }, 5000);
+        };
+        
+        const showFinalResult = (result) => {
+            const isOverallSuccess = result.Status === 'completed'; const successIcon = `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`; const errorIcon = `<svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`; let finalHtml = '';
+            try {
+                const platformResults = typeof result.Results === 'string' ? JSON.parse(result.Results) : result.Results;
+                if (Array.isArray(platformResults)) {
+                    let listItems = ''; platformResults.forEach(platform => { const icon = platform.status === 'success' ? successIcon : errorIcon; listItems += `<li>${icon} ${platform.platform}: ${platform.status}</li>`; });
+                    finalHtml = `<div class="status-block ${isOverallSuccess ? 'status-success' : 'status-error'}"><h4>Post Processing Complete!</h4><ul>${listItems}</ul></div>`;
+                } else if (typeof platformResults === 'object' && platformResults !== null && platformResults.error) {
+                    finalHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p><strong>Reason:</strong> ${platformResults.message || 'An unexpected error occurred.'}</p></div>`;
+                } else { finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>The results could not be displayed.</p></div>`; }
+            } catch (e) { console.error("Error processing final result:", e); finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>An error occurred while displaying the results.</p></div>`; }
+            postStatusDiv.innerHTML = finalHtml; submitPostBtn.style.display = 'none'; backToPanelBtn.textContent = 'Create Another Post'; backToPanelBtn.disabled = false;
+        };
+
+        const resetPostForm = () => { if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } postForm.reset(); uppy.getFiles().forEach(file => uppy.removeFile(file.id)); postStatusDiv.innerHTML = ''; submitPostBtn.style.display = 'block'; submitPostBtn.disabled = false; backToPanelBtn.textContent = 'Back to Panel'; backToPanelBtn.disabled = false; };
+        
+        const fetchAndRenderPlatforms = async () => {
+            const container = document.getElementById('platform-selection-container'); const selectAllCheckbox = document.getElementById('select-all-platforms');
+            container.innerHTML = '<p><em>Loading available platforms...</em></p>';
+            const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; }
+            try {
+                const response = await fetch(GET_PLATFORMS_URL, { headers });
+                if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`);
+                const data = await response.json(); let platforms = data.platforms || [];
+                if (!platforms.length) { container.innerHTML = '<p class="error">No platforms configured for this account.</p>'; selectAllCheckbox.disabled = true; return; }
+                container.innerHTML = '';
+                platforms.forEach(platform => {
+                    const id = `platform-${platform}`; const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper';
+                    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true;
+                    const label = document.createElement('label'); label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform.charAt(0).toUpperCase() + platform.slice(1)}</span>`;
+                    wrapper.appendChild(checkbox); wrapper.appendChild(label); container.appendChild(wrapper);
+                });
+                selectAllCheckbox.disabled = false; setupSelectAllLogic();
+            } catch (error) { console.error('Platform fetch error:', error); container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`; }
+        };
+
+        const setupSelectAllLogic = () => {
+            const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]');
+            const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; };
+            selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); });
+            platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState();
+        };
 
         // Event Listeners
         loginForm.addEventListener('submit', handleLogin);
