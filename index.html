@@ -10,7 +10,7 @@
 <body>
     <div class="container">
         <!-- Login Section -->
-        <div id="login-section" class="view">
+        <div id="login-section">
             <h1>Portal Login</h1>
             <form id="login-form">
                 <div class="form-group">
@@ -27,7 +27,7 @@
         </div>
 
         <!-- Customer Panel Section -->
-        <div id="customer-panel" class="view" style="display:none;">
+        <div id="customer-panel" style="display:none;">
             <h1>Customer Panel</h1>
             <p id="welcome-message"></p>
             <div class="panel-buttons">
@@ -38,7 +38,7 @@
         </div>
 
         <!-- Post Form Section -->
-        <div id="post-form-section" class="view" style="display:none;">
+        <div id="post-form-section" style="display:none;">
             <h2>Create New Post</h2>
             <form id="post-form">
                 <div class="form-group"><label for="postTitle" class="required">Title</label><input type="text" id="postTitle" required></div>
@@ -53,7 +53,7 @@
         </div>
 
         <!-- Approval Portal Section -->
-        <div id="approval-portal-section" class="view" style="display:none;">
+        <div id="approval-portal-section" style="display:none;">
             <h2>Pending Monthly Posts</h2>
             <div id="bulk-actions-container" style="display:none;"><div class="bulk-actions-bar"><div class="checkbox-wrapper"><input type="checkbox" id="bulk-select-all"><label for="bulk-select-all" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text" style="font-weight: 700;">Select All</span></label></div><button id="bulk-approve-btn" class="btn-primary" disabled><span class="btn-text">Approve Selected</span></button></div></div>
             <div id="approval-gallery-container"></div>
