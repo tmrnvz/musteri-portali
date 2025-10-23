@@ -21,7 +21,6 @@ const loginSection = document.getElementById('login-section');
 const customerPanel = document.getElementById('customer-panel');
 const postFormSection = document.getElementById('post-form-section');
 const approvalPortalSection = document.getElementById('approval-portal-section');
-const allViews = document.querySelectorAll('.view');
 const loginForm = document.getElementById('login-form');
 const loginBtn = document.getElementById('login-btn');
 const statusDiv = document.getElementById('status');
@@ -33,15 +32,24 @@ const backToPanelBtn = document.getElementById('back-to-panel-btn');
 const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn');
 const modalSaveBtn = document.getElementById('modal-save-btn');
 const bulkApproveBtn = document.getElementById('bulk-approve-btn');
-// ... Diğer elementler ...
+const publishApprovedBtn = document.getElementById('publish-approved-btn');
+const submitPostBtn = document.getElementById('submit-post-btn');
+// ... other elements
+const approvalGalleryContainer = document.getElementById('approval-gallery-container');
+const bulkActionsContainer = document.getElementById('bulk-actions-container');
+const bulkSelectAll = document.getElementById('bulk-select-all');
+const publishStatus = document.getElementById('publish-status');
+const approvalModal = document.getElementById('approval-modal');
+const modalCloseBtn = document.getElementById('modal-close-btn');
+const modalCancelBtn = document.getElementById('modal-cancel-btn');
+
 
 // --- Helper Functions ---
+
 const showSpinner = (button) => {
     if (!button) return;
     button.disabled = true;
     button.classList.add('btn-loading');
-    const buttonText = button.querySelector('.btn-text');
-    if (buttonText) buttonText.style.visibility = 'hidden';
     if (!button.querySelector('.spinner-inline')) {
         button.insertAdjacentHTML('beforeend', '<div class="spinner-inline"></div>');
     }
@@ -53,61 +61,59 @@ const hideSpinner = (button) => {
     button.classList.remove('btn-loading');
     const spinner = button.querySelector('.spinner-inline');
     if (spinner) spinner.remove();
-    const buttonText = button.querySelector('.btn-text');
-    if (buttonText) buttonText.style.visibility = 'visible';
 };
 
-// --- Router ---
-const navigateTo = (hash) => {
-    if (window.location.hash === hash) {
-        router();
-    } else {
-        window.location.hash = hash;
+const setStatus = (element, message, type = 'info') => {
+    if (element) {
+        element.className = type;
+        element.innerHTML = message;
     }
 };
 
-const router = () => {
-    const hash = window.location.hash || '#login';
-    allViews.forEach(view => view.style.display = 'none');
-
+const getAuthHeaders = () => {
     const token = localStorage.getItem('jwtToken');
-    if (!token && hash !== '#login') {
-        navigateTo('#login');
-        return;
-    }
-
-    let targetView;
-    switch (hash) {
-        case '#panel':
-            targetView = customerPanel;
-            break;
-        case '#approval':
-            targetView = approvalPortalSection;
-            loadAndRenderApprovalGallery();
-            break;
-        case '#create':
-            targetView = postFormSection;
-            resetPostForm();
-            break;
-        default: // #login ve diğerleri
-            if (token) {
-                // Eğer kullanıcı giriş yapmışsa ve geçersiz bir URL'deyse panele yönlendir
-                targetView = customerPanel;
-                if (window.location.hash !== '#panel') navigateTo('#panel');
-            } else {
-                targetView = loginSection;
-            }
-            break;
-    }
-
-    if (targetView) {
-        targetView.style.display = 'block';
-    }
+    if (!token) return null;
+    return { 'Authorization': `Bearer ${token}` };
 };
+
+
+// --- View Management (Simple Display Toggle) ---
+
+function showLoginView() {
+    loginSection.style.display = 'block';
+    customerPanel.style.display = 'none';
+    postFormSection.style.display = 'none';
+    approvalPortalSection.style.display = 'none';
+}
+
+function showPanelView(userData) {
+    if (userData && userData.username) {
+        welcomeMessage.textContent = `Welcome, ${userData.username}!`;
+    }
+    loginSection.style.display = 'none';
+    customerPanel.style.display = 'block';
+    postFormSection.style.display = 'none';
+    approvalPortalSection.style.display = 'none';
+}
+
+function showApprovalView() {
+    loginSection.style.display = 'none';
+    customerPanel.style.display = 'none';
+    postFormSection.style.display = 'none';
+    approvalPortalSection.style.display = 'block';
+    loadAndRenderApprovalGallery();
+}
+
+function showCreatePostView() {
+    resetPostForm();
+    loginSection.style.display = 'none';
+    customerPanel.style.display = 'none';
+    postFormSection.style.display = 'block';
+    approvalPortalSection.style.display = 'none';
+}
 
 // --- Core Functions ---
-// ... Buraya diğer tüm fonksiyonlarınız (handleLogin, renderGallery vb.) gelecek...
-// Örnek olarak handleLogin'i güncelleyelim
+
 const handleLogin = async (event) => {
     event.preventDefault();
     const username = document.getElementById("username").value;
@@ -128,7 +134,6 @@ const handleLogin = async (event) => {
         localStorage.setItem('jwtToken', data.token);
         localStorage.setItem('username', data.username);
         await initializeUserPanel({ username: data.username });
-        navigateTo('#panel');
     } catch (error) {
         setStatus(statusDiv, error.message, "error");
     } finally {
@@ -136,45 +141,86 @@ const handleLogin = async (event) => {
     }
 };
 
+const initializeUserPanel = async (userData) => {
+    if (!userData || !userData.username) {
+        handleLogout();
+        return;
+    }
+    await fetchAndRenderPlatforms();
+    setStatus(statusDiv, "", "success");
+    showPanelView(userData);
+};
+
 const handleLogout = () => {
     localStorage.removeItem('jwtToken');
     localStorage.removeItem('username');
-    // State'i temizle
     state.pendingPosts = [];
-    navigateTo('#login');
+    showLoginView();
+};
+
+// ... (Buradan itibaren bir önceki çalışan kodunuzun fonksiyonlarını kopyalıyoruz)
+// Sadece spinner'ları ekleyeceğiz.
+
+// Tüm fonksiyonlarınız buraya gelecek...
+// Örnek:
+const loadAndRenderApprovalGallery = async () => { /* ... kod ... */ };
+const renderGallery = (posts) => { /* ... kod ... */ };
+const updateBulkActionsState = () => { /* ... kod ... */ };
+
+const handleBulkApprove = async () => {
+    showSpinner(bulkApproveBtn);
+    // ... (eski kodunuz)
+    try {
+        // ...
+    } catch (error) {
+        // ...
+    } finally {
+        hideSpinner(bulkApproveBtn);
+    }
 };
 
 const handleSaveChanges = async () => {
-    const currentPostId = state.modalDecisions.length > 0 ? state.modalDecisions[0].postId : null;
-    if (state.modalDecisions.length === 0) {
-        closeApprovalModal();
-        return;
-    }
-
-    const modalSaveBtn = document.getElementById('modal-save-btn');
     showSpinner(modalSaveBtn);
-    // ... (eski handleSaveChanges kodunuzun geri kalanı)
+    // ... (eski kodunuz)
+    try {
+        // ...
+    } catch (error) {
+        // ...
+    } finally {
+        hideSpinner(modalSaveBtn);
+    }
 };
 
+const handlePublishApproved = async () => {
+    showSpinner(publishApprovedBtn);
+    // ... (eski kodunuz)
+    try {
+        // ...
+    } catch (error) {
+        // ...
+    } finally {
+        hideSpinner(publishApprovedBtn);
+    }
+};
+
+// ... Diğer tüm fonksiyonları buraya yapıştırın.
 
 // --- Event Listeners ---
-window.addEventListener('DOMContentLoaded', router);
-window.addEventListener('hashchange', router);
 
 loginForm.addEventListener('submit', handleLogin);
 logoutBtn.addEventListener('click', handleLogout);
+showFormBtn.addEventListener('click', showCreatePostView);
+showApprovalPortalBtn.addEventListener('click', showApprovalView);
+backToPanelBtn.addEventListener('click', () => showPanelView({ username: localStorage.getItem('username') }));
+backToPanelFromApprovalBtn.addEventListener('click', () => showPanelView({ username: localStorage.getItem('username') }));
+// ... (Diğer tüm event listener'larınız)
 
-showFormBtn.addEventListener('click', () => navigateTo('#create'));
-showApprovalPortalBtn.addEventListener('click', () => navigateTo('#approval'));
-backToPanelBtn.addEventListener('click', () => navigateTo('#panel'));
-backToPanelFromApprovalBtn.addEventListener('click', () => navigateTo('#panel'));
-
-// ... (Diğer tüm kodlarınız ve fonksiyonlarınız aşağıda devam etmeli)
-// handleSaveChanges, handleBulkApprove gibi fonksiyonların içine showSpinner/hideSpinner eklemeyi unutmayın.
-
-// ÖNEMLİ: Buradan aşağısını kendi çalışan script.js dosyanızdan kopyalayın,
-// sadece handleLogin, handleLogout ve event listener'ları yukarıdaki gibi güncelleyin.
-// Aşağısı bir önceki cevaptaki tam kodla aynıdır.
-
-const { uppy, Dashboard, AwsS3 } = window.Uppy; // Global Uppy'yi kullan
-// ... (geri kalan tüm fonksiyonlarınız)
+window.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('jwtToken');
+    const username = localStorage.getItem('username');
+    if (token && username) {
+        initializeUserPanel({ username: username });
+    } else {
+        showLoginView();
+    }
+});
