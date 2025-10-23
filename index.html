@@ -50,7 +50,7 @@
 
         /* LİSTE GÖRÜNÜMÜ STİLLERİ */
         #approval-gallery-container { display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; margin-bottom: 2rem; text-align: left; }
-        .post-list-item { display: flex; align-items: center; background-color: #fff; border: 1px solid #dddfe2; border-radius: 8px; padding: 1rem; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, border-left-width 0.3s ease; border-left: 5px solid transparent; }
+        .post-list-item { display: flex; align-items: center; background-color: #fff; border: 1px solid #dddfe2; border-radius: 8px; padding: 1rem; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, border-left-width 0.3s ease, opacity 0.3s ease; border-left: 5px solid transparent; position: relative; }
         .post-list-item:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .post-list-item-visual { width: 120px; height: 120px; margin-right: 1.5rem; border-radius: 6px; object-fit: cover; background-color: #f0f2f5; flex-shrink: 0; }
         .post-list-item-content { flex-grow: 1; }
@@ -58,7 +58,12 @@
         .post-list-item-title { font-size: 1.2rem; font-weight: 700; color: #1c1e21; margin: 0; line-height: 1.4; }
         .loading-text, .empty-text { text-align: center; color: #606770; padding: 3rem 0; font-size: 1.1rem; }
         
-        /* GÜNCELLENDİ - MODAL STİLLERİ */
+        /* GÜNCELLENDİ - İŞLENMİŞ GÖNDERİ STİLLERİ */
+        .post-list-item.is-processed { opacity: 0.6; background-color: #f8f9fa; cursor: not-allowed; pointer-events: none; }
+        .post-list-item.is-processed:hover { transform: none; box-shadow: none; }
+        .post-list-item-status-badge { position: absolute; top: 1rem; right: 1rem; background-color: #6c757d; color: white; padding: 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 700; border-radius: 12px; text-transform: uppercase; }
+
+        /* MODAL STİLLERİ */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; padding: 1rem; box-sizing: border-box; }
         .modal-overlay.active { opacity: 1; visibility: visible; }
         .modal-content { background: white; border-radius: 8px; width: 100%; max-width: 600px; display: flex; flex-direction: column; max-height: 95vh; text-align: left; transform: scale(0.95); transition: transform 0.3s ease; overflow: hidden; }
@@ -67,9 +72,9 @@
         .modal-close-btn { background: rgba(0,0,0,0.4); border: none; font-size: 1.5rem; cursor: pointer; color: white; line-height: 1; padding: 0; width: 32px; height: 32px; border-radius: 50%; }
         .modal-body { overflow-y: auto; padding: 0; }
         
-        /* GÜNCELLENDİ - MODAL İÇERİK YAPISI */
-        .modal-visual-container { width: 100%; height: 400px; background-color: #f0f2f5; }
-        .modal-visual-container img { width: 100%; height: 100%; object-fit: cover; }
+        /* GÜNCELLENDİ - MODAL GÖRSEL STİLİ */
+        .modal-visual-container { width: 100%; height: auto; min-height: 300px; background-color: #f0f2f5; padding: 1.5rem; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+        .modal-visual-container img { max-width: 100%; max-height: 450px; width: auto; height: auto; object-fit: contain; border-radius: 8px; }
         .modal-text-content { padding: 1.5rem 2rem 2rem 2rem; }
         .modal-title { margin: 0 0 1.5rem 0; font-size: 1.5rem; line-height: 1.4; font-weight: 600; }
         
@@ -103,6 +108,12 @@
         .modal-status-text { margin-right: auto; font-weight: 600; font-size: 0.9rem; }
         .modal-status-text.error { color: #dc3545; }
         .modal-status-text.success { color: #28a745; }
+
+        /* GÜNCELLENDİ - YAYINLAMA YÜKLENME ANİMASYONU */
+        .status-loading { display: flex; align-items: center; justify-content: center; gap: 1rem; background-color: #e7f5ff; border: 1px solid #b3d9ff; color: #004085; padding: 1rem; border-radius: 8px; font-size: 1.1rem; font-weight: 600; }
+        .spinner { width: 24px; height: 24px; border: 4px solid rgba(0, 64, 133, 0.2); border-left-color: #004085; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
     </style>
 </head>
 <body>
@@ -121,7 +132,7 @@
         </div>
     </div>
     
-    <!-- GÜNCELLENDİ - Modal HTML Yapısı -->
+    <!-- Modal HTML Yapısı -->
     <div class="modal-overlay" id="approval-modal">
         <div class="modal-content">
             <div class="modal-body">
@@ -199,14 +210,25 @@
                 const item = document.createElement('div');
                 item.className = 'post-list-item';
                 item.dataset.postId = post.postId;
+
+                // GÜNCELLENDİ - Gönderi durumunu kontrol et ve stil ata
+                const isProcessed = post.status && post.status !== 'Awaiting Approval';
+                if (isProcessed) {
+                    item.classList.add('is-processed');
+                }
+
                 item.innerHTML = `
                     <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual">
                     <div class="post-list-item-content">
+                        ${isProcessed ? '<div class="post-list-item-status-badge">İşlendi</div>' : ''}
                         <p class="post-list-item-label">POST TOPIC:</p>
                         <h4 class="post-list-item-title">${post.ideaText}</h4>
                     </div>
                 `;
-                item.addEventListener('click', () => openApprovalModal(post.postId));
+
+                if (!isProcessed) {
+                   item.addEventListener('click', () => openApprovalModal(post.postId));
+                }
                 approvalGalleryContainer.appendChild(item);
             });
         };
@@ -236,7 +258,6 @@
             modalSaveBtn.disabled = true;
             modalCancelBtn.disabled = false;
 
-            // GÜNCELLENDİ: Modal'daki yeni elementleri doldur
             modalTitle.textContent = post.ideaText;
             modalVisual.src = post.mainVisualUrl;
             modalPlatforms.innerHTML = '';
@@ -328,7 +349,12 @@
         };
 
         const handlePublishApproved = async () => {
-            setStatus(publishStatus, 'Publishing process initiated... This may take a moment.', 'info');
+            // GÜNCELLENDİ - Gelişmiş yüklenme göstergesi
+            publishStatus.innerHTML = `
+                <div class="status-loading">
+                    <div class="spinner"></div>
+                    <p>Publishing process initiated... This may take a moment.</p>
+                </div>`;
             publishApprovedBtn.disabled = true;
             const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; }
             try {
