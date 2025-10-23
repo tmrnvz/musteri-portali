@@ -5,8 +5,9 @@ import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3
 // API URLs
 const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
 const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
-const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/70c27eca-bdc5-46bb-897b-13c3cd27bb8d';
-const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-4718a2205852/check-status/';
+// GÜNCELLENDİ: URL yeni "Generator" iş akışına yönlendirildi.
+const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/107e2a2a-7446-4ebb-9a28-0095ac50ae9b';
+const STATUS_CHECK_BASE_URL = 'https://ops.synqbrand.com/webhook/b21a7415-3fd1-41a4-905f-4718a2205852/check-status/'; // Şimdilik kullanılmıyor.
 const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
 const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
@@ -220,14 +221,101 @@ const openApprovalModal = (postId) => { const post = state.pendingPosts.find(p =
 const closeApprovalModal = () => { approvalModal.classList.remove('active'); };
 const handlePublishApproved = async () => { publishStatus.innerHTML = `<div class="status-loading"><div class="spinner"></div><p>Publishing process initiated... This may take a moment.</p></div>`; publishApprovedBtn.disabled = true; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(PUBLISH_APPROVED_POSTS_URL, { method: 'POST', headers: headers }); const resultText = await response.text(); if (!response.ok) { try { const errorJson = JSON.parse(resultText); throw new Error(errorJson.message || 'An unknown error occurred.'); } catch(e) { throw new Error(resultText || `Request failed with status ${response.status}`); } } const result = JSON.parse(resultText); setStatus(publishStatus, result.message || 'Success!', 'success'); setTimeout(() => { publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); }, 4000); } catch (error) { console.error('Publishing error:', error); setStatus(publishStatus, error.message, 'error'); publishApprovedBtn.disabled = false; } };
 
-// Unchanged Functions (Login, Uppy, Manual Post, etc.)
+// Unchanged Functions (Login, Uppy, etc.)
 const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } }); uppy.use(Dashboard, { inline:true, target:'#uppy-drag-drop-area', proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true }); uppy.use(AwsS3, { getUploadParameters: async (file) => { const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) }); const presignData = await response.json(); return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} }; } });
 const handleLogin = async (event) => { event.preventDefault(); const username = document.getElementById("username").value; const password = document.getElementById("password").value; setStatus(statusDiv, "Logging in..."); loginBtn.disabled = true; try { const response = await fetch(LOGIN_WORKFLOW_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Login failed with status: ${response.status}`); } const data = await response.json(); localStorage.setItem('jwtToken', data.token); localStorage.setItem('username', data.username); await initializeUserPanel({ username: data.username }); } catch (error) { setStatus(statusDiv, error.message, "error"); } finally { loginBtn.disabled = false; } };
 const initializeUserPanel = async (userData) => { if (!userData || !userData.username) { handleLogout(); return; } await fetchAndRenderPlatforms(); setStatus(statusDiv, "", "success"); showPanel(userData); };
 const showPanel = (userData) => { loginSection.style.display = "none"; welcomeMessage.textContent = `Welcome, ${userData.username}!`; customerPanel.style.display = "block"; };
-const handlePostSubmit = async (event) => { event.preventDefault(); const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } const files = uppy.getFiles(); if (files.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`; return; } const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value); if (selectedPlatforms.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`; return; } const messages = [ "Your post has been queued. We are now processing it...", "Uploading media files to secure storage...", "AI is generating content for each platform...", "Publishing posts to selected social media channels...", "Finalizing the report, please wait a moment..." ]; let messageIndex = 0; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); state.loadingIntervalId = setInterval(() => { messageIndex = (messageIndex + 1) % messages.length; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`; }, 4000); submitPostBtn.disabled = true; backToPanelBtn.disabled = true; try { const result = await uppy.upload(); if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`); const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1)); const submissionID = crypto.randomUUID(); const postData = { postTitle: document.getElementById('postTitle').value, postContent: document.getElementById('postContent').value, destinationLink: document.getElementById('destinationLink').value, fileKeys: uploadedFileKeys, fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`), submissionID: submissionID, selectedPlatforms: selectedPlatforms }; const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(postData) }); if (!response.ok) throw new Error('Failed to submit post to n8n queue.'); pollForStatus(submissionID); } catch (error) { if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`; postStatusDiv.innerHTML = errorHtml; submitPostBtn.disabled = false; backToPanelBtn.disabled = false; } };
+
+// GÜNCELLENDİ: handlePostSubmit fonksiyonu, "Generator" akışına göre güncellendi.
+const handlePostSubmit = async (event) => {
+    event.preventDefault();
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders) { handleLogout(); return; }
+    const files = uppy.getFiles();
+    if (files.length === 0) {
+        postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`;
+        return;
+    }
+    const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
+    if (selectedPlatforms.length === 0) {
+        postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`;
+        return;
+    }
+    
+    const messages = [
+        "Your post has been queued. We are now processing it...",
+        "Uploading media files to secure storage...",
+        "AI is generating content for each platform...",
+        "Finalizing the content, please wait a moment..."
+    ];
+    let messageIndex = 0;
+    postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
+    if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
+    state.loadingIntervalId = setInterval(() => {
+        messageIndex = (messageIndex + 1) % messages.length;
+        postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
+    }, 4000);
+    
+    submitPostBtn.disabled = true;
+    backToPanelBtn.disabled = true;
+
+    try {
+        const result = await uppy.upload();
+        if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
+        
+        const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
+        
+        const postData = {
+            postTitle: document.getElementById('postTitle').value,
+            postContent: document.getElementById('postContent').value,
+            destinationLink: document.getElementById('destinationLink').value,
+            fileKeys: uploadedFileKeys,
+            fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`),
+            submissionID: crypto.randomUUID(), // Bu ID artık polling için değil, takip için.
+            selectedPlatforms: selectedPlatforms
+        };
+        
+        const response = await fetch(MAIN_POST_WORKFLOW_URL, {
+            method: 'POST',
+            headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify(postData)
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to submit post. Server responded with: ${errorText}`);
+        }
+
+        const responseData = await response.json();
+        // n8n'den dönen veri genellikle bir dizi içinde gelir.
+        const newPostId = responseData[0]?.json?.Id; 
+
+        if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
+
+        // Polling yerine basit başarı mesajı göster. Sonraki adımda burayı onay ekranı ile değiştireceğiz.
+        const successHtml = `<div class="status-block status-success">
+                               <h4>Content is Ready for Approval!</h4>
+                               <p>Your post has been processed and is waiting for your review. New Post ID: <strong>${newPostId || 'N/A'}</strong></p>
+                             </div>`;
+        postStatusDiv.innerHTML = successHtml;
+        submitPostBtn.style.display = 'none';
+        backToPanelBtn.textContent = 'Create Another Post';
+        backToPanelBtn.disabled = false;
+
+    } catch (error) {
+        if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
+        const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`;
+        postStatusDiv.innerHTML = errorHtml;
+        submitPostBtn.disabled = false;
+        backToPanelBtn.disabled = false;
+    }
+};
+
+// BU FONKSİYONLAR ARTIK handlePostSubmit TARAFINDAN KULLANILMIYOR.
 const pollForStatus = (submissionID) => { const checkStatusUrl = `${STATUS_CHECK_BASE_URL}${submissionID}`; let pollCount = 0; const maxPolls = 180; const intervalId = setInterval(async () => { pollCount++; if (pollCount > maxPolls) { clearInterval(intervalId); if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>TIMEOUT</h4><p>The process is taking longer than expected. Please check back later or contact support.</p></div>`; return; } try { const response = await fetch(checkStatusUrl); if (!response.ok) return; const responseData = await response.json(); let result = null; if (Array.isArray(responseData) && responseData.length > 0) { result = responseData[0]; } else if (typeof responseData === 'object' && responseData !== null) { result = responseData; } if (result && result.Status && result.Status !== 'processing') { clearInterval(intervalId); if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } showFinalResult(result); } } catch (error) { console.error('Polling error:', error); clearInterval(intervalId); if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } } }, 5000); };
 const showFinalResult = (result) => { const isOverallSuccess = result.Status === 'completed'; const successIcon = `<svg class="status-icon icon-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>`; const errorIcon = `<svg class="status-icon icon-error" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`; let finalHtml = ''; try { const platformResults = typeof result.Results === 'string' ? JSON.parse(result.Results) : result.Results; if (Array.isArray(platformResults)) { let listItems = ''; platformResults.forEach(platform => { const icon = platform.status === 'success' ? successIcon : errorIcon; listItems += `<li>${icon} ${platform.platform}: ${platform.status}</li>`; }); finalHtml = `<div class="status-block ${isOverallSuccess ? 'status-success' : 'status-error'}"><h4>Post Processing Complete!</h4><ul>${listItems}</ul></div>`; } else if (typeof platformResults === 'object' && platformResults !== null && platformResults.error) { finalHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p><strong>Reason:</strong> ${platformResults.message || 'An unexpected error occurred.'}</p></div>`; } else { finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>The results could not be displayed.</p></div>`; } } catch (e) { console.error("Error processing final result:", e); finalHtml = `<div class="status-block status-error"><h4>Error</h4><p>An error occurred while displaying the results.</p></div>`; } postStatusDiv.innerHTML = finalHtml; submitPostBtn.style.display = 'none'; backToPanelBtn.textContent = 'Create Another Post'; backToPanelBtn.disabled = false; };
+
 const resetPostForm = () => { if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } postForm.reset(); uppy.getFiles().forEach(file => uppy.removeFile(file.id)); postStatusDiv.innerHTML = ''; submitPostBtn.style.display = 'block'; submitPostBtn.disabled = false; backToPanelBtn.textContent = 'Back to Panel'; backToPanelBtn.disabled = false; };
 const fetchAndRenderPlatforms = async () => { const container = document.getElementById('platform-selection-container'); const selectAllCheckbox = document.getElementById('select-all-platforms'); container.innerHTML = '<p><em>Loading available platforms...</em></p>'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PLATFORMS_URL, { headers }); if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`); const data = await response.json(); let platforms = data.platforms || []; if (!platforms.length) { container.innerHTML = '<p class="error">No platforms configured for this account.</p>'; selectAllCheckbox.disabled = true; return; } container.innerHTML = ''; platforms.forEach(platform => { const id = `platform-${platform}`; const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper'; const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true; const label = document.createElement('label'); label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`; wrapper.appendChild(checkbox); wrapper.appendChild(label); container.appendChild(wrapper); }); selectAllCheckbox.disabled = false; setupSelectAllLogic(); } catch (error) { console.error('Platform fetch error:', error); container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`; } };
 const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]'); const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; }; selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); }); platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState(); };
