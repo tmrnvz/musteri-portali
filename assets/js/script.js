@@ -290,8 +290,13 @@ const handlePostSubmit = async (event) => {
             throw new Error("Sunucudan geçersiz bir formatta cevap alındı. Lütfen konsolu kontrol edin.");
         }
         
-        const newPostId = responseData && responseData[0] ? responseData[0].Id : undefined;
-        console.log("Adım 4: ID değeri çekildi. Sonuç:", newPostId);
+        // Önce dizinin ilk elemanını bir değişkene alalım.
+const resultObject = responseData[0];
+console.log("Adım 4a: Ayrıştırılan obje:", resultObject);
+
+// Şimdi bu objeden 'Id' anahtarını çekmeyi deneyelim.
+const newPostId = resultObject['Id'];
+console.log("Adım 4b: ID değeri çekildi. Sonuç:", newPostId);
         
         if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
 
