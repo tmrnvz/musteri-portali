@@ -289,7 +289,7 @@ const handlePostSubmit = async (event) => {
 
         const responseData = await response.json();
         // n8n'den dönen veri genellikle bir dizi içinde gelir.
-        const newPostId = responseData[0]?.json?.Id; 
+        const newPostId = responseData[0]?.Id;
 
         if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
 
