@@ -19,7 +19,6 @@ body {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 700px;
-    /* Genişlik ayarlandı */
     text-align: center;
 }
 
@@ -101,8 +100,7 @@ textarea {
     margin-top: 1rem;
     border: 2px solid;
     background-color: transparent;
-    position: relative;
-    /* Spinner için eklendi */
+    position: relative; /* Spinner için eklendi */
 }
 
 .btn-primary {
