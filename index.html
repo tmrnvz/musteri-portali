@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SynqBrand Müşteri Portalı</title>
     <link href="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.css" rel="stylesheet">
+    <!-- GÜNCELLENDİ: CSS dosyası dışarıdan çağrılıyor -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
@@ -21,7 +22,7 @@
                     <label for="password">Password</label>
                     <input type="password" id="password" required>
                 </div>
-                <button type="submit" id="login-btn" class="btn-primary"><span class="btn-text">Log In</span></button>
+                <button type="submit" id="login-btn" class="btn-primary">Log In</button>
             </form>
             <div id="status"></div>
         </div>
@@ -31,9 +32,9 @@
             <h1>Customer Panel</h1>
             <p id="welcome-message"></p>
             <div class="panel-buttons">
-                <button id="show-form-btn" class="btn-primary"><span class="btn-text">Create New Post</span></button>
-                <button id="show-approval-portal-btn" class="btn-primary"><span class="btn-text">Pending Monthly Posts</span></button>
-                <button id="logout-btn" class="btn-secondary"><span class="btn-text">Log Out</span></button>
+                <button id="show-form-btn" class="btn-primary">Create New Post</button>
+                <button id="show-approval-portal-btn" class="btn-primary">Pending Monthly Posts</button>
+                <button id="logout-btn" class="btn-secondary">Log Out</button>
             </div>
         </div>
 
@@ -41,13 +42,39 @@
         <div id="post-form-section" style="display:none;">
             <h2>Create New Post</h2>
             <form id="post-form">
-                <div class="form-group"><label for="postTitle" class="required">Title</label><input type="text" id="postTitle" required></div>
-                <div class="form-group"><label for="postContent" class="required">Content / Caption</label><textarea id="postContent" required></textarea></div>
-                <div class="form-group"><label for="destinationLink">Destination Link</label><input type="text" id="destinationLink" placeholder="https://example.com"></div>
-                <div class="form-group"><label class="required">Media Files</label><div id="uppy-drag-drop-area"></div></div>
-                <div class="form-group"><label class="required">Select Platforms to Post</label><div class="platform-options"><div class="checkbox-wrapper select-all-wrapper"><input type="checkbox" id="select-all-platforms" disabled><label for="select-all-platforms" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Select / Deselect All</span></label></div><div id="platform-selection-container"><p><em>Loading available platforms...</em></p></div></div></div>
-                <button type="submit" id="submit-post-btn" class="btn-primary"><span class="btn-text">Submit Post</span></button>
-                <button type="button" id="back-to-panel-btn" class="btn-secondary"><span class="btn-text">Back to Panel</span></button>
+                <div class="form-group">
+                    <label for="postTitle" class="required">Title</label>
+                    <input type="text" id="postTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="postContent" class="required">Content / Caption</label>
+                    <textarea id="postContent" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="destinationLink">Destination Link</label>
+                    <input type="text" id="destinationLink" placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <label class="required">Media Files</label>
+                    <div id="uppy-drag-drop-area"></div>
+                </div>
+                <div class="form-group">
+                    <label class="required">Select Platforms to Post</label>
+                    <div class="platform-options">
+                        <div class="checkbox-wrapper select-all-wrapper">
+                            <input type="checkbox" id="select-all-platforms" disabled>
+                            <label for="select-all-platforms" class="checkbox-label">
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-label-text">Select / Deselect All</span>
+                            </label>
+                        </div>
+                        <div id="platform-selection-container">
+                            <p><em>Loading available platforms...</em></p>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
+                <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
             </form>
             <div id="post-status"></div>
         </div>
@@ -55,11 +82,22 @@
         <!-- Approval Portal Section -->
         <div id="approval-portal-section" style="display:none;">
             <h2>Pending Monthly Posts</h2>
-            <div id="bulk-actions-container" style="display:none;"><div class="bulk-actions-bar"><div class="checkbox-wrapper"><input type="checkbox" id="bulk-select-all"><label for="bulk-select-all" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text" style="font-weight: 700;">Select All</span></label></div><button id="bulk-approve-btn" class="btn-primary" disabled><span class="btn-text">Approve Selected</span></button></div></div>
+            <div id="bulk-actions-container" style="display:none;">
+                <div class="bulk-actions-bar">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="bulk-select-all">
+                        <label for="bulk-select-all" class="checkbox-label">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label-text" style="font-weight: 700;">Select All</span>
+                        </label>
+                    </div>
+                    <button id="bulk-approve-btn" class="btn-primary" disabled>Approve Selected</button>
+                </div>
+            </div>
             <div id="approval-gallery-container"></div>
-            <button type="button" id="publish-approved-btn" class="btn-primary" disabled><span class="btn-text">Send Approved Posts to Publishing Plan</span></button>
+            <button type="button" id="publish-approved-btn" class="btn-primary" disabled>Send Approved Posts to Publishing Plan</button>
             <div id="publish-status"></div>
-            <button type="button" id="back-to-panel-from-approval-btn" class="btn-secondary"><span class="btn-text">Back to Panel</span></button>
+            <button type="button" id="back-to-panel-from-approval-btn" class="btn-secondary">Back to Panel</button>
         </div>
     </div>
 
@@ -77,15 +115,16 @@
             </div>
             <div class="modal-footer">
                 <span id="modal-status" class="modal-status-text"></span>
-                <button id="modal-cancel-btn" class="btn-secondary"><span class="btn-text">Cancel</span></button>
-                <button id="modal-save-btn" class="btn-primary"><span class="btn-text">Save Changes</span></button>
+                <button id="modal-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="modal-save-btn" class="btn-primary">Save Changes</button>
             </div>
             <div class="modal-header">
                 <button class="modal-close-btn" id="modal-close-btn">&times;</button>
             </div>
         </div>
     </div>
-    
+
+    <!-- GÜNCELLENDİ: JS dosyası dışarıdan çağrılıyor -->
     <script type="module" src="assets/js/script.js"></script>
 </body>
 </html>
