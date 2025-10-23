@@ -1,7 +1,7 @@
 /* assets/css/style.css */
 
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 1rem; box-sizing: border-box; }
-.container { background: white; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 900px; text-align: center; }
+.container { background: white; padding: 2rem 2.5rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); width: 100%; max-width: 700px; text-align: center; }
 h1, h2 { color: #1c1e21; margin-top: 0; margin-bottom: 2rem; }
 .form-group { margin-bottom: 1.5rem; text-align: left; }
 label { display: block; margin-bottom: 0.5rem; color: #606770; font-weight: 600; }
