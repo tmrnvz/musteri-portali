@@ -18,12 +18,11 @@ body {
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     width: 100%;
-    max-width: 700px;
+    max-width: 700px; /* Genişlik ayarlandı */
     text-align: center;
 }
 
-h1,
-h2 {
+h1, h2 {
     color: #1c1e21;
     margin-top: 0;
     margin-bottom: 2rem;
@@ -100,7 +99,6 @@ textarea {
     margin-top: 1rem;
     border: 2px solid;
     background-color: transparent;
-    position: relative; /* Spinner için eklendi */
 }
 
 .btn-primary {
@@ -678,45 +676,4 @@ textarea {
     to {
         transform: rotate(360deg);
     }
-}
-
-/* Spinner in Buttons Styles */
-.btn-loading .btn-text {
-    visibility: hidden;
-    opacity: 0;
-}
-
-.spinner-inline {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 20px;
-    height: 20px;
-    border: 3px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    animation: spin 1s ease-in-out infinite;
-    -webkit-animation: spin 1s ease-in-out infinite;
-}
-
-.btn-primary.btn-loading .spinner-inline {
-    border-top-color: #4A90E2;
-    border-left-color: rgba(74, 144, 226, 0.3);
-    border-right-color: rgba(74, 144, 226, 0.3);
-    border-bottom-color: rgba(74, 144, 226, 0.3);
-}
-
-.btn-primary:hover.btn-loading .spinner-inline,
-.btn-primary.btn-loading:hover .spinner-inline {
-    border-top-color: #fff;
-    border-left-color: rgba(255, 255, 255, 0.3);
-    border-right-color: rgba(255, 255, 255, 0.3);
-    border-bottom-color: rgba(255, 255, 255, 0.3);
-}
-
-.btn-secondary.btn-loading .spinner-inline {
-    border-top-color: #6c757d;
-    border-left-color: rgba(108, 117, 125, 0.3);
-    border-right-color: rgba(108, 117, 125, 0.3);
-    border-bottom-color: rgba(108, 117, 125, 0.3);
 }
