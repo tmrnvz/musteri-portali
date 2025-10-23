@@ -101,7 +101,8 @@ textarea {
     margin-top: 1rem;
     border: 2px solid;
     background-color: transparent;
-    position: relative; /* Spinner için eklendi */
+    position: relative;
+    /* Spinner için eklendi */
 }
 
 .btn-primary {
@@ -681,7 +682,7 @@ textarea {
     }
 }
 
-/* YENİ EKLENEN KOD: Spinner in Buttons Styles */
+/* Spinner in Buttons Styles */
 .btn-loading .btn-text {
     visibility: hidden;
     opacity: 0;
@@ -697,6 +698,7 @@ textarea {
     border: 3px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     animation: spin 1s ease-in-out infinite;
+    -webkit-animation: spin 1s ease-in-out infinite;
 }
 
 .btn-primary.btn-loading .spinner-inline {
@@ -706,7 +708,8 @@ textarea {
     border-bottom-color: rgba(74, 144, 226, 0.3);
 }
 
-.btn-primary:hover.btn-loading .spinner-inline {
+.btn-primary:hover.btn-loading .spinner-inline,
+.btn-primary.btn-loading:hover .spinner-inline {
     border-top-color: #fff;
     border-left-color: rgba(255, 255, 255, 0.3);
     border-right-color: rgba(255, 255, 255, 0.3);
