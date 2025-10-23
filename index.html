@@ -53,7 +53,7 @@
         .post-list-item { display: flex; align-items: center; background-color: #fff; border: 1px solid #dddfe2; border-radius: 8px; padding: 1rem; transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.3s ease; position: relative; gap: 1rem; }
         .post-list-item-clickable { cursor: pointer; }
         .post-list-item-clickable:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .post-list-item-main { display: flex; align-items: center; flex-grow: 1; text-decoration: none; } /* GÜNCELLENDİ */
+        .post-list-item-main { display: flex; align-items: center; flex-grow: 1; text-decoration: none; }
         .post-list-item-visual { width: 100px; height: 100px; margin-right: 1.5rem; border-radius: 6px; object-fit: cover; background-color: #f0f2f5; flex-shrink: 0; }
         .post-list-item-content { flex-grow: 1; }
         .post-list-item-label { font-size: 0.8rem; font-weight: 600; color: #606770; margin-bottom: 0.25rem; text-transform: uppercase; }
@@ -66,7 +66,7 @@
         .post-list-item.is-processed { opacity: 0.6; background-color: #f8f9fa; }
         .post-list-item.is-processed .post-list-item-clickable { cursor: not-allowed; pointer-events: none; }
 
-        /* GÜNCELLENDİ - TOPLU İŞLEM STİLLERİ */
+        /* TOPLU İŞLEM STİLLERİ */
         .bulk-actions-bar { display: flex; align-items: center; justify-content: space-between; padding: 1rem; background-color: #f8f9fa; border: 1px solid #dddfe2; border-radius: 8px; margin-top: 2rem; }
         .bulk-actions-bar .btn-primary { width: auto; font-size: 0.9rem; padding: 0.6rem 1.2rem; margin: 0; }
         .post-list-item .checkbox-wrapper { flex-shrink: 0; }
@@ -103,7 +103,6 @@
         
         <div id="approval-portal-section" style="display:none;">
             <h2>Pending Monthly Posts</h2>
-            <!-- GÜNCELLENDİ - Toplu İşlem Paneli Eklendi -->
             <div id="bulk-actions-container" style="display:none;">
                 <div class="bulk-actions-bar">
                     <div class="checkbox-wrapper">
@@ -160,14 +159,12 @@
         const PROCESS_APPROVAL_URL = 'https://ops.synqbrand.com/webhook/ef89b9df-469d-4329-9194-6805b12a6dc5';
         const PUBLISH_APPROVED_POSTS_URL = 'https://ops.synqbrand.com/webhook/eb85bb8a-a1c4-4f0e-a50f-fc0c2afd64d0';
 
-        // GÜNCELLENDİ - State'e selectedPosts eklendi
         let state = { loadingIntervalId: null, pendingPosts: [], modalDecisions: [], selectedPosts: [] };
 
         // Element variables...
         const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms');
         const modalSaveBtn = document.getElementById('modal-save-btn'); const modalCancelBtn = document.getElementById('modal-cancel-btn'); const modalStatus = document.getElementById('modal-status');
         const publishApprovedBtn = document.getElementById('publish-approved-btn'); const publishStatus = document.getElementById('publish-status');
-        // GÜNCELLENDİ - Toplu işlem elementleri
         const bulkActionsContainer = document.getElementById('bulk-actions-container'); const bulkSelectAll = document.getElementById('bulk-select-all'); const bulkApproveBtn = document.getElementById('bulk-approve-btn');
 
         const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -204,7 +201,13 @@
                 return;
             }
 
-            const actionablePosts = posts.filter(p => !p.status || p.status === 'Awaiting Approval');
+            const actionablePosts = posts.filter(p => {
+                const isAlreadyProcessedByServer = p.status && p.status !== 'Awaiting Approval';
+                // GÜNCELLENDİ: Frontend'de durumu kontrol etme mantığı
+                const areAllPlatformsDecided = p.platformDetails && p.platformDetails.every(pd => pd.status !== 'Awaiting Approval');
+                return !isAlreadyProcessedByServer && !areAllPlatformsDecided;
+            });
+            
             if (actionablePosts.length > 0) {
                 bulkActionsContainer.style.display = 'block';
                 updateBulkActionsState();
@@ -219,26 +222,33 @@
                 item.className = 'post-list-item';
                 item.dataset.postId = post.postId;
 
-                const isProcessed = post.status && post.status !== 'Awaiting Approval';
-                const isDecided = post.isDecided; // For optimistic UI
-                if (isProcessed || isDecided) {
+                // GÜNCELLENDİ: Durum kontrolü artık hem sunucu verisine hem de platform detaylarına bakıyor
+                const isProcessedByServer = post.status && post.status !== 'Awaiting Approval';
+                const areAllPlatformsDecided = post.platformDetails && post.platformDetails.every(pd => pd.status !== 'Awaiting Approval');
+                const isOptimisticDecided = post.isDecided;
+
+                const isProcessed = isProcessedByServer || areAllPlatformsDecided || isOptimisticDecided;
+
+                if (isProcessed) {
                     item.classList.add('is-processed');
                 } else {
                     item.classList.add('post-list-item-clickable');
                 }
 
                 let badge = '';
-                if(isProcessed) badge = `<div class="post-list-item-status-badge">Processed</div>`;
-                if(isDecided) badge = `<div class="post-list-item-status-badge ready">Ready for Publish</div>`;
+                if(isProcessedByServer) badge = `<div class="post-list-item-status-badge">Processed</div>`;
+                else if (areAllPlatformsDecided) badge = `<div class="post-list-item-status-badge">Processed</div>`;
+                else if (isOptimisticDecided) badge = `<div class="post-list-item-status-badge ready">Ready for Publish</div>`;
+                
+                const isActionable = !isProcessed;
 
-                // GÜNCELLENDİ - HTML yapısı checkbox'ı içerecek şekilde değiştirildi
                 item.innerHTML = `
-                    ${!isProcessed && !isDecided ? `
+                    ${isActionable ? `
                     <div class="checkbox-wrapper">
                         <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox">
                         <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span></label>
                     </div>` : '<div style="width: 34px;"></div>'}
-                    <div class="post-list-item-main" ${!isProcessed && !isDecided ? `data-post-id="${post.postId}"` : ''}>
+                    <div class="post-list-item-main" ${isActionable ? `data-post-id="${post.postId}"` : ''}>
                         <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual">
                         <div class="post-list-item-content">
                             ${badge}
@@ -251,7 +261,6 @@
                 approvalGalleryContainer.appendChild(item);
             });
 
-            // GÜNCELLENDİ - Olay dinleyicileri ata
             approvalGalleryContainer.querySelectorAll('.post-list-item-main').forEach(el => {
                 if (el.dataset.postId) {
                     el.addEventListener('click', (e) => openApprovalModal(parseInt(el.dataset.postId)));
@@ -271,7 +280,6 @@
             });
         };
         
-        // GÜNCELLENDİ - Yeni Fonksiyonlar
         const updateBulkActionsState = () => {
             const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox');
             if (state.selectedPosts.length > 0) {
@@ -307,13 +315,12 @@
                 });
                 if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || 'Failed to save changes.'); }
                 
-                // Optimistic UI for bulk actions
                 state.selectedPosts.forEach(postId => {
                     const postInState = state.pendingPosts.find(p => p.postId === postId);
                     if (postInState) postInState.isDecided = true;
                 });
                 
-                renderGallery(state.pendingPosts); // Re-render to show immediate change
+                renderGallery(state.pendingPosts);
                 publishApprovedBtn.disabled = false;
 
             } catch (error) {
@@ -346,13 +353,12 @@
                 
                 setTimeout(() => {
                     closeApprovalModal();
-                    // GÜNCELLENDİ - Optimistic UI
                     if(currentPostId) {
                         const postInState = state.pendingPosts.find(p => p.postId === currentPostId);
-                        if (postInState) postInState.isDecided = true; // Mark as decided
-                        renderGallery(state.pendingPosts); // Re-render the gallery with the new state
+                        if (postInState) postInState.isDecided = true;
+                        renderGallery(state.pendingPosts);
                     } else {
-                        loadAndRenderApprovalGallery(); // Fallback to full reload
+                        loadAndRenderApprovalGallery();
                     }
                     publishApprovedBtn.disabled = false;
                 }, 1000);
@@ -395,7 +401,6 @@
         modalSaveBtn.addEventListener('click', handleSaveChanges);
         modalCancelBtn.addEventListener('click', closeApprovalModal);
         publishApprovedBtn.addEventListener('click', handlePublishApproved);
-        // GÜNCELLENDİ - Toplu işlem olay dinleyicileri
         bulkSelectAll.addEventListener('change', () => {
             const isChecked = bulkSelectAll.checked;
             const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox');
