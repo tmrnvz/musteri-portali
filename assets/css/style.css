@@ -672,6 +672,24 @@ textarea {
     animation: spin 1s linear infinite;
 }
 
+/* assets/css/style.css dosyasının sonuna eklenecek */
+
+.media-info-box {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    color: #606770;
+    text-align: left;
+    line-height: 1.5;
+}
+
+.media-info-box strong {
+    color: #1c1e21;
+}
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
