@@ -694,7 +694,7 @@ textarea {
 
 .thumbnails-container {
     display: grid; /* Flex yerine Grid kullanarak daha kontrollü bir yapı */
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Her satırda esnek sayıda thumbnail */
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* Her satırda esnek sayıda thumbnail */
     gap: 12px;
     padding: 1.5rem;
     margin-top: 1.5rem;
