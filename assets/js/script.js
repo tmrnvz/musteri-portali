@@ -301,7 +301,15 @@ const displayReviewInterface = async (postId) => {
     if (!headers) { handleLogout(); return; }
 
     try {
-        const response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, { headers });
+        const response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, {
+    method: 'GET',
+    headers: { 
+        'Content-Type': 'application/json',
+        ...headers // JWT token varsa ekleniyor
+    },
+    credentials: 'omit' // Token varsa include da olabilir
+});
+
         if (!response.ok) {
             throw new Error(`Failed to fetch post details. Server returned ${response.status}`);
         }
