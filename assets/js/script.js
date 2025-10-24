@@ -1,4 +1,4 @@
-/* assets/js/script.js - UPDATED VERSION (CORS-friendly frontend tweaks) */
+/* assets/js/script.js - FINAL VERSION (Fixes undefined text and data parsing issues) */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -284,7 +284,6 @@ const handlePostSubmit = async (event) => {
         
         if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
 
-        // microtask ile çağırıyoruz, böylece POST bağlantı/flight tamamlanmış olur
         queueMicrotask(() => displayReviewInterface(newPostId));
 
     } catch (error) {
@@ -301,57 +300,51 @@ const displayReviewInterface = async (postId) => {
     postStatusDiv.innerHTML = `<p class="loading-text">Loading review interface for Post #${postId}...</p>`;
 
     const authHeaders = getAuthHeaders();
-    if (!authHeaders) {
-        // auth yoksa logout etme — çünkü GET'i anonim deneyeceğiz. Ancak bazı akışlarda auth gerekebilir.
-        // handleLogout(); return;
-    }
+    if (!authHeaders) {}
 
     try {
-        // 1) Önce ANONİM GET dene (Authorization göndermiyoruz) — bu preflight'i tetiklemez
         let response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, {
             method: 'GET',
             mode: 'cors',
             credentials: 'omit'
         });
 
-        // Eğer anonim GET başarısızsa (ör. 401/403), JWT header ile tekrar dene
         if (!response.ok) {
-            // Log for debugging
             console.warn(`Anonymous GET returned ${response.status}. Trying with auth header...`);
             if (authHeaders) {
                 response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, {
                     method: 'GET',
                     mode: 'cors',
                     credentials: 'omit',
-                    headers: {
-                        ...authHeaders
-                    }
+                    headers: { ...authHeaders }
                 });
             }
         }
 
         if (!response.ok) {
-            // still not ok — throw with status for UI
             throw new Error(`Failed to fetch post details. Server returned ${response.status}`);
         }
 
         const postData = await response.json();
+        
+        const platformDetailsArray = JSON.parse(postData.PlatformDetails);
+        const postTitle = postData.PostIdeaTitle;
 
         let platformsHtml = '';
-        if (postData.PlatformGeneratedContent && postData.PlatformGeneratedContent.length > 0) {
-            postData.PlatformGeneratedContent.forEach((platform, index) => {
+        if (platformDetailsArray && platformDetailsArray.length > 0) {
+            platformDetailsArray.forEach((platform, index) => {
                 platformsHtml += `
                     <div class="accordion-item ${index === 0 ? 'active' : ''}">
-                        <div class="accordion-header"><span>${platform.Platform.charAt(0).toUpperCase() + platform.Platform.slice(1)}</span></div>
+                        <div class="accordion-header"><span>${platform.platform.charAt(0).toUpperCase() + platform.platform.slice(1)}</span></div>
                         <div class="accordion-content">
                             <div class="content-section">
                                 <h5>Caption</h5>
-                                <div class="content-text">${platform.Caption}</div>
+                                <div class="content-text">${platform.caption.replace(/\\n/g, '<br>')}</div>
                             </div>
-                            ${platform.Hashtags ? `
+                            ${platform.hashtags ? `
                             <div class="content-section">
                                 <h5>Hashtags</h5>
-                                <div class="content-hashtags">${platform.Hashtags}</div>
+                                <div class="content-hashtags">${platform.hashtags}</div>
                             </div>` : ''}
                         </div>
                     </div>`;
@@ -364,7 +357,7 @@ const displayReviewInterface = async (postId) => {
                     <img src="${postData.MainVisualUrl}" alt="Post Visual" style="border-radius: 8px;">
                 </div>
                 <div class="modal-text-content" style="padding: 1.5rem 0 2rem 0;">
-                    <h3 class="modal-title">${postData.IdeaText}</h3>
+                    <h3 class="modal-title">${postTitle}</h3>
                     <div id="review-platforms">${platformsHtml}</div>
                 </div>
                 <div class="review-footer-buttons">
