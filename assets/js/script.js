@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL & COMPLETE VERSION (Advanced thumbnail gallery with video support & drag-drop sorting) */
+/* assets/js/script.js - FINAL & COMPLETE VERSION (With Functional Approval Button) */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -6,6 +6,7 @@ import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3
 const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
 const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
 const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/ee3b3bd2-ae44-47ae-812d-c97a41a62731'; 
+const APPROVE_MANUAL_POST_URL = 'https://ops.synqbrand.com/webhook/8596e58f-177e-4396-909a-cd4de4d5373c'; // GÜNCELLENDİ
 const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
 const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
@@ -303,6 +304,62 @@ const handlePostSubmit = async (event) => {
     }
 };
 
+const handleApproveAndPublish = async (postId) => {
+    const approveBtn = document.getElementById('approve-and-publish-btn');
+    const discardBtn = document.getElementById('discard-and-restart-btn');
+    const reviewContainer = document.getElementById('manual-post-review-container');
+
+    if (!approveBtn || !reviewContainer) return;
+
+    approveBtn.disabled = true;
+    if(discardBtn) discardBtn.disabled = true;
+    approveBtn.innerHTML = '<div class="spinner-tiny"></div>Approving & Publishing...';
+    
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders) {
+        handleLogout();
+        return;
+    }
+
+    try {
+        const response = await fetch(APPROVE_MANUAL_POST_URL, {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId: postId })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Approval failed with status: ${response.status}`);
+        }
+
+        reviewContainer.innerHTML = `
+            <div class="status-block status-success">
+                <h4>SUCCESS!</h4>
+                <p>Post #${postId} has been approved and sent to the publishing queue.</p>
+                <p>Redirecting you to the main panel...</p>
+            </div>`;
+        
+        setTimeout(() => {
+            resetPostForm();
+            showCustomerPanel();
+        }, 2500);
+
+    } catch (error) {
+        console.error('Error approving post:', error);
+        const errorHtml = `<div class="status-block status-error"><h4>APPROVAL FAILED!</h4><p>${error.message}</p></div>`;
+        const footer = reviewContainer.querySelector('.review-footer-buttons');
+        if (footer) {
+             const existingError = reviewContainer.querySelector('.status-error');
+             if (existingError) existingError.remove();
+             footer.insertAdjacentHTML('beforebegin', errorHtml);
+        }
+        approveBtn.disabled = false;
+        if(discardBtn) discardBtn.disabled = false;
+        approveBtn.textContent = 'Looks Good, Publish It!';
+    }
+};
+
 const displayReviewInterface = async (postId) => {
     postForm.style.display = 'none';
     postStatusDiv.innerHTML = `<p class="loading-text">Loading review interface for Post #${postId}...</p>`;
@@ -384,11 +441,8 @@ const displayReviewInterface = async (postId) => {
         postStatusDiv.innerHTML = reviewHtml;
         setupReviewAccordionListeners();
 
-        document.getElementById('approve-and-publish-btn').addEventListener('click', () => {
-             alert("Publishing functionality will be added in the next step!");
-             resetPostForm();
-             showCustomerPanel();
-        });
+        document.getElementById('approve-and-publish-btn').addEventListener('click', () => handleApproveAndPublish(postId));
+        
         document.getElementById('discard-and-restart-btn').addEventListener('click', () => {
             resetPostForm();
             postForm.style.display = 'block';
