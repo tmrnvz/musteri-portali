@@ -5,7 +5,7 @@ import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3
 // API URLs
 const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
 const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
-const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/gen-manual-post'; 
+const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/ee3b3bd2-ae44-47ae-812d-c97a41a62731'; 
 const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
 const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
