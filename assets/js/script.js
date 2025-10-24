@@ -5,12 +5,15 @@ import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3
 // API URLs
 const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
 const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
-const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/107e2a2a-7446-4ebb-9a28-0095ac50ae9b';
+// ESKİ URL ADI KORUNDU AMA YENİ GENERATOR'A YÖNLENDİRİLDİ
+const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/gen-manual-post'; 
 const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
 const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
 const PROCESS_APPROVAL_URL = 'https://ops.synqbrand.com/webhook/ef89b9df-469d-4329-9194-6805b12a6dc5';
 const PUBLISH_APPROVED_POSTS_URL = 'https://ops.synqbrand.com/webhook/eb85bb8a-a1c4-4f0e-a50f-fc0c2afd64d0';
+// YENİ EKLENDİ: Manuel post detaylarını getiren servis URL'i
+const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/get-single-manual-post/';
 
 let state = { loadingIntervalId: null, pendingPosts: [], modalDecisions: [], selectedPosts: [] };
 
@@ -222,6 +225,8 @@ const handleLogin = async (event) => { event.preventDefault(); const username = 
 const initializeUserPanel = async (userData) => { if (!userData || !userData.username) { handleLogout(); return; } await fetchAndRenderPlatforms(); setStatus(statusDiv, "", "success"); showPanel(userData); };
 const showPanel = (userData) => { loginSection.style.display = "none"; welcomeMessage.textContent = `Welcome, ${userData.username}!`; customerPanel.style.display = "block"; };
 
+
+// GÜNCELLENDİ: handlePostSubmit fonksiyonu artık yeni onay arayüzünü çağırıyor
 const handlePostSubmit = async (event) => {
     event.preventDefault();
     const authHeaders = getAuthHeaders();
@@ -277,19 +282,13 @@ const handlePostSubmit = async (event) => {
         }
 
         const responseData = await response.json();
-        
         const newPostId = responseData.Id;
         
         if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
 
-        const successHtml = `<div class="status-block status-success">
-                               <h4>Content is Ready for Approval!</h4>
-                               <p>Your post has been processed and is waiting for your review. New Post ID: <strong>${newPostId || 'N/A'}</strong></p>
-                             </div>`;
-        postStatusDiv.innerHTML = successHtml;
-        submitPostBtn.style.display = 'none';
-        backToPanelBtn.textContent = 'Create Another Post';
-        backToPanelBtn.disabled = false;
+        // ESKİ BAŞARI MESAJI KALDIRILDI
+        // YENİ ADIM: Gelen ID ile onay arayüzünü göster
+        await displayReviewInterface(newPostId);
 
     } catch (error) {
         if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
@@ -300,7 +299,116 @@ const handlePostSubmit = async (event) => {
     }
 };
 
-const resetPostForm = () => { if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } postForm.reset(); uppy.getFiles().forEach(file => uppy.removeFile(file.id)); postStatusDiv.innerHTML = ''; submitPostBtn.style.display = 'block'; submitPostBtn.disabled = false; backToPanelBtn.textContent = 'Back to Panel'; backToPanelBtn.disabled = false; };
+// YENİ EKLENDİ: Dinamik onay arayüzünü oluşturur ve gösterir
+const displayReviewInterface = async (postId) => {
+    // 1. Mevcut formu ve durumu temizle/gizle
+    postForm.style.display = 'none';
+    postStatusDiv.innerHTML = `<p class="loading-text">Loading review interface for Post #${postId}...</p>`;
+
+    // 2. Yeni servis ile post detaylarını çek
+    const headers = getAuthHeaders();
+    if (!headers) { handleLogout(); return; }
+
+    try {
+        const response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, { headers });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch post details. Server returned ${response.status}`);
+        }
+        const postData = await response.json();
+
+        // 3. Gelen veriyle HTML'i oluştur
+        let platformsHtml = '';
+        if (postData.PlatformGeneratedContent && postData.PlatformGeneratedContent.length > 0) {
+            postData.PlatformGeneratedContent.forEach((platform, index) => {
+                platformsHtml += `
+                    <div class="accordion-item ${index === 0 ? 'active' : ''}">
+                        <div class="accordion-header"><span>${platform.Platform.charAt(0).toUpperCase() + platform.Platform.slice(1)}</span></div>
+                        <div class="accordion-content">
+                            <div class="content-section">
+                                <h5>Caption</h5>
+                                <div class="content-text">${platform.Caption}</div>
+                            </div>
+                            ${platform.Hashtags ? `
+                            <div class="content-section">
+                                <h5>Hashtags</h5>
+                                <div class="content-hashtags">${platform.Hashtags}</div>
+                            </div>` : ''}
+                        </div>
+                    </div>`;
+            });
+        }
+
+        const reviewHtml = `
+            <div id="manual-post-review-container">
+                <div class="modal-visual-container">
+                    <img src="${postData.MainVisualUrl}" alt="Post Visual" style="border-radius: 8px;">
+                </div>
+                <div class="modal-text-content" style="padding: 1.5rem 0 2rem 0;">
+                    <h3 class="modal-title">${postData.IdeaText}</h3>
+                    <div id="review-platforms">${platformsHtml}</div>
+                </div>
+                <div class="review-footer-buttons">
+                    <button id="approve-and-publish-btn" class="btn-primary">Looks Good, Publish It!</button>
+                    <button id="discard-and-restart-btn" class="btn-secondary">Make Changes & Re-generate</button>
+                </div>
+            </div>`;
+        
+        postStatusDiv.innerHTML = reviewHtml;
+        setupReviewAccordionListeners();
+
+        // Butonlara event listener eklemek için (şimdilik sadece resetliyorlar)
+        document.getElementById('approve-and-publish-btn').addEventListener('click', () => {
+             // TODO: Buraya onay ve yayınlama mantığı eklenecek
+             alert("Publishing functionality will be added in the next step!");
+             resetPostForm();
+             showCustomerPanel();
+        });
+        document.getElementById('discard-and-restart-btn').addEventListener('click', () => {
+            resetPostForm();
+            postForm.style.display = 'block';
+        });
+
+
+    } catch (error) {
+        console.error("Error displaying review interface:", error);
+        postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>Error</h4><p>${error.message}</p></div>`;
+    }
+};
+
+// YENİ EKLENDİ: Dinamik olarak oluşturulan akordiyon için olay dinleyicilerini ayarlar
+const setupReviewAccordionListeners = () => {
+    const container = document.getElementById('review-platforms');
+    if (!container) return;
+
+    container.querySelectorAll('.accordion-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const activeItem = container.querySelector('.accordion-item.active');
+            const clickedItem = header.parentElement;
+            if (activeItem && activeItem !== clickedItem) {
+                activeItem.classList.remove('active');
+            }
+            clickedItem.classList.toggle('active');
+        });
+    });
+};
+
+const resetPostForm = () => { 
+    if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } 
+    // Onay arayüzünü temizle
+    const reviewContainer = document.getElementById('manual-post-review-container');
+    if (reviewContainer) {
+        reviewContainer.remove();
+    }
+    
+    postForm.style.display = 'block'; // Formu tekrar göster
+    postForm.reset(); 
+    uppy.getFiles().forEach(file => uppy.removeFile(file.id)); 
+    postStatusDiv.innerHTML = ''; 
+    submitPostBtn.style.display = 'block'; 
+    submitPostBtn.disabled = false; 
+    backToPanelBtn.textContent = 'Back to Panel'; 
+    backToPanelBtn.disabled = false; 
+};
 const fetchAndRenderPlatforms = async () => { const container = document.getElementById('platform-selection-container'); const selectAllCheckbox = document.getElementById('select-all-platforms'); container.innerHTML = '<p><em>Loading available platforms...</em></p>'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PLATFORMS_URL, { headers }); if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`); const data = await response.json(); let platforms = data.platforms || []; if (!platforms.length) { container.innerHTML = '<p class="error">No platforms configured for this account.</p>'; selectAllCheckbox.disabled = true; return; } container.innerHTML = ''; platforms.forEach(platform => { const id = `platform-${platform}`; const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper'; const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true; const label = document.createElement('label'); label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`; wrapper.appendChild(checkbox); wrapper.appendChild(label); container.appendChild(wrapper); }); selectAllCheckbox.disabled = false; setupSelectAllLogic(); } catch (error) { console.error('Platform fetch error:', error); container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`; } };
 const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]'); const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; }; selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); }); platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState(); };
 
