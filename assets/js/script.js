@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL VERSION (Adds thumbnail gallery to review interface) */
+/* assets/js/script.js - FINAL & COMPLETE VERSION (Advanced thumbnail gallery with video support & drag-drop sorting) */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -229,6 +229,7 @@ const handlePostSubmit = async (event) => {
     event.preventDefault();
     const authHeaders = getAuthHeaders();
     if (!authHeaders) { handleLogout(); return; }
+
     const files = uppy.getFiles();
     if (files.length === 0) {
         postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`;
@@ -256,14 +257,21 @@ const handlePostSubmit = async (event) => {
         const result = await uppy.upload();
         if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
         
-        const uploadedFileKeys = result.successful.map(file => new URL(file.uploadURL).pathname.substring(1));
+        const sortedFiles = uppy.getFiles();
+        
+        const sortedFileKeys = sortedFiles.map(file => {
+             const successfulUpload = result.successful.find(s => s.id === file.id);
+             return successfulUpload ? new URL(successfulUpload.uploadURL).pathname.substring(1) : null;
+        }).filter(key => key !== null);
+
+        const sortedFileUrls = sortedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`);
         
         const postData = {
             postTitle: document.getElementById('postTitle').value,
             postContent: document.getElementById('postContent').value,
             destinationLink: document.getElementById('destinationLink').value,
-            fileKeys: uploadedFileKeys,
-            fileUrls: uploadedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`),
+            fileKeys: sortedFileKeys,
+            fileUrls: sortedFileUrls,
             submissionID: crypto.randomUUID(),
             selectedPlatforms: selectedPlatforms
         };
@@ -300,30 +308,15 @@ const displayReviewInterface = async (postId) => {
     postStatusDiv.innerHTML = `<p class="loading-text">Loading review interface for Post #${postId}...</p>`;
 
     const authHeaders = getAuthHeaders();
-    if (!authHeaders) {}
-
     try {
-        let response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, {
-            method: 'GET',
-            mode: 'cors',
-            credentials: 'omit'
-        });
-
+        let response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, { method: 'GET', mode: 'cors', credentials: 'omit' });
         if (!response.ok) {
             console.warn(`Anonymous GET returned ${response.status}. Trying with auth header...`);
             if (authHeaders) {
-                response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    credentials: 'omit',
-                    headers: { ...authHeaders }
-                });
+                response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, { method: 'GET', mode: 'cors', credentials: 'omit', headers: { ...authHeaders } });
             }
         }
-
-        if (!response.ok) {
-            throw new Error(`Failed to fetch post details. Server returned ${response.status}`);
-        }
+        if (!response.ok) { throw new Error(`Failed to fetch post details. Server returned ${response.status}`); }
 
         const postData = await response.json();
         
@@ -333,20 +326,29 @@ const displayReviewInterface = async (postId) => {
 
         let thumbnailsHtml = '';
         if (allMediaFilesArray.length > 0) {
-            thumbnailsHtml += '<div class="thumbnails-container">';
+            thumbnailsHtml += '<h4 class="review-section-title">Uploaded Media</h4><div class="thumbnails-container">';
             allMediaFilesArray.forEach(mediaFile => {
                 const isMainVisual = mediaFile.url === postData.MainVisualUrl;
-                thumbnailsHtml += `
-                    <div class="thumbnail-item ${isMainVisual ? 'is-main' : ''}">
-                        <img src="${mediaFile.url}" alt="${mediaFile.fileName}" title="${mediaFile.fileName}">
-                    </div>
-                `;
+                const isVideo = /\.(mp4|mov|avi|webm)$/i.test(mediaFile.fileName);
+
+                thumbnailsHtml += `<div class="thumbnail-item ${isMainVisual ? 'is-main' : ''}" title="${mediaFile.fileName}">`;
+                if (isVideo) {
+                    thumbnailsHtml += `
+                        <div class="video-placeholder">
+                            <svg width="24" height="24"><use xlink:href="#video-icon"></use></svg>
+                        </div>
+                    `;
+                } else {
+                    thumbnailsHtml += `<img src="${mediaFile.url}" alt="${mediaFile.fileName}">`;
+                }
+                thumbnailsHtml += `</div>`;
             });
             thumbnailsHtml += '</div>';
         }
 
         let platformsHtml = '';
         if (platformDetailsArray && platformDetailsArray.length > 0) {
+            platformsHtml += '<h4 class="review-section-title">Generated Content</h4>';
             platformDetailsArray.forEach((platform, index) => {
                 platformsHtml += `
                     <div class="accordion-item ${index === 0 ? 'active' : ''}">
@@ -368,12 +370,9 @@ const displayReviewInterface = async (postId) => {
 
         const reviewHtml = `
             <div id="manual-post-review-container">
-                <div class="modal-visual-container">
-                    <img src="${postData.MainVisualUrl}" alt="Post Visual" style="border-radius: 8px;">
-                </div>
+                <h3 class="modal-title">${postTitle}</h3>
                 ${thumbnailsHtml}
                 <div class="modal-text-content" style="padding: 1.5rem 0 2rem 0;">
-                    <h3 class="modal-title">${postTitle}</h3>
                     <div id="review-platforms">${platformsHtml}</div>
                 </div>
                 <div class="review-footer-buttons">
