@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL VERSION (Corrected for a working backend) */
+/* assets/js/script.js - UPDATED VERSION (CORS-friendly frontend tweaks) */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -85,8 +85,8 @@ const renderGallery = (posts) => {
         let badge = post.isDecided ? `<div class="post-list-item-status-badge">Ready for Publish</div>` : '';
 
         item.innerHTML = `
-            ${!post.isDecided ? `
-            <div class="checkbox-wrapper">
+            ${!post.isDecided ?
+            `<div class="checkbox-wrapper">
                 <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox">
                 <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span></label>
             </div>` : '<div style="width: 34px;"></div>'}
@@ -219,7 +219,9 @@ const closeApprovalModal = () => { approvalModal.classList.remove('active'); };
 const handlePublishApproved = async () => { publishStatus.innerHTML = `<div class="status-loading"><div class="spinner"></div><p>Publishing process initiated... This may take a moment.</p></div>`; publishApprovedBtn.disabled = true; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(PUBLISH_APPROVED_POSTS_URL, { method: 'POST', headers: headers }); const resultText = await response.text(); if (!response.ok) { try { const errorJson = JSON.parse(resultText); throw new Error(errorJson.message || 'An unknown error occurred.'); } catch(e) { throw new Error(resultText || `Request failed with status ${response.status}`); } } const result = JSON.parse(resultText); setStatus(publishStatus, result.message || 'Success!', 'success'); setTimeout(() => { publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); }, 4000); } catch (error) { console.error('Publishing error:', error); setStatus(publishStatus, error.message, 'error'); publishApprovedBtn.disabled = false; } };
 
 const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } }); uppy.use(Dashboard, { inline:true, target:'#uppy-drag-drop-area', proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true }); uppy.use(AwsS3, { getUploadParameters: async (file) => { const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) }); const presignData = await response.json(); return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} }; } });
+
 const handleLogin = async (event) => { event.preventDefault(); const username = document.getElementById("username").value; const password = document.getElementById("password").value; setStatus(statusDiv, "Logging in..."); loginBtn.disabled = true; try { const response = await fetch(LOGIN_WORKFLOW_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Login failed with status: ${response.status}`); } const data = await response.json(); localStorage.setItem('jwtToken', data.token); localStorage.setItem('username', data.username); await initializeUserPanel({ username: data.username }); } catch (error) { setStatus(statusDiv, error.message, "error"); } finally { loginBtn.disabled = false; } };
+
 const initializeUserPanel = async (userData) => { if (!userData || !userData.username) { handleLogout(); return; } await fetchAndRenderPlatforms(); setStatus(statusDiv, "", "success"); showPanel(userData); };
 const showPanel = (userData) => { loginSection.style.display = "none"; welcomeMessage.textContent = `Welcome, ${userData.username}!`; customerPanel.style.display = "block"; };
 
@@ -282,7 +284,8 @@ const handlePostSubmit = async (event) => {
         
         if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
 
-        await displayReviewInterface(newPostId);
+        // microtask ile çağırıyoruz, böylece POST bağlantı/flight tamamlanmış olur
+        queueMicrotask(() => displayReviewInterface(newPostId));
 
     } catch (error) {
         if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
@@ -297,22 +300,41 @@ const displayReviewInterface = async (postId) => {
     postForm.style.display = 'none';
     postStatusDiv.innerHTML = `<p class="loading-text">Loading review interface for Post #${postId}...</p>`;
 
-    const headers = getAuthHeaders();
-    if (!headers) { handleLogout(); return; }
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders) {
+        // auth yoksa logout etme — çünkü GET'i anonim deneyeceğiz. Ancak bazı akışlarda auth gerekebilir.
+        // handleLogout(); return;
+    }
 
     try {
-        const response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, {
-    method: 'GET',
-    headers: { 
-        'Content-Type': 'application/json',
-        ...headers // JWT token varsa ekleniyor
-    },
-    credentials: 'omit' // Token varsa include da olabilir
-});
+        // 1) Önce ANONİM GET dene (Authorization göndermiyoruz) — bu preflight'i tetiklemez
+        let response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, {
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'omit'
+        });
+
+        // Eğer anonim GET başarısızsa (ör. 401/403), JWT header ile tekrar dene
+        if (!response.ok) {
+            // Log for debugging
+            console.warn(`Anonymous GET returned ${response.status}. Trying with auth header...`);
+            if (authHeaders) {
+                response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    credentials: 'omit',
+                    headers: {
+                        ...authHeaders
+                    }
+                });
+            }
+        }
 
         if (!response.ok) {
+            // still not ok — throw with status for UI
             throw new Error(`Failed to fetch post details. Server returned ${response.status}`);
         }
+
         const postData = await response.json();
 
         let platformsHtml = '';
