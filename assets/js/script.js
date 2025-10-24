@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL VERSION (Fixes undefined text and data parsing issues) */
+/* assets/js/script.js - FINAL VERSION (Adds multi-file info display to review interface) */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -329,6 +329,17 @@ const displayReviewInterface = async (postId) => {
         
         const platformDetailsArray = JSON.parse(postData.PlatformDetails);
         const postTitle = postData.PostIdeaTitle;
+        const allMediaFilesArray = postData.AllMediaFiles ? JSON.parse(postData.AllMediaFiles) : [];
+
+        let mediaInfoHtml = '';
+        if (allMediaFilesArray.length > 1) {
+            const fileNames = allMediaFilesArray.map(file => file.fileName).join(', ');
+            mediaInfoHtml = `
+                <div class="media-info-box">
+                    <strong>Total ${allMediaFilesArray.length} files uploaded:</strong> ${fileNames}
+                </div>
+            `;
+        }
 
         let platformsHtml = '';
         if (platformDetailsArray && platformDetailsArray.length > 0) {
@@ -356,6 +367,7 @@ const displayReviewInterface = async (postId) => {
                 <div class="modal-visual-container">
                     <img src="${postData.MainVisualUrl}" alt="Post Visual" style="border-radius: 8px;">
                 </div>
+                ${mediaInfoHtml}
                 <div class="modal-text-content" style="padding: 1.5rem 0 2rem 0;">
                     <h3 class="modal-title">${postTitle}</h3>
                     <div id="review-platforms">${platformsHtml}</div>
