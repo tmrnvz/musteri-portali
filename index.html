@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SynqBrand Müşteri Portalı</title>
+    <!-- YENİ: Tarayıcı sekmesi için ikon (Favicon) -->
+    <link rel="icon" href="assets/images/SynqBrand_Icon.webp" type="image/webp">
     <link href="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.css" rel="stylesheet">
-    <!-- GÜNCELLENDİ: CSS dosyası dışarıdan çağrılıyor -->
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
     <div class="container">
         <!-- Login Section -->
         <div id="login-section">
+            <!-- YENİ: Logo Eklendi -->
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h1>Portal Login</h1>
             <form id="login-form">
                 <div class="form-group">
@@ -29,6 +32,8 @@
 
         <!-- Customer Panel Section -->
         <div id="customer-panel" style="display:none;">
+            <!-- YENİ: Logo Eklendi -->
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h1>User Panel</h1>
             <p id="welcome-message"></p>
             <div class="panel-buttons">
@@ -40,6 +45,8 @@
 
         <!-- Post Form Section -->
         <div id="post-form-section" style="display:none;">
+            <!-- YENİ: Logo Eklendi -->
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h2>Create New Post</h2>
             <form id="post-form">
                 <div class="form-group">
@@ -81,6 +88,8 @@
 
         <!-- Approval Portal Section -->
         <div id="approval-portal-section" style="display:none;">
+            <!-- YENİ: Logo Eklendi -->
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h2>Pending Monthly Posts</h2>
             <div id="bulk-actions-container" style="display:none;">
                 <div class="bulk-actions-bar">
@@ -123,14 +132,13 @@
             </div>
         </div>
     </div>
-
-    <!-- GÜNCELLENDİ: JS dosyası dışarıdan çağrılıyor -->
+    
     <script type="module" src="assets/js/script.js"></script>
-    <!-- index.html dosyasının en sonuna, </body>'den önce eklenecek -->
-<svg width="0" height="0" style="position:absolute">
-  <symbol id="video-icon" viewBox="0 0 24 24">
-    <path fill="currentColor" d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
-  </symbol>
-</svg>
+    
+    <svg width="0" height="0" style="position:absolute">
+      <symbol id="video-icon" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
+      </symbol>
+    </svg>
 </body>
 </html>
