@@ -740,6 +740,15 @@ textarea {
     height: 40%;
 }
 
+/* Logo Stilleri */
+.header-logo {
+  display: block; /* Ortalamak için block element yapıyoruz */
+  width: 250px; /* İstediğiniz genişlik */
+  max-width: 100%; /* Mobil cihazlarda taşmayı önler */
+  height: auto; /* Genişliğe göre yüksekliği otomatik ayarlar */
+  margin: 0 auto 25px; /* Üst/alt: 0, sağ/sol: auto (ortalar), alt boşluk: 25px */
+}
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
