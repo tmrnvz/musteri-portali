@@ -248,7 +248,7 @@ const handlePostSubmit = async (event) => {
     if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
     state.loadingIntervalId = setInterval(() => {
         messageIndex = (messageIndex + 1) % messages.length;
-        postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing...</h4><p>${messages[messageIndex]}</p></div>`;
+        postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts.</h4><p>${messages[messageIndex]}</p></div>`;
     }, 4000);
     
     submitPostBtn.disabled = true;
