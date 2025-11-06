@@ -348,6 +348,10 @@ textarea {
     text-transform: uppercase;
 }
 
+.post-list-item-status-badge.cancelled {
+    background-color: #e74c3c; /* Kırmızı bir ton */
+    color: white;
+}
 
 /* İŞLENMİŞ GÖNDERİ STİLLERİ */
 .post-list-item.is-decided {
