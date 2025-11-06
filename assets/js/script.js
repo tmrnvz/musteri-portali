@@ -83,7 +83,17 @@ const renderGallery = (posts) => {
             item.classList.add('is-decided');
         }
 
-        let badge = post.isDecided ? `<div class="post-list-item-status-badge">Ready for Publish</div>` : '';
+        let badge = '';
+if (post.isDecided) {
+    // Postun en az bir platformu 'Approved' ise 'Ready' göster
+    if (post.platformDetails.some(p => p.status === 'Approved')) {
+        badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`;
+    } 
+    // Eğer tüm platformlar 'Canceled' ise 'Cancelled' göster
+    else if (post.platformDetails.every(p => p.status === 'Canceled')) {
+        badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`;
+    }
+}
 
         item.innerHTML = `
             ${!post.isDecided ?
