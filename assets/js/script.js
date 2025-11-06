@@ -6,7 +6,7 @@ import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3
 const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
 const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
 const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/ee3b3bd2-ae44-47ae-812d-c97a41a62731'; 
-const APPROVE_MANUAL_POST_URL = 'https://ops.synqbrand.com/webhook/8596e58f-177e-4396-909a-cd4de4d5373c'; // GÜNCELLENDİ
+const APPROVE_MANUAL_POST_URL = 'https://ops.synqbrand.com/webhook/8596e58f-177e-4396-909a-cd4de4d5373c';
 const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
 const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
@@ -134,20 +134,39 @@ const updateBulkActionsState = () => {
     bulkSelectAll.checked = actionableCheckboxes.length > 0 && state.selectedPosts.length === actionableCheckboxes.length;
 };
 
+// --- BAŞLANGIÇ: GÜNCELLENMİŞ FONKSİYON ---
 const handleBulkApprove = async () => {
     const decisions = [];
-    state.selectedPosts.forEach(postId => {
+    const actionablePostIds = state.pendingPosts.filter(p => !p.isDecided).map(p => p.postId);
+
+    // Ekranda karar verilebilecek TÜM postlar için döngü başlat
+    actionablePostIds.forEach(postId => {
         const post = state.pendingPosts.find(p => p.postId === postId);
-        if (post && post.platformDetails) {
-            post.platformDetails.forEach(platform => {
-                decisions.push({ postId: postId, platform: platform.platform, decision: 'approved' });
-            });
+        
+        // EĞER bu post, kullanıcının seçtiği "onaylanacaklar" listesindeyse
+        if (state.selectedPosts.includes(postId)) {
+            // Tüm platformlarını 'approved' olarak işaretle
+            if (post && post.platformDetails) {
+                post.platformDetails.forEach(platform => {
+                    decisions.push({ postId: postId, platform: platform.platform, decision: 'approved' });
+                });
+            }
+        } 
+        // EĞER bu post, seçilenler listesinde DEĞİLSE (yani boş bırakıldıysa)
+        else {
+            // Tüm platformlarını 'cancelled' olarak işaretle
+            if (post && post.platformDetails) {
+                post.platformDetails.forEach(platform => {
+                    decisions.push({ postId: postId, platform: platform.platform, decision: 'cancelled' });
+                });
+            }
         }
     });
+
     if (decisions.length === 0) return;
 
     bulkApproveBtn.disabled = true;
-    bulkApproveBtn.textContent = 'Approving...';
+    bulkApproveBtn.textContent = 'Processing Decisions...';
     const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; }
 
     try {
@@ -157,7 +176,8 @@ const handleBulkApprove = async () => {
         });
         if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || 'Failed to save changes.'); }
 
-        state.selectedPosts.forEach(postId => {
+        // Sadece seçilenleri değil, karar verilen TÜM postları 'isDecided' olarak işaretle
+        actionablePostIds.forEach(postId => {
             const postInState = state.pendingPosts.find(p => p.postId === postId);
             if (postInState) postInState.isDecided = true;
         });
@@ -166,12 +186,13 @@ const handleBulkApprove = async () => {
         publishApprovedBtn.disabled = false;
 
     } catch (error) {
-        console.error('Bulk approve error:', error);
+        console.error('Bulk action error:', error);
         setStatus(publishStatus, `Error: ${error.message}`, 'error');
         bulkApproveBtn.disabled = false;
         updateBulkActionsState();
     }
 };
+// --- BİTİŞ: GÜNCELLENMİŞ FONKSİYON ---
 
 const handleSaveChanges = async () => {
     const currentPostId = state.modalDecisions.length > 0 ? state.modalDecisions[0].postId : null;
