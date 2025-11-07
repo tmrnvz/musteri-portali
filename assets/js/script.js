@@ -84,16 +84,14 @@ const renderGallery = (posts) => {
         }
 
         let badge = '';
-if (post.isDecided) {
-    // Postun en az bir platformu 'Approved' ise 'Ready' göster
-    if (post.platformDetails.some(p => p.status === 'Approved')) {
-        badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`;
-    } 
-    // Eğer tüm platformlar 'Canceled' ise 'Cancelled' göster
-    else if (post.platformDetails.every(p => p.status === 'Canceled')) {
-        badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`;
-    }
-}
+        if (post.isDecided) {
+            if (post.platformDetails.some(p => p.status === 'Approved')) {
+                badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`;
+            } 
+            else if (post.platformDetails.every(p => p.status === 'Canceled')) {
+                badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`;
+            }
+        }
 
         item.innerHTML = `
             ${!post.isDecided ?
@@ -149,22 +147,16 @@ const handleBulkApprove = async () => {
     const decisions = [];
     const actionablePostIds = state.pendingPosts.filter(p => !p.isDecided).map(p => p.postId);
 
-    // Ekranda karar verilebilecek TÜM postlar için döngü başlat
     actionablePostIds.forEach(postId => {
         const post = state.pendingPosts.find(p => p.postId === postId);
-        
-        // EĞER bu post, kullanıcının seçtiği "onaylanacaklar" listesindeyse
         if (state.selectedPosts.includes(postId)) {
-            // Tüm platformlarını 'approved' olarak işaretle
             if (post && post.platformDetails) {
                 post.platformDetails.forEach(platform => {
                     decisions.push({ postId: postId, platform: platform.platform, decision: 'approved' });
                 });
             }
         } 
-        // EĞER bu post, seçilenler listesinde DEĞİLSE (yani boş bırakıldıysa)
         else {
-            // Tüm platformlarını 'cancelled' olarak işaretle
             if (post && post.platformDetails) {
                 post.platformDetails.forEach(platform => {
                     decisions.push({ postId: postId, platform: platform.platform, decision: 'cancelled' });
@@ -186,10 +178,15 @@ const handleBulkApprove = async () => {
         });
         if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || 'Failed to save changes.'); }
 
-        // Sadece seçilenleri değil, karar verilen TÜM postları 'isDecided' olarak işaretle
         actionablePostIds.forEach(postId => {
             const postInState = state.pendingPosts.find(p => p.postId === postId);
-            if (postInState) postInState.isDecided = true;
+            if (postInState) {
+                postInState.isDecided = true;
+                const wasApproved = state.selectedPosts.includes(postId);
+                postInState.platformDetails.forEach(platform => {
+                    platform.status = wasApproved ? 'Approved' : 'Canceled';
+                });
+            }
         });
 
         renderGallery(state.pendingPosts);
@@ -228,7 +225,16 @@ const handleSaveChanges = async () => {
             closeApprovalModal();
             if (currentPostId) {
                 const postInState = state.pendingPosts.find(p => p.postId === currentPostId);
-                if (postInState) postInState.isDecided = true;
+                if (postInState) {
+                    postInState.isDecided = true;
+                    // Update platform statuses in the local state for immediate feedback
+                    state.modalDecisions.forEach(decision => {
+                        const platformDetail = postInState.platformDetails.find(p => p.platform === decision.platform);
+                        if(platformDetail) {
+                            platformDetail.status = decision.decision === 'approved' ? 'Approved' : 'Canceled';
+                        }
+                    });
+                }
                 renderGallery(state.pendingPosts);
             } else {
                 loadAndRenderApprovalGallery();
