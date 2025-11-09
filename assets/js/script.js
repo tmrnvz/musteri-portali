@@ -4,7 +4,6 @@ import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3
 
 // API URLs
 const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
-// YENİ: Onboarding formu için n8n webhook URL'si
 const ONBOARDING_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/af26ffa3-b636-46cf-9135-05fe0de71aac';
 const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
 const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/ee3b3bd2-ae44-47ae-812d-c97a41a62731'; 
@@ -24,12 +23,12 @@ const modalSaveBtn = document.getElementById('modal-save-btn'); const modalCance
 const publishApprovedBtn = document.getElementById('publish-approved-btn'); const publishStatus = document.getElementById('publish-status');
 const bulkActionsContainer = document.getElementById('bulk-actions-container'); const bulkSelectAll = document.getElementById('bulk-select-all'); const bulkApproveBtn = document.getElementById('bulk-approve-btn');
 
-// YENİ: Onboarding ve Pending Activation bölümlerinin elementleri
 const onboardingSection = document.getElementById('onboarding-section');
 const pendingActivationSection = document.getElementById('pending-activation-section');
 const onboardingForm = document.getElementById('onboarding-form');
 const onboardingStatus = document.getElementById('onboarding-status');
-
+const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
+const pendingLogoutBtn = document.getElementById('pending-logout-btn');
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const ICON_REJECT = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
@@ -38,7 +37,6 @@ const getAuthHeaders = () => { const token = localStorage.getItem('jwtToken'); i
 const setStatus = (element, message, type = 'info') => { element.className = type; element.innerHTML = message; };
 const handleLogout = () => { localStorage.removeItem('jwtToken'); localStorage.removeItem('username'); location.reload(); };
 
-// YENİ: JWT'yi çözümleyip içindeki veriyi (payload) döndüren yardımcı fonksiyon
 const parseJwt = (token) => {
     try {
         return JSON.parse(atob(token.split('.')[1]));
@@ -48,9 +46,7 @@ const parseJwt = (token) => {
     }
 };
 
-// YENİ: Kullanıcıyı rolüne göre doğru ekrana yönlendiren ana fonksiyon
 const routeUserByRole = (role, username) => {
-    // Önce tüm ana bölümleri gizle
     loginSection.style.display = 'none';
     customerPanel.style.display = 'none';
     onboardingSection.style.display = 'none';
@@ -58,22 +54,19 @@ const routeUserByRole = (role, username) => {
     postFormSection.style.display = 'none';
     approvalPortalSection.style.display = 'none';
 
-    // Role göre ilgili bölümü göster
     if (role === 'customer') {
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
-        fetchAndRenderPlatforms(); // Platformları sadece 'customer' rolü için yükle
-    } else if (role === 'pending' || role === 'new_member') { // Her iki isimlendirmeyi de kabul et
+        fetchAndRenderPlatforms();
+    } else if (role === 'pending' || role === 'new_member') {
         onboardingSection.style.display = 'block';
     } else if (role === 'pending_activation') {
         pendingActivationSection.style.display = 'block';
     } else if (role === 'admin') {
-        // Admin için özel bir arayüz yok, login ekranına yönlendirip bilgi ver
         loginSection.style.display = 'block';
         setStatus(statusDiv, 'Admin panel is not accessible from this interface.', 'error');
         handleLogout();
     } else {
-        // Tanımsız bir rol veya hata durumunda güvenli çıkış yap
         loginSection.style.display = 'block';
         setStatus(statusDiv, 'An error occurred with your user role. Please contact support.', 'error');
         handleLogout();
@@ -306,7 +299,6 @@ const handlePublishApproved = async () => { publishStatus.innerHTML = `<div clas
 
 const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } }); uppy.use(Dashboard, { inline:true, target:'#uppy-drag-drop-area', proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true, allowMultipleUploadBatches:false }); uppy.use(AwsS3, { getUploadParameters: async (file) => { const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) }); const presignData = await response.json(); return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} }; } });
 
-// DEĞİŞTİRİLDİ: handleLogin fonksiyonu artık rol kontrolü yapıyor
 const handleLogin = async (event) => {
     event.preventDefault();
     const username = document.getElementById("username").value;
@@ -329,7 +321,7 @@ const handleLogin = async (event) => {
         
         const decodedToken = parseJwt(token);
         if (decodedToken && decodedToken.role) {
-            localStorage.setItem('username', decodedToken.username); // Kullanıcı adını da sakla
+            localStorage.setItem('username', decodedToken.username);
             setStatus(statusDiv, "", "success");
             routeUserByRole(decodedToken.role, decodedToken.username);
         } else {
@@ -342,7 +334,6 @@ const handleLogin = async (event) => {
     }
 };
 
-// YENİ: Onboarding formunun gönderilmesini yöneten fonksiyon
 const handleOnboardingSubmit = async (event) => {
     event.preventDefault();
     const submitBtn = document.getElementById('submit-onboarding-btn');
@@ -351,7 +342,7 @@ const handleOnboardingSubmit = async (event) => {
 
     const authHeaders = getAuthHeaders();
     if (!authHeaders) {
-        handleLogout(); // Bu durumun yaşanmaması gerekir ama güvenlik için eklendi
+        handleLogout();
         return;
     }
 
@@ -375,7 +366,6 @@ const handleOnboardingSubmit = async (event) => {
             throw new Error(errorData.message || 'Submission failed due to a server error.');
         }
         
-        // Başarılı. Kullanıcıyı bekleme ekranına yönlendir.
         onboardingSection.style.display = 'none';
         pendingActivationSection.style.display = 'block';
 
@@ -384,10 +374,6 @@ const handleOnboardingSubmit = async (event) => {
         submitBtn.disabled = false;
     }
 };
-
-// KALDIRILDI: Bu fonksiyonların görevini artık routeUserByRole üstleniyor
-// const initializeUserPanel = async (userData) => { ... };
-// const showPanel = (userData) => { ... };
 
 const handlePostSubmit = async (event) => {
     event.preventDefault();
@@ -682,11 +668,10 @@ bulkSelectAll.addEventListener('change', () => {
     updateBulkActionsState();
 });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
-
-// YENİ: Onboarding formu için event listener
 onboardingForm.addEventListener('submit', handleOnboardingSubmit);
+onboardingLogoutBtn.addEventListener('click', handleLogout);
+pendingLogoutBtn.addEventListener('click', handleLogout);
 
-// DEĞİŞTİRİLDİ: Sayfa yüklendiğinde artık rolü kontrol ediyor
 window.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('jwtToken');
     if (token) {
@@ -694,7 +679,6 @@ window.addEventListener('DOMContentLoaded', () => {
         if (decodedToken && decodedToken.role) {
             routeUserByRole(decodedToken.role, decodedToken.username);
         } else {
-            // Tarayıcıda geçersiz bir token bulunursa temizle
             handleLogout();
         }
     }
