@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SynqBrand Müşteri Portalı</title>
-    <!-- YENİ: Tarayıcı sekmesi için ikon (Favicon) -->
     <link rel="icon" href="assets/images/SynqBrand_Icon.webp" type="image/webp">
     <link href="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
@@ -13,7 +12,6 @@
     <div class="container">
         <!-- Login Section -->
         <div id="login-section">
-            <!-- YENİ: Logo Eklendi -->
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h1>Portal Login</h1>
             <form id="login-form">
@@ -32,7 +30,6 @@
 
         <!-- Customer Panel Section -->
         <div id="customer-panel" style="display:none;">
-            <!-- YENİ: Logo Eklendi -->
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h1>User Panel</h1>
             <p id="welcome-message"></p>
@@ -43,15 +40,17 @@
             </div>
         </div>
 
-        <!-- YENİ: Onboarding Section (for new_member/pending roles) -->
+        <!-- Onboarding Section (for new_member/pending roles) -->
         <div id="onboarding-section" style="display:none;">
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <div class="panel-buttons">
+                <button id="onboarding-logout-btn" class="btn-secondary">Log Out</button>
+            </div>
             <h1>Welcome! Let's Set Up Your Brand Profile</h1>
             <p>Please provide the following information to help us configure your content creation engine.</p>
             
             <form id="onboarding-form">
                 
-                <!-- Section 1: Core Brand Identity -->
                 <div class="form-section">
                     <h3>Section 1: Core Brand Identity</h3>
                     <p class="section-description">This section helps us understand the fundamentals of your business.</p>
@@ -87,7 +86,6 @@
                     </div>
                 </div>
 
-                <!-- Section 2: Marketing & Content Strategy -->
                 <div class="form-section">
                     <h3>Section 2: Marketing & Content Strategy</h3>
                     <p class="section-description">This section defines the personality and direction of your content, ensuring it connects with your audience.</p>
@@ -159,7 +157,6 @@
                     </div>
                 </div>
 
-                <!-- Section 3: Blog & Website Content -->
                 <div class="form-section">
                     <h3>Section 3: Blog & Website Content</h3>
                     <p class="section-description">If your service package includes blog content, please complete this section.</p>
@@ -201,16 +198,18 @@
             <div id="onboarding-status"></div>
         </div>
 
-        <!-- YENİ: Pending Activation Section -->
+        <!-- Pending Activation Section -->
         <div id="pending-activation-section" style="display:none;">
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <div class="panel-buttons">
+                <button id="pending-logout-btn" class="btn-secondary">Log Out</button>
+            </div>
             <h2>Setup in Progress</h2>
             <p>Thank you for submitting your information. Your system is being configured and will be activated shortly. You will be notified via email once your panel is ready.</p>
         </div>
 
         <!-- Post Form Section -->
         <div id="post-form-section" style="display:none;">
-            <!-- YENİ: Logo Eklendi -->
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h2>Create New Post</h2>
             <form id="post-form">
@@ -253,7 +252,6 @@
 
         <!-- Approval Portal Section -->
         <div id="approval-portal-section" style="display:none;">
-            <!-- YENİ: Logo Eklendi -->
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h2>Pending Monthly Posts</h2>
             <div id="bulk-actions-container" style="display:none;">
