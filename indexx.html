@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SynqBrand Müşteri Portalı</title>
+    <!-- YENİ: Tarayıcı sekmesi için ikon (Favicon) -->
+    <link rel="icon" href="assets/images/SynqBrand_Icon.webp" type="image/webp">
+    <link href="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Login Section -->
+        <div id="login-section">
+            <!-- YENİ: Logo Eklendi -->
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h1>Portal Login</h1>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" id="login-btn" class="btn-primary">Log In</button>
+            </form>
+            <div id="status"></div>
+        </div>
+
+        <!-- Customer Panel Section -->
+        <div id="customer-panel" style="display:none;">
+            <!-- YENİ: Logo Eklendi -->
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h1>User Panel</h1>
+            <p id="welcome-message"></p>
+            <div class="panel-buttons">
+                <button id="show-form-btn" class="btn-primary">Create New Post</button>
+                <button id="show-approval-portal-btn" class="btn-primary">Pending Monthly Posts</button>
+                <button id="logout-btn" class="btn-secondary">Log Out</button>
+            </div>
+        </div>
+
+        <!-- YENİ: Onboarding Section (for new_member/pending roles) -->
+        <div id="onboarding-section" style="display:none;">
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h1>Welcome! Let's Set Up Your Brand Profile</h1>
+            <p>Please provide the following information to help us configure your content creation engine.</p>
+            
+            <form id="onboarding-form">
+                
+                <!-- Section 1: Core Brand Identity -->
+                <div class="form-section">
+                    <h3>Section 1: Core Brand Identity</h3>
+                    <p class="section-description">This section helps us understand the fundamentals of your business.</p>
+                    
+                    <div class="form-group">
+                        <label for="brandName">Brand Name</label>
+                        <input type="text" id="brandName" name="BrandName" required>
+                        <p class="helper-text">Your official brand name. <br> <i>Example: DizaynAtelierGifts</i></p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="primaryLink">Main Website URL</label>
+                        <input type="url" id="primaryLink" name="PrimaryLink" required>
+                        <p class="helper-text">The primary website or shop link you want to drive traffic to. <br> <i>Example: https://dizaynateliergifts.etsy.com</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="offeringsDescription">Offerings Description</label>
+                        <textarea id="offeringsDescription" name="OfferingsDescription" required></textarea>
+                        <p class="helper-text">Describe what you do. This helps us write accurate and compelling content about your offerings. <br> <i>Example: Customizable print-on-demand products (mugs, t-shirts, phone cases, posters). Products can be personalized with images or text.</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="targetLanguage">Target Language</label>
+                        <input type="text" id="targetLanguage" name="TargetLanguage" required>
+                        <p class="helper-text">In which language should your content be written? Please write the full language name. <br> <i>Example: English</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notificationEmail">Notification Email</label>
+                        <input type="email" id="notificationEmail" name="NotificationEmail" required>
+                        <p class="helper-text">The email address where you'd like to receive system notifications. <br> <i>Example: hello@your-business.com</i></p>
+                    </div>
+                </div>
+
+                <!-- Section 2: Marketing & Content Strategy -->
+                <div class="form-section">
+                    <h3>Section 2: Marketing & Content Strategy</h3>
+                    <p class="section-description">This section defines the personality and direction of your content, ensuring it connects with your audience.</p>
+
+                    <div class="form-group">
+                        <label for="targetAudience">Target Audience</label>
+                        <textarea id="targetAudience" name="TargetAudience" required></textarea>
+                        <p class="helper-text">Describe your ideal customers. The more detail, the better we can tailor content to them. <br> <i>Example: Geography: USA & Europe. Demographics: Individuals aged 25-55, middle to upper-income. Interests: Seeking special, meaningful gifts for occasions. Needs: Tired of ordinary gifts, seeking lasting and personalized products.</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="targetPainPoint">Audience's Goal or Challenge</label>
+                        <textarea id="targetPainPoint" name="TargetPainPoint" required></textarea>
+                        <p class="helper-text">From your audience's perspective, what goal are they trying to achieve or what challenge are they facing that your brand can help with? <br> <i>Example: "Finding a truly special, non-generic gift is hard and time-consuming. I want an easy way to discover a memorable, high-quality personalized item that shows I put in thought."</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Brand Voice</label>
+                        <p class="helper-text">This defines the personality of your brand in all written content. Choose the archetype that best fits your brand's desired communication style.</p>
+                        
+                        <div class="radio-option">
+                            <input type="radio" id="voice1" name="BrandVoice" value="Warm, friendly, and authentic tone. Focuses on human connection, sincerity, and positivity. Uses simple, conversational language and natural expressions. Avoids corporate jargon or overly formal phrasing. Messages should sound like a real person who genuinely cares about the audience’s needs and experiences." required>
+                            <label for="voice1">Friendly & Authentic</label>
+                            <p class="radio-description">Warm, genuine, and people-oriented. Feels approachable and real.</p>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="voice2" name="BrandVoice" value="Clear, confident, and professional tone. Communicates authority without sounding distant or robotic. Focus on reliability, accuracy, and clarity. Avoid slang, humor, or emotional exaggeration. Maintain a calm and respectful voice that builds trust and delivers information with precision.">
+                            <label for="voice2">Professional & Trustworthy</label>
+                            <p class="radio-description">Clear, confident, and credible. Expert yet approachable.</p>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="voice3" name="BrandVoice" value="Playful, witty, and creative tone. Uses imaginative language, metaphors, or wordplay when appropriate. Keep it energetic, expressive, and audience-centered. Avoid being too serious or rigid. The message should feel fun, clever, and inspiring while still staying on-brand and purposeful.">
+                            <label for="voice3">Creative & Playful</label>
+                            <p class="radio-description">Lively, witty, and expressive. Makes communication fun and memorable.</p>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="voice4" name="BrandVoice" value="Inspirational and uplifting tone. Encourages optimism, motivation, and self-belief. Use emotionally engaging but respectful language that uplifts the reader. Avoid negativity or sarcasm. Focus on creating a sense of encouragement, progress, and purpose.">
+                            <label for="voice4">Inspirational & Empowering</label>
+                            <p class="radio-description">Positive, hopeful, and motivating. Encourages growth and confidence.</p>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="voice5" name="BrandVoice" value="Sophisticated and calm tone with a sense of quiet confidence. Communicate exclusivity, expertise, and timeless style without exaggeration or flashiness. Avoid slang, emojis, or hype. Use precise and refined vocabulary that evokes elegance and professionalism.">
+                            <label for="voice5">Elegant & Refined</label>
+                            <p class="radio-description">Sophisticated, calm, and graceful. Reflects taste and confidence.</p>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="voice6" name="BrandVoice" value="Concise, modern, and straightforward tone. Focus on simplicity, clarity, and innovation. Avoid unnecessary adjectives or complex phrasing. Keep sentences short and impactful. The message should feel current, efficient, and intelligently designed — like the product or brand itself.">
+                            <label for="voice6">Modern & Minimal</label>
+                            <p class="radio-description">Clean, concise, and contemporary. Focused on clarity and innovation.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="contentPillars">Content Pillars</label>
+                        <textarea id="contentPillars" name="ContentPillars" required></textarea>
+                        <p class="helper-text">Define the 3-5 core themes for your monthly content. Our system will generate posts based on these pillars. <br> <i>Example: 1. Power of Personalization 2. Special Occasion Celebrations (Gift guides) 3. The Art of Gifting (Tips, ideas)</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="negativeKeywords">Banned Words/Topics</label>
+                        <textarea id="negativeKeywords" name="NegativeKeywords"></textarea>
+                        <p class="helper-text">List any words, phrases, or topics you want to avoid completely. <br> <i>Example: cheap, low-quality, fake, political content</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specialInstructions">Additional Notes</label>
+                        <textarea id="specialInstructions" name="SpecialInstructions"></textarea>
+                        <p class="helper-text">Provide any other standing instructions for your content. <br> <i>Example: Use emojis generously. Ask questions to engage the audience.</i></p>
+                    </div>
+                </div>
+
+                <!-- Section 3: Blog & Website Content -->
+                <div class="form-section">
+                    <h3>Section 3: Blog & Website Content</h3>
+                    <p class="section-description">If your service package includes blog content, please complete this section.</p>
+
+                    <div class="form-group">
+                        <label for="seoKeywords">SEO Keywords</label>
+                        <textarea id="seoKeywords" name="SEO_Keywords"></textarea>
+                        <p class="helper-text">List 5-10 keywords your customers might use to find your website on Google. <br> <i>Example: personalized gifts, custom gifts, print on demand, Etsy gifts, unique gifts</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="evergreenTopics">Evergreen Topics</label>
+                        <textarea id="evergreenTopics" name="EvergreenContentTopics"></textarea>
+                        <p class="helper-text">List timeless blog post ideas that reflect your expertise and will always be useful to your audience. <br> <i>Example: Personalized Gift Ideas for Him/Her, Behind The Scenes of a Design, How to Choose a Meaningful Gift</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="blogPerspective">Blog Writing Perspective</label>
+                        <select id="blogPerspective" name="Blog_Default_Point_Of_View">
+                            <option value="2nd Person (You/Your)" selected>2nd Person (You/Your)</option>
+                            <option value="1st Person (I/We)">1st Person (I/We)</option>
+                        </select>
+                        <p class="helper-text">How should blog posts address the reader?</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="articleLength">Preferred Article Length</label>
+                        <select id="articleLength" name="Blog_Default_Article_Size">
+                            <option value="Short (400-600 words)">Short (400-600 words)</option>
+                            <option value="Medium (800-1200 words)" selected>Medium (800-1200 words)</option>
+                            <option value="Long (1500+ words)">Long (1500+ words)</option>
+                        </select>
+                        <p class="helper-text">What is the typical length you're aiming for?</p>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-onboarding-btn" class="btn-primary">Submit Information</button>
+            </form>
+            <div id="onboarding-status"></div>
+        </div>
+
+        <!-- YENİ: Pending Activation Section -->
+        <div id="pending-activation-section" style="display:none;">
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h2>Setup in Progress</h2>
+            <p>Thank you for submitting your information. Your system is being configured and will be activated shortly. You will be notified via email once your panel is ready.</p>
+        </div>
+
+        <!-- Post Form Section -->
+        <div id="post-form-section" style="display:none;">
+            <!-- YENİ: Logo Eklendi -->
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h2>Create New Post</h2>
+            <form id="post-form">
+                <div class="form-group">
+                    <label for="postTitle" class="required">Title</label>
+                    <input type="text" id="postTitle" required>
+                </div>
+                <div class="form-group">
+                    <label for="postContent" class="required">Content / Caption</label>
+                    <textarea id="postContent" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="destinationLink">Destination Link</label>
+                    <input type="text" id="destinationLink" placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <label class="required">Media Files</label>
+                    <div id="uppy-drag-drop-area"></div>
+                </div>
+                <div class="form-group">
+                    <label class="required">Select Platforms to Post</label>
+                    <div class="platform-options">
+                        <div class="checkbox-wrapper select-all-wrapper">
+                            <input type="checkbox" id="select-all-platforms" disabled>
+                            <label for="select-all-platforms" class="checkbox-label">
+                                <span class="checkbox-custom"></span>
+                                <span class="checkbox-label-text">Select / Deselect All</span>
+                            </label>
+                        </div>
+                        <div id="platform-selection-container">
+                            <p><em>Loading available platforms...</em></p>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" id="submit-post-btn" class="btn-primary">Submit Post</button>
+                <button type="button" id="back-to-panel-btn" class="btn-secondary">Back to Panel</button>
+            </form>
+            <div id="post-status"></div>
+        </div>
+
+        <!-- Approval Portal Section -->
+        <div id="approval-portal-section" style="display:none;">
+            <!-- YENİ: Logo Eklendi -->
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h2>Pending Monthly Posts</h2>
+            <div id="bulk-actions-container" style="display:none;">
+                <div class="bulk-actions-bar">
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" id="bulk-select-all">
+                        <label for="bulk-select-all" class="checkbox-label">
+                            <span class="checkbox-custom"></span>
+                            <span class="checkbox-label-text" style="font-weight: 700;">Select All</span>
+                        </label>
+                    </div>
+                    <button id="bulk-approve-btn" class="btn-primary" disabled>Approve Selected</button>
+                </div>
+            </div>
+            <div id="approval-gallery-container"></div>
+            <button type="button" id="publish-approved-btn" class="btn-primary" disabled>Send Approved Posts to Publishing Plan</button>
+            <div id="publish-status"></div>
+            <button type="button" id="back-to-panel-from-approval-btn" class="btn-secondary">Back to Panel</button>
+        </div>
+    </div>
+
+    <!-- Modal HTML Structure -->
+    <div class="modal-overlay" id="approval-modal">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="modal-visual-container">
+                    <img id="modal-visual" src="" alt="Post Visual">
+                </div>
+                <div class="modal-text-content">
+                    <h3 id="modal-title" class="modal-title"></h3>
+                    <div id="modal-platforms"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="modal-status" class="modal-status-text"></span>
+                <button id="modal-cancel-btn" class="btn-secondary">Cancel</button>
+                <button id="modal-save-btn" class="btn-primary">Save Changes</button>
+            </div>
+            <div class="modal-header">
+                <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module" src="assets/js/script.js"></script>
+    
+    <svg width="0" height="0" style="position:absolute">
+      <symbol id="video-icon" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" />
+      </symbol>
+    </svg>
+</body>
+</html>
