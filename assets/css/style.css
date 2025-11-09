@@ -753,6 +753,102 @@ textarea {
   margin: 0 auto 25px; /* Üst/alt: 0, sağ/sol: auto (ortalar), alt boşluk: 25px */
 }
 
+/* ============================================= */
+/* YENİ EKLENEN ONBOARDING FORMU STİLLERİ       */
+/* ============================================= */
+
+/* Form bölümlerini kart gibi göstermek için */
+.form-section {
+    border: 1px solid #dddfe2;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: 8px;
+    text-align: left;
+}
+
+/* Form bölüm başlıkları (h3) için stil */
+.form-section h3 {
+    font-size: 1.5rem;
+    color: #1c1e21;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+/* Form bölüm açıklamaları için stil */
+.section-description {
+    color: #606770;
+    margin-top: 0;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+}
+
+/* Tüm input, textarea ve select kutularını aynı yapmak için */
+input[type="text"],
+input[type="password"],
+input[type="url"],
+input[type="email"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    margin-top: 0.25rem; /* Etiketle arasında küçük bir boşluk */
+}
+
+/* Inputların altındaki yardımcı metinleri biçimlendirmek için */
+.helper-text {
+    font-size: 0.9rem;
+    color: #606770;
+    margin-top: 0.5rem;
+    line-height: 1.4;
+}
+
+.helper-text i {
+    color: #8a919c;
+}
+
+/* Brand Voice radyo butonları için özel stil */
+.radio-option {
+    margin-bottom: 1.25rem;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+.radio-option label {
+    display: inline-block;
+    vertical-align: middle;
+    margin-bottom: 0.25rem;
+}
+
+.radio-description {
+    font-size: 0.9rem;
+    color: #606770;
+    margin-top: 0.25rem;
+    margin-left: 27px; /* Radyo butonu ile hizalamak için */
+    line-height: 1.4;
+}
+
+/* Logout butonunu sağa yaslamak için */
+#onboarding-section .panel-buttons,
+#pending-activation-section .panel-buttons {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1.5rem;
+}
+
+#onboarding-section .panel-buttons button,
+#pending-activation-section .panel-buttons button {
+    width: auto; /* Tam genişlik olmasın */
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+}
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
