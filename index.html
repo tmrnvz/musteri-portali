@@ -7,6 +7,11 @@
     <link rel="icon" href="assets/images/SynqBrand_Icon.webp" type="image/webp">
     <link href="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        /* Platform kullanıcı adı inputlarını gizlemek için ek stil */
+        .platform-username-input { display: none; margin-left: 10px; max-width: 200px; padding: 0.4rem; font-size: 0.9rem; }
+        .checkbox-wrapper input[type="checkbox"]:checked ~ .platform-username-input { display: inline-block; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -40,7 +45,7 @@
             </div>
         </div>
 
-        <!-- Onboarding Section (for new_member/pending roles) -->
+        <!-- Onboarding Section -->
         <div id="onboarding-section" style="display:none;">
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <div class="panel-buttons">
@@ -90,25 +95,17 @@
                     <h3>Section 2: Social Media & Visual Strategy</h3>
                     <p class="section-description">Define your social media presence, hashtag strategy, and visual style.</p>
 
-                    <!-- DEĞİŞİKLİK BURADA YAPILDI -->
                     <div class="form-group">
-                        <label>Platform Focus</label>
-                        <p class="helper-text">Select the social media platforms you want us to create content for. (Select all that apply)</p>
+                        <label>Platform Focus & Usernames</label>
+                        <p class="helper-text">Select the platforms you want us to create content for and enter your current username/handle for each.</p>
                         <div id="platform-selection-container">
-                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-instagram" name="PlatformFocus" value="Instagram"><label for="pf-instagram" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Instagram</span></label></div>
-                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-facebook" name="PlatformFocus" value="Facebook"><label for="pf-facebook" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Facebook</span></label></div>
-                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-pinterest" name="PlatformFocus" value="Pinterest"><label for="pf-pinterest" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Pinterest</span></label></div>
-                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-twitter" name="PlatformFocus" value="Twitter"><label for="pf-twitter" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Twitter</span></label></div>
-                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-linkedin" name="PlatformFocus" value="LinkedIn"><label for="pf-linkedin" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">LinkedIn</span></label></div>
-                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-gbp" name="PlatformFocus" value="GBP"><label for="pf-gbp" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">GBP (Google Business Profile)</span></label></div>
+                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-instagram" name="PlatformFocus" value="Instagram"><label for="pf-instagram" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Instagram</span></label><input type="text" id="pf-instagram-user" class="platform-username-input" placeholder="@username"></div>
+                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-facebook" name="PlatformFocus" value="Facebook"><label for="pf-facebook" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Facebook</span></label><input type="text" id="pf-facebook-user" class="platform-username-input" placeholder="Page username"></div>
+                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-pinterest" name="PlatformFocus" value="Pinterest"><label for="pf-pinterest" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Pinterest</span></label><input type="text" id="pf-pinterest-user" class="platform-username-input" placeholder="Username"></div>
+                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-twitter" name="PlatformFocus" value="Twitter"><label for="pf-twitter" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Twitter</span></label><input type="text" id="pf-twitter-user" class="platform-username-input" placeholder="@handle"></div>
+                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-linkedin" name="PlatformFocus" value="LinkedIn"><label for="pf-linkedin" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">LinkedIn</span></label><input type="text" id="pf-linkedin-user" class="platform-username-input" placeholder="Company page name"></div>
+                            <div class="checkbox-wrapper"><input type="checkbox" id="pf-gbp" name="PlatformFocus" value="GBP"><label for="pf-gbp" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">GBP</span></label><input type="text" id="pf-gbp-user" class="platform-username-input" placeholder="Business name"></div>
                         </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Account Creation</label>
-                        <p class="helper-text">If you do not have an account for a selected platform, should we create one for you?</p>
-                        <div class="radio-option"><input type="radio" id="create-yes" name="CreateNewAccounts" value="Yes, please create new accounts for missing platforms." required><label for="create-yes">Yes, please create new accounts for missing platforms.</label></div>
-                        <div class="radio-option"><input type="radio" id="create-no" name="CreateNewAccounts" value="No, I will create them myself or provide access later." required><label for="create-no">No, I will create them myself or provide access later.</label></div>
                     </div>
 
                     <div class="form-group">
@@ -121,6 +118,11 @@
                         <label for="hashtagStrategy">Hashtag Strategy</label>
                         <textarea id="hashtagStrategy" name="HashtagStrategy"></textarea>
                         <p class="helper-text">Describe your general approach to hashtags. <br> <i>Example: Use a mix of general (#personalizedgifts), niche (#customcoffeemug), brand, and community (#etsyfinds) hashtags.</i></p>
+                    </div>
+                     <div class="form-group">
+                        <label for="instagramHookIdeas">Instagram Hook Ideas</label>
+                        <textarea id="instagramHookIdeas" name="InstagramHookIdeas"></textarea>
+                        <p class="helper-text">Provide a list of short, attention-grabbing sentences for the start of your posts. <br> <i>Example: ["✨ Gift idea alert!", "Tired of boring gifts?", "Want to make them smile? 😊"]</i></p>
                     </div>
 
                     <div class="form-group">
@@ -147,9 +149,9 @@
                     <p class="section-description">Define your audience, brand voice, and core content themes.</p>
 
                     <div class="form-group">
-                        <label for="targetPersona">Detailed Target Persona</label>
-                        <textarea id="targetPersona" name="TargetPersona" required></textarea>
-                        <p class="helper-text">Describe your ideal customer as if they were a single person. What are their demographics, interests, and motivations? <br> <i>Example: Individuals (18-55, mid-upper income, USA/Europe) seeking unique, personalized print-on-demand gifts. Active on Instagram, Pinterest, Etsy. Appreciates quality & humor.</i></p>
+                        <label for="targetAudience">Target Audience</label>
+                        <textarea id="targetAudience" name="TargetAudience" required></textarea>
+                        <p class="helper-text">Describe your ideal customers in detail (Geography, Demographics, Interests, Needs). <br> <i>Example: Geography: Primarily USA and European countries. Demographics: Individuals aged 25-55, with middle to upper-income levels. Interests: Seeking special, meaningful, and unique gifts... Needs: Those tired of ordinary gifts...</i></p>
                     </div>
                     
                     <div class="form-group">
@@ -161,12 +163,12 @@
                     <div class="form-group">
                         <label>Brand Voice</label>
                         <p class="helper-text">This defines the personality of your brand in all written content. Choose the archetype that best fits your brand's desired communication style.</p>
-                        <div class="radio-option"><input type="radio" id="voice1" name="BrandVoice" value="Warm, friendly, and authentic tone. Focuses on human connection, sincerity, and positivity. Uses simple, conversational language and natural expressions. Avoids corporate jargon or overly formal phrasing. Messages should sound like a real person who genuinely cares about the audience’s needs and experiences." required><label for="voice1">Friendly & Authentic</label><p class="radio-description">Warm, genuine, and people-oriented. Feels approachable and real.</p></div>
-                        <div class="radio-option"><input type="radio" id="voice2" name="BrandVoice" value="Clear, confident, and professional tone. Communicates authority without sounding distant or robotic. Focus on reliability, accuracy, and clarity. Avoid slang, humor, or emotional exaggeration. Maintain a calm and respectful voice that builds trust and delivers information with precision."><label for="voice2">Professional & Trustworthy</label><p class="radio-description">Clear, confident, and credible. Expert yet approachable.</p></div>
-                        <div class="radio-option"><input type="radio" id="voice3" name="BrandVoice" value="Playful, witty, and creative tone. Uses imaginative language, metaphors, or wordplay when appropriate. Keep it energetic, expressive, and audience-centered. Avoid being too serious or rigid. The message should feel fun, clever, and inspiring while still staying on-brand and purposeful."><label for="voice3">Creative & Playful</label><p class="radio-description">Lively, witty, and expressive. Makes communication fun and memorable.</p></div>
-                        <div class="radio-option"><input type="radio" id="voice4" name="BrandVoice" value="Inspirational and uplifting tone. Encourages optimism, motivation, and self-belief. Use emotionally engaging but respectful language that uplifts the reader. Avoid negativity or sarcasm. Focus on creating a sense of encouragement, progress, and purpose."><label for="voice4">Inspirational & Empowering</label><p class="radio-description">Positive, hopeful, and motivating. Encourages growth and confidence.</p></div>
-                        <div class="radio-option"><input type="radio" id="voice5" name="BrandVoice" value="Sophisticated and calm tone with a sense of quiet confidence. Communicate exclusivity, expertise, and timeless style without exaggeration or flashiness. Avoid slang, emojis, or hype. Use precise and refined vocabulary that evokes elegance and professionalism."><label for="voice5">Elegant & Refined</label><p class="radio-description">Sophisticated, calm, and graceful. Reflects taste and confidence.</p></div>
-                        <div class="radio-option"><input type="radio" id="voice6" name="BrandVoice" value="Concise, modern, and straightforward tone. Focus on simplicity, clarity, and innovation. Avoid unnecessary adjectives or complex phrasing. Keep sentences short and impactful. The message should feel current, efficient, and intelligently designed — like the product or brand itself."><label for="voice6">Modern & Minimal</label><p class="radio-description">Clean, concise, and contemporary. Focused on clarity and innovation.</p></div>
+                        <div class="radio-option"><input type="radio" id="voice1" name="BrandVoice" value="Warm, friendly, and authentic tone. Focuses on human connection, sincerity, and positivity. Uses simple, conversational language and natural expressions. Avoids corporate jargon or overly formal phrasing. Messages should sound like a real person who genuinely cares about the audience’s needs and experiences." required><label for="voice1">Friendly & Authentic</label></div>
+                        <div class="radio-option"><input type="radio" id="voice2" name="BrandVoice" value="Clear, confident, and professional tone. Communicates authority without sounding distant or robotic. Focus on reliability, accuracy, and clarity. Avoid slang, humor, or emotional exaggeration. Maintain a calm and respectful voice that builds trust and delivers information with precision."><label for="voice2">Professional & Trustworthy</label></div>
+                        <div class="radio-option"><input type="radio" id="voice3" name="BrandVoice" value="Playful, witty, and creative tone. Uses imaginative language, metaphors, or wordplay when appropriate. Keep it energetic, expressive, and audience-centered. Avoid being too serious or rigid. The message should feel fun, clever, and inspiring while still staying on-brand and purposeful."><label for="voice3">Creative & Playful</label></div>
+                        <div class="radio-option"><input type="radio" id="voice4" name="BrandVoice" value="Inspirational and uplifting tone. Encourages optimism, motivation, and self-belief. Use emotionally engaging but respectful language that uplifts the reader. Avoid negativity or sarcasm. Focus on creating a sense of encouragement, progress, and purpose."><label for="voice4">Inspirational & Empowering</label></div>
+                        <div class="radio-option"><input type="radio" id="voice5" name="BrandVoice" value="Sophisticated and calm tone with a sense of quiet confidence. Communicate exclusivity, expertise, and timeless style without exaggeration or flashiness. Avoid slang, emojis, or hype. Use precise and refined vocabulary that evokes elegance and professionalism."><label for="voice5">Elegant & Refined</label></div>
+                        <div class="radio-option"><input type="radio" id="voice6" name="BrandVoice" value="Concise, modern, and straightforward tone. Focus on simplicity, clarity, and innovation. Avoid unnecessary adjectives or complex phrasing. Keep sentences short and impactful. The message should feel current, efficient, and intelligently designed — like the product or brand itself."><label for="voice6">Modern & Minimal</label></div>
                     </div>
 
                     <div class="form-group">
@@ -176,9 +178,15 @@
                     </div>
 
                      <div class="form-group">
-                        <label for="recurringThemes">Recurring Themes / Content Series</label>
-                        <textarea id="recurringThemes" name="RecurringThemes"></textarea>
-                        <p class="helper-text">List any weekly or monthly content series ideas. <br> <i>Example: MondayMotivationPost, WorkshopWednesdayDesignPeek, FeelGoodFridayUGC, MonthlyProductHighlight, CustomerSpotlight</i></p>
+                        <label for="callToActionExamples">Call to Action Examples</label>
+                        <textarea id="callToActionExamples" name="CallToActionExamples"></textarea>
+                        <p class="helper-text">List some typical calls to action you'd like to use. <br> <i>Example: Design your personalized gift now!, "Click the link in bio to explore our store!", "Make your loved ones feel special!"</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specialInstructions">Special Instructions</label>
+                        <textarea id="specialInstructions" name="SpecialInstructions"></textarea>
+                        <p class="helper-text">Provide any other standing instructions for your content. <br> <i>Example: Use emojis generously. Ask questions to engage with the target audience (e.g., "What was your favorite personalized gift?"). Be sensitive to US and European cultural references and holidays.</i></p>
                     </div>
 
                     <div class="form-group">
@@ -191,6 +199,24 @@
                 <div class="form-section">
                     <h3>Section 4: Blog & Website Content</h3>
                     <p class="section-description">If your service package includes blog content, please complete this section.</p>
+                     
+                    <div class="form-group">
+                        <label for="wordPressBaseURL">WordPress Base URL</label>
+                        <input type="url" id="wordPressBaseURL" name="WordPressBaseURL">
+                        <p class="helper-text">If you have a blog, what is its main URL? <br> <i>Example: https://dizaynatelier.com</i></p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="internalLinkPool">Internal Link Pool</label>
+                        <textarea id="internalLinkPool" name="InternalLinkPool"></textarea>
+                        <p class="helper-text">List any specific pages from your website you want us to link to in blog posts (one URL per line).</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="youTubeVideoPool">YouTube Video Pool</label>
+                        <textarea id="youTubeVideoPool" name="YouTubeVideoPool"></textarea>
+                        <p class="helper-text">List any of your YouTube videos we can embed in blog posts (one URL per line).</p>
+                    </div>
 
                     <div class="form-group">
                         <label for="seoKeywords">Primary SEO Keywords</label>
