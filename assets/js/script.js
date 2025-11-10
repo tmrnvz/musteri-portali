@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL & COMPLETE VERSION (With Role-Based Routing and Onboarding Form) */
+/* assets/js/script.js - FINAL & COMPLETE VERSION (With All Fields and Correct Data Handling) */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -29,6 +29,7 @@ const onboardingForm = document.getElementById('onboarding-form');
 const onboardingStatus = document.getElementById('onboarding-status');
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
+
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const ICON_REJECT = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
@@ -348,7 +349,30 @@ const handleOnboardingSubmit = async (event) => {
 
     try {
         const formData = new FormData(onboardingForm);
-        const jsonData = Object.fromEntries(formData.entries());
+        const jsonData = {};
+        
+        for (const [key, value] of formData.entries()) {
+            if (key !== 'PlatformFocus') {
+                jsonData[key] = value;
+            }
+        }
+
+        const platformFocusCheckboxes = onboardingForm.querySelectorAll('input[name="PlatformFocus"]:checked');
+        const platformFocusValues = Array.from(platformFocusCheckboxes).map(cb => cb.value);
+        jsonData.PlatformFocus = platformFocusValues;
+
+        let platformUsernamesText = "";
+        platformFocusValues.forEach(platform => {
+            const safeId = platform.toLowerCase().replace(/ \/ /g, '-').replace(/ /g, '-');
+            const inputId = `pf-${safeId}-user`;
+            const userInput = document.getElementById(inputId);
+            if (userInput && userInput.value) {
+                platformUsernamesText += `${platform}: ${userInput.value}\n`;
+            } else {
+                 platformUsernamesText += `${platform}: (Not provided)\n`;
+            }
+        });
+        jsonData.PlatformUsernamesForEmail = platformUsernamesText.trim();
 
         const response = await fetch(ONBOARDING_WORKFLOW_URL, {
             method: 'POST',
