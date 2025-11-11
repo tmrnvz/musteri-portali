@@ -15,6 +15,11 @@ const PROCESS_APPROVAL_URL = 'https://ops.synqbrand.com/webhook/ef89b9df-469d-43
 const PUBLISH_APPROVED_POSTS_URL = 'https://ops.synqbrand.com/webhook/eb85bb8a-a1c4-4f0e-a50f-fc0c2afd64d0';
 const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/e1b260ea-2f4f-4620-8098-c5e9d369258b/e1b260ea-2f4f-4620-8098-c5e9d369258b/';
 
+// FAZ 2 - YENİ URL'LER
+const GET_BUSINESS_PROFILE_URL = 'https://ops.synqbrand.com/webhook/0dff236e-f2c4-40db-ad88-0fc59f3f779d';
+const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-59b4-4eaf-95b8-712c1e47bfbe';
+
+
 let state = { loadingIntervalId: null, pendingPosts: [], modalDecisions: [], selectedPosts: [] };
 
 // Element variables
@@ -28,6 +33,12 @@ const pendingActivationSection = document.getElementById('pending-activation-sec
 const formContainer = document.getElementById('form-container'); // Formun yükleneceği div
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
+
+// FAZ 2 - YENİ ELEMENTLER
+const editProfileBtn = document.getElementById('edit-profile-btn');
+const editProfileSection = document.getElementById('edit-profile-section');
+const formContainerEdit = document.getElementById('form-container-edit');
+const backToPanelFromEditBtn = document.getElementById('back-to-panel-from-edit-btn');
 
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -74,6 +85,7 @@ const routeUserByRole = async (role, username) => {
     pendingActivationSection.style.display = 'none';
     postFormSection.style.display = 'none';
     approvalPortalSection.style.display = 'none';
+    editProfileSection.style.display = 'none'; // GÜNCELLENDİ
 
     if (role === 'customer') {
         welcomeMessage.textContent = `Welcome, ${username}!`;
@@ -96,7 +108,7 @@ const routeUserByRole = async (role, username) => {
 };
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
-const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; };
+const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; editProfileSection.style.display = 'none'; customerPanel.style.display = 'block'; };
 
 const loadAndRenderApprovalGallery = async () => {
     approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`;
@@ -686,6 +698,159 @@ const resetPostForm = () => {
 const fetchAndRenderPlatforms = async () => { const container = document.getElementById('platform-selection-container'); const selectAllCheckbox = document.getElementById('select-all-platforms'); container.innerHTML = '<p><em>Loading available platforms...</em></p>'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PLATFORMS_URL, { headers }); if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`); const data = await response.json(); let platforms = data.platforms || []; if (!platforms.length) { container.innerHTML = '<p class="error">No platforms configured for this account.</p>'; selectAllCheckbox.disabled = true; return; } container.innerHTML = ''; platforms.forEach(platform => { const id = `platform-${platform}`; const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper'; const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true; const label = document.createElement('label'); label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`; wrapper.appendChild(checkbox); wrapper.appendChild(label); container.appendChild(wrapper); }); selectAllCheckbox.disabled = false; setupSelectAllLogic(); } catch (error) { console.error('Platform fetch error:', error); container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`; } };
 const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]'); const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; }; selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); }); platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState(); };
 
+
+// =================================================================
+// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI BAŞLANGIÇ
+// =================================================================
+
+const showEditProfileForm = () => {
+    customerPanel.style.display = 'none';
+    editProfileSection.style.display = 'block';
+    loadAndPopulateProfileForm();
+};
+
+const hideEditProfileForm = () => {
+    editProfileSection.style.display = 'none';
+    customerPanel.style.display = 'block';
+    formContainerEdit.innerHTML = ''; // Formu temizle
+};
+
+const loadAndPopulateProfileForm = async () => {
+    formContainerEdit.innerHTML = `<p class="loading-text">Loading your profile data...</p>`;
+    const headers = getAuthHeaders();
+    if (!headers) { handleLogout(); return; }
+
+    try {
+        // 1. Profil verilerini çek
+        const profileResponse = await fetch(GET_BUSINESS_PROFILE_URL, { headers });
+        if (!profileResponse.ok) throw new Error(`Could not load your profile. Server responded with status: ${profileResponse.status}`);
+        const profileData = await profileResponse.json();
+
+        // 2. Form HTML'ini yükle
+        const formResponse = await fetch('onboarding-form.html');
+        if (!formResponse.ok) throw new Error('Could not load the form template.');
+        const formHtml = await formResponse.text();
+        formContainerEdit.innerHTML = formHtml;
+        
+        // 3. Formu verilerle doldur
+        populateFormWithData(profileData);
+
+        // 4. Formun submit olayını GÜNCELLEME fonksiyonuna bağla
+        const onboardingForm = document.getElementById('onboarding-form');
+        if (onboardingForm) {
+            // Buton metnini değiştir
+            const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
+            if(submitBtn) {
+                submitBtn.textContent = 'Save Changes';
+            }
+            onboardingForm.addEventListener('submit', handleProfileUpdateSubmit);
+        }
+
+    } catch (error) {
+        formContainerEdit.innerHTML = `<p class="error">Error: ${error.message}. Please try again later.</p>`;
+        console.error(error);
+    }
+};
+
+const populateFormWithData = (data) => {
+    if (!data) return;
+
+    // Her bir form alanı için veriyi ata
+    for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+            const element = document.getElementById(key); // Input/textarea/select id'leri
+            const radioElements = document.querySelectorAll(`input[name="${key}"]`); // Radio button name'leri
+
+            if (element) {
+                if (element.type === 'checkbox') {
+                    // Bu senaryoda tekil checkbox yok, PlatformFocus aşağıda ayrıca ele alınıyor
+                } else {
+                    element.value = data[key] || '';
+                }
+            } else if (radioElements.length > 0 && typeof data[key] === 'string') {
+                // BrandVoice gibi radio button grupları için
+                radioElements.forEach(radio => {
+                    if (radio.value === data[key]) {
+                        radio.checked = true;
+                    }
+                });
+            }
+        }
+    }
+    
+    // PlatformFocus (checkbox grubu) ve bağlı kullanıcı adı inputları için özel mantık
+    if (data.PlatformFocus && Array.isArray(data.PlatformFocus)) {
+        const platformCheckboxes = document.querySelectorAll('input[name="PlatformFocus"]');
+        platformCheckboxes.forEach(cb => {
+            if (data.PlatformFocus.includes(cb.value)) {
+                cb.checked = true;
+                // Not: Kullanıcı adı alanları, mevcut n8n yapısında ayrı ayrı saklanmadığı için
+                // bu aşamada doldurulamamaktadır. Eğer ileride bu veriler yapısal olarak gelirse
+                // ilgili username input'ları burada doldurulabilir.
+            }
+        });
+    }
+};
+
+const handleProfileUpdateSubmit = async (event) => {
+    event.preventDefault();
+    const onboardingForm = document.getElementById('onboarding-form');
+    const onboardingStatus = document.getElementById('onboarding-status');
+    const submitBtn = document.getElementById('submit-onboarding-btn');
+    setStatus(onboardingStatus, 'Saving your changes...', 'info');
+    submitBtn.disabled = true;
+
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders) { handleLogout(); return; }
+
+    try {
+        const formData = new FormData(onboardingForm);
+        const jsonData = {};
+        
+        // FormData'yı JSON nesnesine dönüştür
+        for (const [key, value] of formData.entries()) {
+            if (key !== 'PlatformFocus') {
+                jsonData[key] = value;
+            }
+        }
+
+        // Checkbox'ları dizi olarak ekle
+        const platformFocusCheckboxes = onboardingForm.querySelectorAll('input[name="PlatformFocus"]:checked');
+        jsonData.PlatformFocus = Array.from(platformFocusCheckboxes).map(cb => cb.value);
+        
+        // Not: PlatformUsernamesForEmail bu akışta gönderilmiyor çünkü UPDATE akışı
+        // direkt olarak veritabanı sütunlarını hedefliyor.
+
+        const response = await fetch(UPDATE_PROFILE_WORKFLOW_URL, {
+            method: 'POST', // n8n webhook'ları POST bekler
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify(jsonData),
+        });
+
+        if (!response.ok) {
+            let errorData;
+            try { errorData = await response.json(); } 
+            catch (e) { throw new Error(`Update failed with status: ${response.status}`); }
+            throw new Error(errorData.message || 'Update failed due to a server error.');
+        }
+        
+        setStatus(onboardingStatus, 'Profile updated successfully!', 'success');
+        
+        setTimeout(() => {
+            hideEditProfileForm();
+        }, 2000);
+
+    } catch (error) {
+        setStatus(onboardingStatus, `Error: ${error.message}`, 'error');
+        submitBtn.disabled = false;
+    }
+};
+
+// =================================================================
+// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI BİTİŞ
+// =================================================================
+
+
 // Event Listeners
 loginForm.addEventListener('submit', handleLogin);
 postForm.addEventListener('submit', handlePostSubmit);
@@ -715,6 +880,10 @@ bulkSelectAll.addEventListener('change', () => {
     updateBulkActionsState();
 });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
+
+// FAZ 2 - YENİ EVENT LISTENER'LAR
+editProfileBtn.addEventListener('click', showEditProfileForm);
+backToPanelFromEditBtn.addEventListener('click', hideEditProfileForm);
 
 onboardingLogoutBtn.addEventListener('click', handleLogout);
 pendingLogoutBtn.addEventListener('click', handleLogout);
