@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL & COMPLETE VERSION (With Profile Edit & Bug Fixes) */
+/* assets/js/script.js - FINAL & COMPLETE VERSION (With Profile Edit & Bug Fixes v2) */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -106,11 +106,6 @@ const routeUserByRole = async (role, username) => {
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
 const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; editProfileSection.style.display = 'none'; customerPanel.style.display = 'block'; };
 
-// ... (Burada loadAndRenderApprovalGallery'den handlePublishApproved'a kadar olan tüm fonksiyonlar SİZİN ORİJİNAL KODUNUZLA AYNI)
-// ... Bu bölümü değiştirmeye gerek yok, o yüzden kısalık için eklemiyorum. Sadece yeni fonksiyonları ve event listener'ları ekliyoruz.
-// ... Lütfen bu aralıktaki kendi kodunuzu koruyun.
-// Kısaltılan fonksiyonlar: loadAndRenderApprovalGallery, renderGallery, updateBulkActionsState, handleBulkApprove, handleSaveChanges, checkAllDecisionsMade, openApprovalModal, closeApprovalModal, handlePublishApproved
-
 const loadAndRenderApprovalGallery = async () => { approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`; bulkActionsContainer.style.display = 'none'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PENDING_POSTS_URL, { headers }); if (!response.ok) throw new Error(`Server responded with status: ${response.status}`); const data = await response.json(); renderGallery(data.posts); } catch (error) { console.error('Failed to load pending posts:', error); approvalGalleryContainer.innerHTML = `<p class="error loading-text">${error.message}</p>`; } };
 const renderGallery = (posts) => { approvalGalleryContainer.innerHTML = ''; const currentDecidedIds = state.pendingPosts.filter(p => p.isDecided).map(p => p.postId); posts.forEach(p => { if (currentDecidedIds.includes(p.postId)) { p.isDecided = true; } }); state.pendingPosts = posts; state.selectedPosts = []; if (!posts || posts.length === 0) { approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`; publishApprovedBtn.style.display = 'none'; bulkActionsContainer.style.display = 'none'; return; } const actionablePosts = posts.filter(post => !post.isDecided); if (actionablePosts.length > 0) { bulkActionsContainer.style.display = 'block'; updateBulkActionsState(); } else { bulkActionsContainer.style.display = 'none'; } publishApprovedBtn.style.display = 'block'; posts.forEach(post => { const item = document.createElement('div'); item.className = 'post-list-item'; item.dataset.postId = post.postId; if (post.isDecided) { item.classList.add('is-decided'); } let badge = ''; if (post.isDecided) { if (post.platformDetails.some(p => p.status === 'Approved')) { badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`; } else if (post.platformDetails.every(p => p.status === 'Canceled')) { badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`; } } item.innerHTML = ` ${!post.isDecided ? `<div class="checkbox-wrapper"> <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox"> <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span></label> </div>` : '<div style="width: 34px;"></div>'} <div class="post-list-item-main"> <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual"> <div class="post-list-item-content"> ${badge} <p class="post-list-item-label">POST TOPIC:</p> <h4 class="post-list-item-title">${post.ideaText}</h4> </div> </div> `; item.addEventListener('click', (e) => { if (e.target.closest('.checkbox-wrapper')) return; openApprovalModal(post.postId); }); approvalGalleryContainer.appendChild(item); }); approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox').forEach(cb => { cb.addEventListener('change', (e) => { const postId = parseInt(e.target.dataset.postId); if (e.target.checked) { if (!state.selectedPosts.includes(postId)) state.selectedPosts.push(postId); } else { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } updateBulkActionsState(); }); }); };
 const updateBulkActionsState = () => { const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); if (state.selectedPosts.length > 0) { bulkApproveBtn.disabled = false; bulkApproveBtn.textContent = `Approve Selected (${state.selectedPosts.length})`; } else { bulkApproveBtn.disabled = true; bulkApproveBtn.textContent = 'Approve Selected'; } bulkSelectAll.checked = actionableCheckboxes.length > 0 && state.selectedPosts.length === actionableCheckboxes.length; };
@@ -135,7 +130,7 @@ const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElemen
 
 
 // =================================================================
-// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (GÜNCELLENDİ VE DÜZELTİLDİ)
+// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (NİHAİ DÜZELTİLMİŞ VERSİYON)
 // =================================================================
 
 const showEditProfileForm = () => {
@@ -160,12 +155,12 @@ const loadAndPopulateProfileForm = async () => {
         const profileResponse = await fetch(GET_BUSINESS_PROFILE_URL, { headers });
         if (!profileResponse.ok) throw new Error(`Could not load your profile. Server responded with status: ${profileResponse.status}`);
         
-        // HATA DÜZELTME 1: n8n'den gelen veriyi doğru işle
+        // HATA DÜZELTME 1: n8n'den gelen veriyi doğru işle (ara ".json" olmadan)
         const responseArray = await profileResponse.json();
-        if (!responseArray || responseArray.length === 0 || !responseArray[0].json) {
+        if (!responseArray || responseArray.length === 0) {
             throw new Error('Profile data is missing or in an incorrect format.');
         }
-        const profileData = responseArray[0].json;
+        const profileData = responseArray[0]; // Doğrudan ilk nesneyi al
 
         // 2. Form HTML'ini yükle
         const formResponse = await fetch('onboarding-form.html');
@@ -197,20 +192,19 @@ const populateFormWithData = (data) => {
     const form = document.getElementById('onboarding-form');
     if (!form) return;
 
+    // HATA DÜZELTME 2: Formdaki elementlerin 'id'leri yerine 'name'lerini kullanmak daha güvenilir
+    // çünkü 'name' NocoDB sütun adlarıyla eşleşiyor.
     for (const key in data) {
         if (data.hasOwnProperty(key)) {
-            // HATA DÜZELTME 2: Elementleri ID yerine NAME niteliğine göre bul
             const element = form.querySelector(`[name="${key}"]`);
             const radioElements = form.querySelectorAll(`input[name="${key}"]`);
 
             if (element && element.type !== 'radio' && element.type !== 'checkbox') {
                 element.value = data[key] || '';
             } else if (radioElements.length > 0 && typeof data[key] === 'string') {
-                // BrandVoice gibi radio button grupları için
                 radioElements.forEach(radio => {
                     if (radio.value === data[key]) {
                         radio.checked = true;
-                        // Radio button'a bağlı ekstra bilgiyi göster
                         const extraInfo = radio.closest('.radio-option').querySelector('.radio-extra-info');
                         if (extraInfo) extraInfo.style.display = 'block';
                     }
@@ -219,11 +213,20 @@ const populateFormWithData = (data) => {
         }
     }
     
-    // PlatformFocus (checkbox grubu) için özel mantık
-    if (data.PlatformFocus && Array.isArray(data.PlatformFocus)) {
+    // HATA DÜZELTME 3: PlatformFocus'un string veya array olmasını işle
+    let platformFocusArray = [];
+    if (data.PlatformFocus) {
+        if (Array.isArray(data.PlatformFocus)) {
+            platformFocusArray = data.PlatformFocus;
+        } else if (typeof data.PlatformFocus === 'string') {
+            platformFocusArray = data.PlatformFocus.split(',');
+        }
+    }
+    
+    if (platformFocusArray.length > 0) {
         const platformCheckboxes = form.querySelectorAll('input[name="PlatformFocus"]');
         platformCheckboxes.forEach(cb => {
-            if (data.PlatformFocus.includes(cb.value)) {
+            if (platformFocusArray.includes(cb.value)) {
                 cb.checked = true;
             }
         });
