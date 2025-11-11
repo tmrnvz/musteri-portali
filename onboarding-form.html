@@ -1,0 +1,267 @@
+<!-- assets/onboarding-form.html -->
+<form id="onboarding-form">
+    
+    <div class="form-section">
+        <h3>Section 1: Core Brand Identity</h3>
+        <p class="section-description">This section helps us understand the fundamentals of your business.</p>
+        
+        <div class="form-group">
+            <label for="brandName">Brand Name</label>
+            <input type="text" id="brandName" name="BrandName" required>
+            <p class="helper-text">Your official brand name. <br> <i>Example: DizaynAtelierGifts</i></p>
+        </div>
+        
+        <div class="form-group">
+            <label for="primaryLink">Main Website URL</label>
+            <input type="url" id="primaryLink" name="PrimaryLink" required>
+            <p class="helper-text">The primary website or shop link you want to drive traffic to. <br> <i>Example: https://dizaynateliergifts.etsy.com</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="offeringsDescription">Offerings Description</label>
+            <textarea id="offeringsDescription" name="OfferingsDescription" required></textarea>
+            <p class="helper-text">Describe what you do. This helps us write accurate and compelling content about your offerings. <br> <i>Example: Customizable print-on-demand products (mugs, t-shirts, phone cases, posters). Products can be personalized with images or text.</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="targetLanguage">Target Language</label>
+            <input type="text" id="targetLanguage" name="TargetLanguage" required>
+            <p class="helper-text">In which language should your content be written? Please write the full language name. <br> <i>Example: English</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="notificationEmail">Notification Email</label>
+            <input type="email" id="notificationEmail" name="NotificationEmail" required>
+            <p class="helper-text">The email address where you'd like to receive system notifications. <br> <i>Example: hello@your-business.com</i></p>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Section 2: Social Media & Visual Strategy</h3>
+        <p class="section-description">Define your social media presence, hashtag strategy, and visual style.</p>
+
+        <div class="form-group">
+            <label>Platform Focus & Usernames</label>
+            <p class="helper-text">Select the platforms you want us to create content for and enter your current username/handle for each.</p>
+            <div id="platform-selection-container">
+                <div class="checkbox-wrapper"><input type="checkbox" id="pf-instagram" name="PlatformFocus" value="Instagram"><label for="pf-instagram" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Instagram</span></label><input type="text" id="pf-instagram-user" class="platform-username-input" placeholder="@username"></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="pf-facebook" name="PlatformFocus" value="Facebook"><label for="pf-facebook" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Facebook</span></label><input type="text" id="pf-facebook-user" class="platform-username-input" placeholder="Page username"></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="pf-pinterest" name="PlatformFocus" value="Pinterest"><label for="pf-pinterest" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Pinterest</span></label><input type="text" id="pf-pinterest-user" class="platform-username-input" placeholder="Username"></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="pf-twitter" name="PlatformFocus" value="Twitter"><label for="pf-twitter" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Twitter</span></label><input type="text" id="pf-twitter-user" class="platform-username-input" placeholder="@handle"></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="pf-linkedin" name="PlatformFocus" value="LinkedIn"><label for="pf-linkedin" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">LinkedIn</span></label><input type="text" id="pf-linkedin-user" class="platform-username-input" placeholder="Company page name"></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="pf-gbp" name="PlatformFocus" value="GBP"><label for="pf-gbp" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">GBP</span></label><input type="text" id="pf-gbp-user" class="platform-username-input" placeholder="Business name"></div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="brandHashtag">Main Brand Hashtag</label>
+            <input type="text" id="brandHashtag" name="Brand_Hashtag">
+            <p class="helper-text">Your primary, unique hashtag. <br> <i>Example: #DizaynAtelierGifts</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="hashtagStrategy">Hashtag Strategy</label>
+            <textarea id="hashtagStrategy" name="HashtagStrategy"></textarea>
+            <p class="helper-text">Describe your general approach to hashtags. <br> <i>Example: Use a mix of general (#personalizedgifts), niche (#customcoffeemug), brand, and community (#etsyfinds) hashtags.</i></p>
+        </div>
+         <div class="form-group">
+            <label for="instagramHookIdeas">Instagram Hook Ideas</label>
+            <textarea id="instagramHookIdeas" name="InstagramHookIdeas"></textarea>
+            <p class="helper-text">Provide a list of short, attention-grabbing sentences for the start of your posts. <br> <i>Example: ["✨ Gift idea alert!", "Tired of boring gifts?", "Want to make them smile? 😊"]</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="ugcHashtag">User-Generated Content (UGC) Hashtag</label>
+            <input type="text" id="ugcHashtag" name="Brand_Specific_UGC_Hashtag">
+            <p class="helper-text">The hashtag you want customers to use when sharing photos of your products. <br> <i>Example: #DizaynAtelierGiftsMoments</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="ugcCallToAction">UGC Call to Action</label>
+            <input type="text" id="ugcCallToAction" name="UGC_CallToAction">
+            <p class="helper-text">The text you'll use to encourage customers to share their content. <br> <i>Example: Share your @DizaynAtelierGifts moments with #DizaynAtelierGifts for a chance to be featured! 📸</i></p>
+        </div>
+        
+        <div class="form-group">
+            <label for="imageStyleGuidelines">Master Image Style Guidelines</label>
+            <textarea id="imageStyleGuidelines" name="Master_Image_Style_Guidelines"></textarea>
+            <p class="helper-text">Describe the desired look and feel for all visual content. <br> <i>Example: Bright and cheerful Instagram-style design with clean white or pastel background. Emphasize personalization. The overall aesthetic should feel warm, modern, and gift-worthy.</i></p>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Section 3: Marketing & Content Strategy</h3>
+        <p class="section-description">Define your audience, brand voice, and core content themes.</p>
+
+        <div class="form-group">
+            <label for="targetAudience">Target Audience</label>
+            <textarea id="targetAudience" name="TargetAudience" required></textarea>
+            <p class="helper-text">Describe your ideal customers in detail (Geography, Demographics, Interests, Needs). <br> <i>Example: Geography: Primarily USA and European countries. Demographics: Individuals aged 25-55, with middle to upper-income levels. Interests: Seeking special, meaningful, and unique gifts... Needs: Those tired of ordinary gifts...</i></p>
+        </div>
+        
+        <div class="form-group">
+            <label for="targetPainPoint">Audience's Goal or Challenge</label>
+            <textarea id="targetPainPoint" name="TargetPainPoint" required></textarea>
+            <p class="helper-text">From your audience's perspective, what goal are they trying to achieve or what challenge are they facing that your brand can help with? <br> <i>Example: "Finding a truly special, non-generic gift is hard and time-consuming. I want an easy way to discover a memorable, high-quality personalized item that shows I put in thought."</i></p>
+        </div>
+
+        <div class="form-group">
+            <label>Brand Voice</label>
+            <p class="helper-text">This defines the personality of your brand in all written content. Choose the archetype that best fits your brand's desired communication style.</p>
+            
+            <div class="radio-option">
+                <input type="radio" id="voice1" name="BrandVoice" value="Warm, friendly, and authentic tone. Focuses on human connection, sincerity, and positivity. Uses simple, conversational language and natural expressions. Avoids corporate jargon or overly formal phrasing. Messages should sound like a real person who genuinely cares about the audience’s needs and experiences." required>
+                <label for="voice1">Friendly & Authentic</label>
+                <p class="radio-description">Warm, genuine, and people-oriented. Feels approachable and real.</p>
+                <div class="radio-extra-info">
+                    <p><b>Best for:</b> Cafes, Etsy shops, coaches, personal brands, community-focused businesses.</p>
+                    <p><b>Example Post:</b> <i>"Hey everyone! We're so excited to share our brand new collection of coffee mugs. We poured a lot of love into them and hope you enjoy!"</i></p>
+                </div>
+            </div>
+
+            <div class="radio-option">
+                <input type="radio" id="voice2" name="BrandVoice" value="Clear, confident, and professional tone. Communicates authority without sounding distant or robotic. Focus on reliability, accuracy, and clarity. Avoid slang, humor, or emotional exaggeration. Maintain a calm and respectful voice that builds trust and delivers information with precision.">
+                <label for="voice2">Professional & Trustworthy</label>
+                 <p class="radio-description">Clear, confident, and credible. Expert yet approachable.</p>
+                 <div class="radio-extra-info">
+                    <p><b>Best for:</b> Financial advisors, B2B tech companies, legal services, consultants.</p>
+                    <p><b>Example Post:</b> <i>"Introducing our new collection of premium coffee mugs, crafted for durability and timeless design. View the specifications on our website."</i></p>
+                </div>
+            </div>
+
+            <div class="radio-option">
+                <input type="radio" id="voice3" name="BrandVoice" value="Playful, witty, and creative tone. Uses imaginative language, metaphors, or wordplay when appropriate. Keep it energetic, expressive, and audience-centered. Avoid being too serious or rigid. The message should feel fun, clever, and inspiring while still staying on-brand and purposeful.">
+                <label for="voice3">Creative & Playful</label>
+                <p class="radio-description">Lively, witty, and expressive. Makes communication fun and memorable.</p>
+                <div class="radio-extra-info">
+                    <p><b>Best for:</b> Ice cream shops, design agencies, apparel brands targeting younger audiences.</p>
+                    <p><b>Example Post:</b> <i>"Your morning coffee is about to get a major personality upgrade! Say hello to our quirky and colorful new mug collection."</i></p>
+                </div>
+            </div>
+
+            <div class="radio-option">
+                <input type="radio" id="voice4" name="BrandVoice" value="Inspirational and uplifting tone. Encourages optimism, motivation, and self-belief. Use emotionally engaging but respectful language that uplifts the reader. Avoid negativity or sarcasm. Focus on creating a sense of encouragement, progress, and purpose.">
+                <label for="voice4">Inspirational & Empowering</label>
+                <p class="radio-description">Positive, hopeful, and motivating. Encourages growth and confidence.</p>
+                <div class="radio-extra-info">
+                    <p><b>Best for:</b> Yoga studios, life coaches, fitness brands, non-profits, motivational speakers.</p>
+                    <p><b>Example Post:</b> <i>"Start your day with intention. Our new collection of coffee mugs is here to inspire your daily ritual and help you conquer your goals."</i></p>
+                </div>
+            </div>
+
+            <div class="radio-option">
+                <input type="radio" id="voice5" name="BrandVoice" value="Sophisticated and calm tone with a sense of quiet confidence. Communicate exclusivity, expertise, and timeless style without exaggeration or flashiness. Avoid slang, emojis, or hype. Use precise and refined vocabulary that evokes elegance and professionalism.">
+                <label for="voice5">Elegant & Refined</label>
+                <p class="radio-description">Sophisticated, calm, and graceful. Reflects taste and confidence.</p>
+                <div class="radio-extra-info">
+                    <p><b>Best for:</b> High-end jewelers, luxury brands, boutique hotels, art galleries.</p>
+                    <p><b>Example Post:</b> <i>"Discover the new collection. Exquisitely designed coffee mugs for the discerning taste, now available in our boutique."</i></p>
+                </div>
+            </div>
+
+            <div class="radio-option">
+                <input type="radio" id="voice6" name="BrandVoice" value="Concise, modern, and straightforward tone. Focus on simplicity, clarity, and innovation. Avoid unnecessary adjectives or complex phrasing. Keep sentences short and impactful. The message should feel current, efficient, and intelligently designed — like the product or brand itself.">
+                <label for="voice6">Modern & Minimal</label>
+                <p class="radio-description">Clean, concise, and contemporary. Focused on clarity and innovation.</p>
+                 <div class="radio-extra-info">
+                    <p><b>Best for:</b> SaaS companies, tech gadgets, minimalist furniture stores, architecture firms.</p>
+                    <p><b>Example Post:</b> <i>"New coffee mugs. Clean lines, simple design. Shop the collection now."</i></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="contentPillars">Content Pillars</label>
+            <textarea id="contentPillars" name="ContentPillars" required></textarea>
+            <p class="helper-text">Define the 3-5 core themes for your monthly content. Our system will generate posts based on these pillars. <br> <i>Example: 1. Power of Personalization 2. Special Occasion Celebrations (Gift guides) 3. The Art of Gifting (Tips, ideas)</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="recurringThemes">Recurring Themes / Content Series</label>
+            <textarea id="recurringThemes" name="RecurringThemes"></textarea>
+            <p class="helper-text">List any weekly or monthly content series ideas. <br> <i>Example: MondayMotivationPost, WorkshopWednesdayDesignPeek, FeelGoodFridayUGC, MonthlyProductHighlight, CustomerSpotlight</i></p>
+        </div>
+        
+         <div class="form-group">
+            <label for="callToActionExamples">Call to Action Examples</label>
+            <textarea id="callToActionExamples" name="CallToActionExamples"></textarea>
+            <p class="helper-text">List some typical calls to action you'd like to use. <br> <i>Example: Design your personalized gift now!, "Click the link in bio to explore our store!", "Make your loved ones feel special!"</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="specialInstructions">Special Instructions</label>
+            <textarea id="specialInstructions" name="SpecialInstructions"></textarea>
+            <p class="helper-text">Provide any other standing instructions for your content. <br> <i>Example: Use emojis generously. Ask questions to engage with the target audience (e.g., "What was your favorite personalized gift?"). Be sensitive to US and European cultural references and holidays.</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="negativeKeywords">Banned Words/Topics</label>
+            <textarea id="negativeKeywords" name="NegativeKeywords"></textarea>
+            <p class="helper-text">List any words, phrases, or topics you want to avoid completely. <br> <i>Example: cheap, low-quality, fake, political content</i></p>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Section 4: Blog & Website Content</h3>
+        <p class="section-description">If your service package includes blog content, please complete this section.</p>
+         
+        <div class="form-group">
+            <label for="wordPressBaseURL">WordPress Base URL</label>
+            <input type="url" id="wordPressBaseURL" name="WordPressBaseURL">
+            <p class="helper-text">If you have a blog, what is its main URL? <br> <i>Example: https://dizaynatelier.com</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="internalLinkPool">Internal Link Pool</label>
+            <textarea id="internalLinkPool" name="InternalLinkPool"></textarea>
+            <p class="helper-text">List any specific pages from your website you want us to link to in blog posts (one URL per line).</p>
+        </div>
+
+        <div class="form-group">
+            <label for="youTubeVideoPool">YouTube Video Pool</label>
+            <textarea id="youTubeVideoPool" name="YouTubeVideoPool"></textarea>
+            <p class="helper-text">List any of your YouTube videos we can embed in blog posts (one URL per line).</p>
+        </div>
+
+        <div class="form-group">
+            <label for="seoKeywords">Primary SEO Keywords</label>
+            <textarea id="seoKeywords" name="SEO_Keywords"></textarea>
+            <p class="helper-text">List 5-10 keywords your customers might use to find your website on Google. <br> <i>Example: personalized gifts, custom gifts, print on demand, Etsy gifts, unique gifts</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="blogAdditionalKeywords">Additional Blog Keywords</label>
+            <textarea id="blogAdditionalKeywords" name="Blog_Additional_Keywords"></textarea>
+            <p class="helper-text">Provide any other related keywords for blog content. <br> <i>Example: thoughtful custom presents, memorable Etsy gifts, custom gifts USA Europe, design your own gift...</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="evergreenTopics">Evergreen Topics</label>
+            <textarea id="evergreenTopics" name="EvergreenContentTopics"></textarea>
+            <p class="helper-text">List timeless blog post ideas that reflect your expertise and will always be useful to your audience. <br> <i>Example: Personalized Gift Ideas for Him/Her, Behind The Scenes of a Design, How to Choose a Meaningful Gift</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="blogPerspective">Blog Writing Perspective</label>
+            <select id="blogPerspective" name="Blog_Default_Point_Of_View">
+                <option value="2nd Person (You/Your)" selected>2nd Person (You/Your)</option>
+                <option value="1st Person (I/We)">1st Person (I/We)</option>
+            </select>
+            <p class="helper-text">How should blog posts address the reader?</p>
+        </div>
+
+        <div class="form-group">
+            <label for="articleLength">Preferred Article Length</label>
+            <select id="articleLength" name="Blog_Default_Article_Size">
+                <option value="Small (300-500 words)">Small (300-500 words)</option>
+                <option value="Medium (500-800 words)" selected>Medium (500-800 words)</option>
+                <option value="Long (800-1200 words)">Long (800-1200 words)</option>
+                <option value="Very Long (1200-1500 words)">Very Long (1200-1500 words)</option>
+            </select>
+            <p class="helper-text">What is the typical length you're aiming for?</p>
+        </div>
+    </div>
+
+    <button type="submit" id="submit-onboarding-btn" class="btn-primary">Submit Information</button>
+    <div id="onboarding-status"></div>
+</form>
