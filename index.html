@@ -43,6 +43,8 @@
             <p id="welcome-message"></p>
             <div class="panel-buttons">
                 <button id="show-form-btn" class="btn-primary">Create New Post</button>
+                <!-- YENİ BUTON -->
+                <button id="edit-profile-btn" class="btn-primary">Edit Profile</button>
                 <button id="show-approval-portal-btn" class="btn-primary">Pending Monthly Posts</button>
                 <button id="logout-btn" class="btn-secondary">Log Out</button>
             </div>
@@ -103,6 +105,21 @@
             <div id="publish-status"></div>
             <button type="button" id="back-to-panel-from-approval-btn" class="btn-secondary">Back to Panel</button>
         </div>
+
+        <!-- YENİ BÖLÜM: PROFİL DÜZENLEME -->
+        <div id="edit-profile-section" style="display:none;">
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h2>Edit Your Brand Profile</h2>
+            <p>Update your brand information below. The changes will be applied to the content creation engine.</p>
+            
+            <!-- Düzenleme formu JavaScript tarafından bu div'in içine yüklenecek -->
+            <div id="form-container-edit"></div>
+            
+            <div class="panel-buttons" style="margin-top: 2rem;">
+                 <button type="button" id="back-to-panel-from-edit-btn" class="btn-secondary">Back to Panel</button>
+            </div>
+        </div>
+        
     </div>
 
     <!-- Modal HTML Structure -->
