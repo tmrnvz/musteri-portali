@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL & COMPLETE VERSION (With Scope Fix v3) */
+/* assets/js/script.js - FINAL VERSION with ChatGPT's robust form population logic */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -30,7 +30,7 @@ const bulkActionsContainer = document.getElementById('bulk-actions-container'); 
 
 const onboardingSection = document.getElementById('onboarding-section');
 const pendingActivationSection = document.getElementById('pending-activation-section');
-const formContainer = document.getElementById('form-container'); // Formun yükleneceği div
+const formContainer = document.getElementById('form-container');
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
 
@@ -45,7 +45,7 @@ const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" v
 const ICON_REJECT = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
 
 const getAuthHeaders = () => { const token = localStorage.getItem('jwtToken'); if (!token) return null; return { 'Authorization': `Bearer ${token}` }; };
-const setStatus = (element, message, type = 'info') => { element.className = type; element.innerHTML = message; };
+const setStatus = (element, message, type = 'info') => { if(element) { element.className = type; element.innerHTML = message; }};
 const handleLogout = () => { localStorage.removeItem('jwtToken'); localStorage.removeItem('username'); location.reload(); };
 
 const parseJwt = (token) => {
@@ -64,7 +64,7 @@ const loadAndInjectForm = async () => {
         if (!response.ok) throw new Error('Could not load the form.');
         const formHtml = await response.text();
         formContainer.innerHTML = formHtml;
-        const onboardingForm = formContainer.querySelector('#onboarding-form'); // DEĞİŞİKLİK
+        const onboardingForm = formContainer.querySelector('#onboarding-form');
         if (onboardingForm) {
             onboardingForm.addEventListener('submit', handleOnboardingSubmit);
         }
@@ -132,7 +132,7 @@ const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElemen
 
 
 // =================================================================
-// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (KAPSAM SORUNU DÜZELTİLDİ)
+// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (CHATGPT TARAFINDAN DÜZELTİLDİ)
 // =================================================================
 
 const showEditProfileForm = () => {
@@ -151,89 +151,120 @@ const loadAndPopulateProfileForm = async () => {
     formContainerEdit.innerHTML = `<p class="loading-text">Loading your profile data...</p>`;
     const headers = getAuthHeaders();
     if (!headers) { handleLogout(); return; }
-
+  
     try {
-        const profileResponse = await fetch(GET_BUSINESS_PROFILE_URL, { headers });
-        if (!profileResponse.ok) throw new Error(`Could not load your profile. Server responded with status: ${profileResponse.status}`);
-        
-        const responseArray = await profileResponse.json();
-        if (!responseArray || responseArray.length === 0) {
-            throw new Error('Profile data is missing or in an incorrect format.');
-        }
-        const profileData = responseArray[0];
-
-        const formResponse = await fetch('onboarding-form.html');
-        if (!formResponse.ok) throw new Error('Could not load the form template.');
-        const formHtml = await formResponse.text();
-        formContainerEdit.innerHTML = formHtml;
-        
-        // DEĞİŞİKLİK: Formu, yüklendiği div içinden seçiyoruz.
-        const onboardingForm = formContainerEdit.querySelector('#onboarding-form');
-        
-        if (onboardingForm) {
-            populateFormWithData(profileData, onboardingForm); // DEĞİŞİKLİK: Formu parametre olarak gönderiyoruz.
-
-            const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
-            if(submitBtn) {
-                submitBtn.textContent = 'Save Changes';
-            }
-            onboardingForm.addEventListener('submit', handleProfileUpdateSubmit);
-        } else {
-            throw new Error('Form could not be found after loading.');
-        }
-
+      const profileResponse = await fetch(GET_BUSINESS_PROFILE_URL, { headers });
+      if (!profileResponse.ok) throw new Error(`Could not load your profile.`);
+  
+      const responseArray = await profileResponse.json();
+      if (!responseArray || responseArray.length === 0) {
+        throw new Error('Profile data is missing or in an incorrect format.');
+      }
+      const profileData = responseArray[0];
+  
+      const formResponse = await fetch('onboarding-form.html');
+      if (!formResponse.ok) throw new Error('Could not load the form template.');
+      const formHtml = await formResponse.text();
+      formContainerEdit.innerHTML = formHtml;
+  
+      await Promise.resolve();
+  
+      const onboardingForm = formContainerEdit.querySelector('#onboarding-form');
+  
+      if (onboardingForm) {
+        populateFormWithData(profileData, onboardingForm);
+  
+        const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
+        if (submitBtn) submitBtn.textContent = 'Save Changes';
+  
+        onboardingForm.addEventListener('submit', handleProfileUpdateSubmit);
+      } else {
+        throw new Error('Form could not be found after loading.');
+      }
     } catch (error) {
-        formContainerEdit.innerHTML = `<p class="error">Error: ${error.message}. Please try again later.</p>`;
-        console.error(error);
+      formContainerEdit.innerHTML = `<p class="error">Error: ${error.message}. Please try again later.</p>`;
+      console.error(error);
     }
 };
-
-const populateFormWithData = (data, form) => { // DEĞİŞİKLİK: form parametresi eklendi.
+  
+const populateFormWithData = (data, form) => {
     if (!data || !form) return;
-
+  
+    const controls = form.elements;
+    const toStr = v => (v === null || v === undefined) ? '' : String(v);
+  
     for (const key in data) {
-        if (data.hasOwnProperty(key)) {
-            const element = form.querySelector(`[name="${key}"]`);
-            const radioElements = form.querySelectorAll(`input[name="${key}"]`);
-
-            if (element && element.type !== 'radio' && element.type !== 'checkbox') {
-                element.value = data[key] || '';
-            } else if (radioElements.length > 0 && typeof data[key] === 'string') {
-                radioElements.forEach(radio => {
-                    if (radio.value === data[key]) {
-                        radio.checked = true;
-                        const extraInfo = radio.closest('.radio-option').querySelector('.radio-extra-info');
-                        if (extraInfo) extraInfo.style.display = 'block';
-                    }
-                });
+      if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
+      const value = data[key];
+      const named = controls.namedItem(key);
+  
+      if (!named) continue;
+  
+      const isCollection = (named && typeof named.length === 'number' && !(named instanceof HTMLInputElement || named instanceof HTMLTextAreaElement || named instanceof HTMLSelectElement));
+  
+      if (isCollection) {
+        const asArray = Array.from(named);
+        if (asArray.every(el => el.type === 'radio')) {
+          const targetVal = toStr(value);
+          asArray.forEach(r => {
+            r.checked = (toStr(r.value) === targetVal);
+          });
+        } else if (asArray.every(el => el.type === 'checkbox')) {
+          const vals = typeof value === 'string' ? value.split(',').map(s => s.trim()) : (Array.isArray(value) ? value.map(toStr) : [toStr(value)]);
+          asArray.forEach(cb => {
+            cb.checked = vals.includes(toStr(cb.value));
+          });
+        } else {
+          for (const el of asArray) {
+            if ('value' in el) {
+              el.value = toStr(value);
             }
+          }
         }
-    }
-    
-    let platformFocusArray = [];
-    if (data.PlatformFocus) {
-        if (Array.isArray(data.PlatformFocus)) {
-            platformFocusArray = data.PlatformFocus;
-        } else if (typeof data.PlatformFocus === 'string') {
-            platformFocusArray = data.PlatformFocus.split(',').map(p => p.trim());
-        }
-    }
-    
-    if (platformFocusArray.length > 0) {
-        const platformCheckboxes = form.querySelectorAll('input[name="PlatformFocus"]');
-        platformCheckboxes.forEach(cb => {
-            if (platformFocusArray.includes(cb.value)) {
-                cb.checked = true;
+      } else {
+        const el = named;
+        if (el.tagName === 'INPUT') {
+          const t = el.type;
+          if (t === 'checkbox') {
+            if (typeof value === 'boolean') {
+              el.checked = value;
+            } else {
+              const str = toStr(value).toLowerCase();
+              el.checked = (str === 'true' || str === '1' || str === 'on' || str === el.value);
             }
-        });
+          } else if (t === 'radio') {
+            el.checked = (toStr(el.value) === toStr(value));
+          } else {
+            el.value = toStr(value);
+          }
+        } else if (el.tagName === 'TEXTAREA') {
+          el.value = toStr(value);
+        } else if (el.tagName === 'SELECT') {
+          el.value = toStr(value);
+          if (el.value !== toStr(value)) {
+            const opt = Array.from(el.options).find(o => toStr(o.value) === toStr(value) || toStr(o.text) === toStr(value));
+            if (opt) opt.selected = true;
+          }
+        } else {
+          if ('value' in el) el.value = toStr(value);
+        }
+      }
+    }
+  
+    if (data.PlatformFocus && typeof data.PlatformFocus === 'string') {
+      const platformFocusArray = data.PlatformFocus.split(',').map(p => p.trim());
+      const platformCheckboxes = form.querySelectorAll('input[name="PlatformFocus"]');
+      platformCheckboxes.forEach(cb => {
+        cb.checked = platformFocusArray.includes(cb.value);
+      });
     }
 };
 
 const handleProfileUpdateSubmit = async (event) => {
     event.preventDefault();
-    const onboardingForm = event.target; // DEĞİŞİKLİK: Formu doğrudan event'ten alıyoruz.
-    const onboardingStatus = onboardingForm.querySelector('#onboarding-status'); // DEĞİŞİKLİK: Status'u form içinden bul.
-    const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn'); // DEĞİŞİKLİK: Butonu form içinden bul.
+    const onboardingForm = event.target;
+    const onboardingStatus = onboardingForm.querySelector('#onboarding-status');
+    const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
     
     if (!onboardingStatus || !submitBtn) {
         console.error("Form status or submit button not found inside the submitted form.");
@@ -256,7 +287,7 @@ const handleProfileUpdateSubmit = async (event) => {
             }
         }
         const platformFocusCheckboxes = onboardingForm.querySelectorAll('input[name="PlatformFocus"]:checked');
-        jsonData.PlatformFocus = Array.from(platformFocusCheckboxes).map(cb => cb.value).join(','); // DEĞİŞİKLİK: NocoDB'ye array yerine string gönder.
+        jsonData.PlatformFocus = Array.from(platformFocusCheckboxes).map(cb => cb.value).join(',');
 
         const response = await fetch(UPDATE_PROFILE_WORKFLOW_URL, {
             method: 'POST',
