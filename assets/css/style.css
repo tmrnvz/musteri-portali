@@ -842,6 +842,27 @@ textarea {
     margin-bottom: 1.5rem;
 }
 
+/* =================================================== */
+/* FAZ 2 - PROFİL DÜZENLEME BUTON STİLLERİ            */
+/* =================================================== */
+
+/* Turuncu vurgu butonu */
+.btn-highlight {
+    border-color: #FF6F00; /* Turuncu kenarlık */
+    color: #FF6F00;       /* Turuncu yazı */
+    background-color: transparent;
+}
+
+.btn-highlight:hover {
+    background-color: #FF6F00; /* Üzerine gelince turuncu dolgu */
+    color: #fff;               /* Üzerine gelince beyaz yazı */
+}
+
+/* Buton gruplarını ayırmak için */
+.panel-buttons #edit-profile-btn {
+    margin-top: 15px; /* Üstündeki butondan boşluk bırak */
+}
+
 #onboarding-section .panel-buttons button,
 #pending-activation-section .panel-buttons button {
     width: auto; /* Tam genişlik olmasın */
