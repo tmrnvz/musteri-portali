@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL & COMPLETE VERSION (With All Fields and Correct Data Handling) */
+/* assets/js/script.js - FINAL & COMPLETE VERSION (With External Form Loading and All Fields) */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -25,8 +25,7 @@ const bulkActionsContainer = document.getElementById('bulk-actions-container'); 
 
 const onboardingSection = document.getElementById('onboarding-section');
 const pendingActivationSection = document.getElementById('pending-activation-section');
-const onboardingForm = document.getElementById('onboarding-form');
-const onboardingStatus = document.getElementById('onboarding-status');
+const formContainer = document.getElementById('form-container'); // Formun yükleneceği div
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
 
@@ -47,7 +46,28 @@ const parseJwt = (token) => {
     }
 };
 
-const routeUserByRole = (role, username) => {
+const loadAndInjectForm = async () => {
+    // Formu tekrar tekrar yüklememek için kontrol et
+    if (formContainer.innerHTML.trim() !== "") return;
+
+    try {
+        const response = await fetch('onboarding-form.html');
+        if (!response.ok) throw new Error('Could not load the form.');
+        const formHtml = await response.text();
+        formContainer.innerHTML = formHtml;
+        
+        // Form yüklendikten sonra event listener'ı bağla
+        const onboardingForm = document.getElementById('onboarding-form');
+        if (onboardingForm) {
+            onboardingForm.addEventListener('submit', handleOnboardingSubmit);
+        }
+    } catch (error) {
+        formContainer.innerHTML = `<p class="error">Error loading the onboarding form. Please refresh the page.</p>`;
+        console.error(error);
+    }
+};
+
+const routeUserByRole = async (role, username) => {
     loginSection.style.display = 'none';
     customerPanel.style.display = 'none';
     onboardingSection.style.display = 'none';
@@ -60,6 +80,7 @@ const routeUserByRole = (role, username) => {
         customerPanel.style.display = 'block';
         fetchAndRenderPlatforms();
     } else if (role === 'pending' || role === 'new_member') {
+        await loadAndInjectForm(); // Formu yükle ve bekle
         onboardingSection.style.display = 'block';
     } else if (role === 'pending_activation') {
         pendingActivationSection.style.display = 'block';
@@ -324,7 +345,7 @@ const handleLogin = async (event) => {
         if (decodedToken && decodedToken.role) {
             localStorage.setItem('username', decodedToken.username);
             setStatus(statusDiv, "", "success");
-            routeUserByRole(decodedToken.role, decodedToken.username);
+            await routeUserByRole(decodedToken.role, decodedToken.username);
         } else {
             throw new Error('Invalid token received from server.');
         }
@@ -337,6 +358,8 @@ const handleLogin = async (event) => {
 
 const handleOnboardingSubmit = async (event) => {
     event.preventDefault();
+    const onboardingForm = document.getElementById('onboarding-form');
+    const onboardingStatus = document.getElementById('onboarding-status');
     const submitBtn = document.getElementById('submit-onboarding-btn');
     setStatus(onboardingStatus, 'Submitting your information...', 'info');
     submitBtn.disabled = true;
@@ -692,16 +715,16 @@ bulkSelectAll.addEventListener('change', () => {
     updateBulkActionsState();
 });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
-onboardingForm.addEventListener('submit', handleOnboardingSubmit);
+
 onboardingLogoutBtn.addEventListener('click', handleLogout);
 pendingLogoutBtn.addEventListener('click', handleLogout);
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('jwtToken');
     if (token) {
         const decodedToken = parseJwt(token);
         if (decodedToken && decodedToken.role) {
-            routeUserByRole(decodedToken.role, decodedToken.username);
+            await routeUserByRole(decodedToken.role, decodedToken.username);
         } else {
             handleLogout();
         }
