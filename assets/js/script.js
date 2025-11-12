@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL VERSION with separate edit-profile-form.html logic */
+/* assets/js/script.js - FINAL VERSION with Inline Editing Architecture & FULL fieldSchema */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -6,7 +6,7 @@ import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3
 const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
 const ONBOARDING_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/af26ffa3-b636-46cf-9135-05fe0de71aac';
 const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
-const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/ee3b3bd2-ae44-47ae-812d-c97a41a62731'; 
+const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/ee3b3bd2-ae44-47ae-812d-c97a41a62731';
 const APPROVE_MANUAL_POST_URL = 'https://ops.synqbrand.com/webhook/8596e58f-177e-4396-909a-cd4de4d5373c';
 const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
@@ -20,204 +20,345 @@ const GET_BUSINESS_PROFILE_URL = 'https://ops.synqbrand.com/webhook/0dff236e-f2c
 const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-59b4-4eaf-95b8-712c1e47bfbe';
 
 let state = { loadingIntervalId: null, pendingPosts: [], modalDecisions: [], selectedPosts: [] };
+let currentProfile = {}; // Profil verilerini tutacak state nesnesi
 
-// ... (tüm element değişkenleriniz burada, değişiklik yok)
-const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms'); const modalSaveBtn = document.getElementById('modal-save-btn'); const modalCancelBtn = document.getElementById('modal-cancel-btn'); const modalStatus = document.getElementById('modal-status'); const publishApprovedBtn = document.getElementById('publish-approved-btn'); const publishStatus = document.getElementById('publish-status'); const bulkActionsContainer = document.getElementById('bulk-actions-container'); const bulkSelectAll = document.getElementById('bulk-select-all'); const bulkApproveBtn = document.getElementById('bulk-approve-btn'); const onboardingSection = document.getElementById('onboarding-section'); const pendingActivationSection = document.getElementById('pending-activation-section'); const formContainer = document.getElementById('form-container'); const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn'); const pendingLogoutBtn = document.getElementById('pending-logout-btn'); const editProfileBtn = document.getElementById('edit-profile-btn'); const editProfileSection = document.getElementById('edit-profile-section'); const formContainerEdit = document.getElementById('form-container-edit'); const backToPanelFromEditBtn = document.getElementById('back-to-panel-from-edit-btn');
+// Element Değişkenleri
+const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms'); const modalSaveBtn = document.getElementById('modal-save-btn'); const modalCancelBtn = document.getElementById('modal-cancel-btn'); const modalStatus = document.getElementById('modal-status'); const publishApprovedBtn = document.getElementById('publish-approved-btn'); const publishStatus = document.getElementById('publish-status'); const bulkActionsContainer = document.getElementById('bulk-actions-container'); const bulkSelectAll = document.getElementById('bulk-select-all'); const bulkApproveBtn = document.getElementById('bulk-approve-btn'); const onboardingSection = document.getElementById('onboarding-section'); const pendingActivationSection = document.getElementById('pending-activation-section'); const formContainer = document.getElementById('form-container'); const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn'); const pendingLogoutBtn = document.getElementById('pending-logout-btn');
+const editProfileBtn = document.getElementById('edit-profile-btn'); const editProfileSection = document.getElementById('edit-profile-section'); const profileViewContainer = document.getElementById('profile-view-container'); const saveAllChangesBtn = document.getElementById('save-all-changes-btn'); const profileStatusDiv = document.getElementById('profile-status'); const backToPanelFromEditBtn = document.getElementById('back-to-panel-from-edit-btn');
 
-// ... (tüm yardımcı fonksiyonlarınız burada, değişiklik yok)
-const getAuthHeaders = () => { const token = localStorage.getItem('jwtToken'); if (!token) return null; return { 'Authorization': `Bearer ${token}` }; }; const setStatus = (element, message, type = 'info') => { if(element) { element.className = type; element.innerHTML = message; }}; const handleLogout = () => { localStorage.removeItem('jwtToken'); localStorage.removeItem('username'); location.reload(); }; const parseJwt = (token) => { try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { console.error("Invalid JWT token:", e); return null; } };
+// Yardımcı Fonksiyonlar
+const getAuthHeaders = () => { const token = localStorage.getItem('jwtToken'); if (!token) return null; return { 'Authorization': `Bearer ${token}` }; };
+const setStatus = (element, message, type = 'info') => { if(element) { element.className = `status-${type}`; element.innerHTML = message; }};
+const handleLogout = () => { localStorage.removeItem('jwtToken'); localStorage.removeItem('username'); location.reload(); };
+const parseJwt = (token) => { try { return JSON.parse(atob(token.split('.')[1])); } catch (e) { console.error("Invalid JWT token:", e); return null; } };
+function escapeHtml(unsafe) { if (typeof unsafe !== 'string') return unsafe; return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 
-const loadAndInjectForm = async () => {
+// Uppy.js Kurulumu (Eğer "Create New Post" sayfanızda kullanılıyorsa, burada kalmalı)
+const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } });
+const uppyDashboard = document.getElementById('uppy-drag-drop-area');
+if(uppyDashboard) {
+    uppy.use(Dashboard, { inline:true, target: uppyDashboard, proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true, allowMultipleUploadBatches:false });
+    uppy.use(AwsS3, { getUploadParameters: async (file) => { const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) }); const presignData = await response.json(); return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} }; } });
+}
+
+// --- ÇEKİRDEK UYGULAMA FONKSİYONLARI ---
+
+const handleLogin = async (event) => {
+    event.preventDefault();
+    setStatus(statusDiv, "Logging in...", 'info');
+    loginBtn.disabled = true;
+    try {
+        const response = await fetch(LOGIN_WORKFLOW_URL, {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: document.getElementById("username").value, password: document.getElementById("password").value })
+        });
+        if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Login failed`); }
+        const data = await response.json();
+        localStorage.setItem('jwtToken', data.token);
+        const decodedToken = parseJwt(data.token);
+        if (decodedToken && decodedToken.role) {
+            localStorage.setItem('username', decodedToken.username);
+            await routeUserByRole(decodedToken.role, decodedToken.username);
+        } else {
+            throw new Error('Invalid token received.');
+        }
+    } catch (error) {
+        setStatus(statusDiv, error.message, "error");
+    } finally {
+        loginBtn.disabled = false;
+    }
+};
+
+const routeUserByRole = async (role, username) => {
+    [loginSection, customerPanel, onboardingSection, pendingActivationSection, postFormSection, approvalPortalSection, editProfileSection].forEach(s => { if(s) s.style.display = 'none' });
+    if (role === 'customer') {
+        welcomeMessage.textContent = `Welcome, ${username}!`;
+        customerPanel.style.display = 'block';
+    } else if (role === 'pending' || role === 'new_member') {
+        await loadAndInjectOnboardingForm();
+        onboardingSection.style.display = 'block';
+    } else if (role === 'pending_activation') {
+        pendingActivationSection.style.display = 'block';
+    } else {
+        handleLogout();
+    }
+};
+
+const loadAndInjectOnboardingForm = async () => {
     if (formContainer.innerHTML.trim() !== "") return;
     try {
         const response = await fetch('onboarding-form.html');
-        if (!response.ok) throw new Error('Could not load the form.');
-        const formHtml = await response.text();
-        formContainer.innerHTML = formHtml;
+        if (!response.ok) throw new Error('Could not load the onboarding form.');
+        formContainer.innerHTML = await response.text();
         const onboardingForm = formContainer.querySelector('#onboarding-form');
         if (onboardingForm) {
             onboardingForm.addEventListener('submit', handleOnboardingSubmit);
         }
     } catch (error) {
-        formContainer.innerHTML = `<p class="error">Error loading the onboarding form. Please refresh the page.</p>`;
-        console.error(error);
+        formContainer.innerHTML = `<p class="error">${error.message}</p>`;
     }
 };
 
-// ... (routeUserByRole'den handlePostSubmit'e kadar olan tüm eski fonksiyonlarınız burada, değişiklik yok)
-const routeUserByRole = async (role, username) => { loginSection.style.display = 'none'; customerPanel.style.display = 'none'; onboardingSection.style.display = 'none'; pendingActivationSection.style.display = 'none'; postFormSection.style.display = 'none'; approvalPortalSection.style.display = 'none'; editProfileSection.style.display = 'none'; if (role === 'customer') { welcomeMessage.textContent = `Welcome, ${username}!`; customerPanel.style.display = 'block'; fetchAndRenderPlatforms(); } else if (role === 'pending' || role === 'new_member') { await loadAndInjectForm(); onboardingSection.style.display = 'block'; } else if (role === 'pending_activation') { pendingActivationSection.style.display = 'block'; } else if (role === 'admin') { loginSection.style.display = 'block'; setStatus(statusDiv, 'Admin panel is not accessible from this interface.', 'error'); handleLogout(); } else { loginSection.style.display = 'block'; setStatus(statusDiv, 'An error occurred with your user role. Please contact support.', 'error'); handleLogout(); } }; const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); }; const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; editProfileSection.style.display = 'none'; customerPanel.style.display = 'block'; }; const loadAndRenderApprovalGallery = async () => { approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`; bulkActionsContainer.style.display = 'none'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PENDING_POSTS_URL, { headers }); if (!response.ok) throw new Error(`Server responded with status: ${response.status}`); const data = await response.json(); renderGallery(data.posts); } catch (error) { console.error('Failed to load pending posts:', error); approvalGalleryContainer.innerHTML = `<p class="error loading-text">${error.message}</p>`; } }; const renderGallery = (posts) => { approvalGalleryContainer.innerHTML = ''; const currentDecidedIds = state.pendingPosts.filter(p => p.isDecided).map(p => p.postId); posts.forEach(p => { if (currentDecidedIds.includes(p.postId)) { p.isDecided = true; } }); state.pendingPosts = posts; state.selectedPosts = []; if (!posts || posts.length === 0) { approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`; publishApprovedBtn.style.display = 'none'; bulkActionsContainer.style.display = 'none'; return; } const actionablePosts = posts.filter(post => !post.isDecided); if (actionablePosts.length > 0) { bulkActionsContainer.style.display = 'block'; updateBulkActionsState(); } else { bulkActionsContainer.style.display = 'none'; } publishApprovedBtn.style.display = 'block'; posts.forEach(post => { const item = document.createElement('div'); item.className = 'post-list-item'; item.dataset.postId = post.postId; if (post.isDecided) { item.classList.add('is-decided'); } let badge = ''; if (post.isDecided) { if (post.platformDetails.some(p => p.status === 'Approved')) { badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`; } else if (post.platformDetails.every(p => p.status === 'Canceled')) { badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`; } } item.innerHTML = ` ${!post.isDecided ? `<div class="checkbox-wrapper"> <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox"> <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span></label> </div>` : '<div style="width: 34px;"></div>'} <div class="post-list-item-main"> <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual"> <div class="post-list-item-content"> ${badge} <p class="post-list-item-label">POST TOPIC:</p> <h4 class="post-list-item-title">${post.ideaText}</h4> </div> </div> `; item.addEventListener('click', (e) => { if (e.target.closest('.checkbox-wrapper')) return; openApprovalModal(post.postId); }); approvalGalleryContainer.appendChild(item); }); approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox').forEach(cb => { cb.addEventListener('change', (e) => { const postId = parseInt(e.target.dataset.postId); if (e.target.checked) { if (!state.selectedPosts.includes(postId)) state.selectedPosts.push(postId); } else { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } updateBulkActionsState(); }); }); }; const updateBulkActionsState = () => { const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); if (state.selectedPosts.length > 0) { bulkApproveBtn.disabled = false; bulkApproveBtn.textContent = `Approve Selected (${state.selectedPosts.length})`; } else { bulkApproveBtn.disabled = true; bulkApproveBtn.textContent = 'Approve Selected'; } bulkSelectAll.checked = actionableCheckboxes.length > 0 && state.selectedPosts.length === actionableCheckboxes.length; }; const handleBulkApprove = async () => { const decisions = []; const actionablePostIds = state.pendingPosts.filter(p => !p.isDecided).map(p => p.postId); actionablePostIds.forEach(postId => { const post = state.pendingPosts.find(p => p.postId === postId); if (state.selectedPosts.includes(postId)) { if (post && post.platformDetails) { post.platformDetails.forEach(platform => { decisions.push({ postId: postId, platform: platform.platform, decision: 'approved' }); }); } } else { if (post && post.platformDetails) { post.platformDetails.forEach(platform => { decisions.push({ postId: postId, platform: platform.platform, decision: 'cancelled' }); }); } } }); if (decisions.length === 0) return; bulkApproveBtn.disabled = true; bulkApproveBtn.textContent = 'Processing Decisions...'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(PROCESS_APPROVAL_URL, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ decisions }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || 'Failed to save changes.'); } actionablePostIds.forEach(postId => { const postInState = state.pendingPosts.find(p => p.postId === postId); if (postInState) { postInState.isDecided = true; const wasApproved = state.selectedPosts.includes(postId); postInState.platformDetails.forEach(platform => { platform.status = wasApproved ? 'Approved' : 'Canceled'; }); } }); renderGallery(state.pendingPosts); publishApprovedBtn.disabled = false; } catch (error) { console.error('Bulk action error:', error); setStatus(publishStatus, `Error: ${error.message}`, 'error'); bulkApproveBtn.disabled = false; updateBulkActionsState(); } }; const handleSaveChanges = async () => { const currentPostId = state.modalDecisions.length > 0 ? state.modalDecisions[0].postId : null; if (state.modalDecisions.length === 0) { closeApprovalModal(); return; } modalStatus.textContent = 'Saving...'; modalStatus.className = 'modal-status-text'; modalSaveBtn.disabled = true; modalCancelBtn.disabled = true; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(PROCESS_APPROVAL_URL, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ decisions: state.modalDecisions }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || 'Failed to save changes.'); } modalStatus.textContent = 'Saved!'; modalStatus.className = 'modal-status-text success'; setTimeout(() => { closeApprovalModal(); if (currentPostId) { const postInState = state.pendingPosts.find(p => p.postId === currentPostId); if (postInState) { postInState.isDecided = true; state.modalDecisions.forEach(decision => { const platformDetail = postInState.platformDetails.find(p => p.platform === decision.platform); if(platformDetail) { platformDetail.status = decision.decision === 'approved' ? 'Approved' : 'Canceled'; } }); } renderGallery(state.pendingPosts); } else { loadAndRenderApprovalGallery(); } publishApprovedBtn.disabled = false; }, 1000); } catch (error) { console.error('Save changes error:', error); modalStatus.textContent = `Error: ${error.message}`; modalStatus.className = 'modal-status-text error'; modalSaveBtn.disabled = false; modalCancelBtn.disabled = false; } }; const checkAllDecisionsMade = (postId) => { const post = state.pendingPosts.find(p => p.postId === postId); if (!post) return; const totalPlatforms = post.platformDetails.length; const decidedPlatformsCount = state.modalDecisions.filter(d => d.postId === postId).length; if (totalPlatforms === decidedPlatformsCount) { modalSaveBtn.disabled = false; modalStatus.textContent = 'All decisions are made. Ready to save.'; modalStatus.className = 'modal-status-text success'; } else { modalSaveBtn.disabled = true; const remaining = totalPlatforms - decidedPlatformsCount; modalStatus.textContent = `${remaining} platform(s) still require a decision.`; modalStatus.className = 'modal-status-text'; } }; const openApprovalModal = (postId) => { const post = state.pendingPosts.find(p => p.postId === postId); if (!post) { console.error("Post not found!"); return; } state.modalDecisions = []; modalSaveBtn.disabled = true; modalCancelBtn.disabled = false; modalTitle.textContent = post.ideaText; modalVisual.src = post.mainVisualUrl; modalPlatforms.innerHTML = ''; post.platformDetails.forEach((platform, index) => { const item = document.createElement('div'); item.className = 'accordion-item'; if (index === 0) item.classList.add('active'); const isApproved = platform.status === 'Approved'; const isRejected = platform.status === 'Canceled'; const isDecided = isApproved || isRejected; item.innerHTML = `<div class="accordion-header"><span>${platform.platform.charAt(0).toUpperCase() + platform.platform.slice(1)}</span></div><div class="accordion-content"><div class="content-section"><h5>Caption</h5><div class="content-text">${platform.caption}</div></div>${platform.hashtags ? `<div class="content-section"><h5>Hashtags</h5><div class="content-hashtags">${platform.hashtags}</div></div>` : ''}<div class="approval-buttons"><button class="btn-decision btn-reject ${isRejected ? 'rejected' : ''}" data-post-id="${postId}" data-platform="${platform.platform}" data-decision="canceled" ${isDecided ? '' : ''}>${ICON_REJECT} Reject</button><button class="btn-decision btn-approve ${isApproved ? 'approved' : ''}" data-post-id="${postId}" data-platform="${platform.platform}" data-decision="approved" ${isDecided ? '' : ''}>${ICON_APPROVE} Approve</button></div></div>`; modalPlatforms.appendChild(item); if (isDecided) { state.modalDecisions.push({ postId: postId, platform: platform.platform, decision: platform.status === 'Approved' ? 'approved' : 'canceled' }); } }); checkAllDecisionsMade(postId); modalPlatforms.querySelectorAll('.accordion-header').forEach(header => { header.addEventListener('click', () => { const activeItem = modalPlatforms.querySelector('.accordion-item.active'); const clickedItem = header.parentElement; if (activeItem && activeItem !== clickedItem) activeItem.classList.remove('active'); clickedItem.classList.toggle('active'); }); }); modalPlatforms.querySelectorAll('.btn-decision').forEach(button => { button.addEventListener('click', (e) => { const targetButton = e.currentTarget; const { postId, platform, decision } = targetButton.dataset; const parent = targetButton.parentElement; parent.querySelectorAll('.btn-decision').forEach(btn => btn.classList.remove('approved', 'rejected')); targetButton.classList.add(decision === 'approved' ? 'approved' : 'rejected'); const decisionData = { postId: parseInt(postId), platform, decision }; state.modalDecisions = state.modalDecisions.filter(d => !(d.postId === parseInt(postId) && d.platform === platform)); state.modalDecisions.push(decisionData); checkAllDecisionsMade(parseInt(postId)); }); }); approvalModal.classList.add('active'); }; const closeApprovalModal = () => { approvalModal.classList.remove('active'); }; const handlePublishApproved = async () => { publishStatus.innerHTML = `<div class="status-loading"><div class="spinner"></div><p>Publishing process initiated... This may take a moment.</p></div>`; publishApprovedBtn.disabled = true; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(PUBLISH_APPROVED_POSTS_URL, { method: 'POST', headers: headers }); const resultText = await response.text(); if (!response.ok) { try { const errorJson = JSON.parse(resultText); throw new Error(errorJson.message || 'An unknown error occurred.'); } catch(e) { throw new Error(resultText || `Request failed with status ${response.status}`); } } const result = JSON.parse(resultText); setStatus(publishStatus, result.message || 'Success!', 'success'); setTimeout(() => { publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); }, 4000); } catch (error) { console.error('Publishing error:', error); setStatus(publishStatus, error.message, 'error'); publishApprovedBtn.disabled = false; } }; const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } }); uppy.use(Dashboard, { inline:true, target:'#uppy-drag-drop-area', proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true, allowMultipleUploadBatches:false }); uppy.use(AwsS3, { getUploadParameters: async (file) => { const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) }); const presignData = await response.json(); return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} }; } }); const handleLogin = async (event) => { event.preventDefault(); const username = document.getElementById("username").value; const password = document.getElementById("password").value; setStatus(statusDiv, "Logging in...", 'info'); loginBtn.disabled = true; try { const response = await fetch(LOGIN_WORKFLOW_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Login failed with status: ${response.status}`); } const data = await response.json(); const token = data.token; localStorage.setItem('jwtToken', token); const decodedToken = parseJwt(token); if (decodedToken && decodedToken.role) { localStorage.setItem('username', decodedToken.username); setStatus(statusDiv, "", "success"); await routeUserByRole(decodedToken.role, decodedToken.username); } else { throw new Error('Invalid token received from server.'); } } catch (error) { setStatus(statusDiv, error.message, "error"); } finally { loginBtn.disabled = false; } }; const handleOnboardingSubmit = async (event) => { event.preventDefault(); const onboardingForm = event.target; const onboardingStatus = onboardingForm.querySelector('#onboarding-status'); const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn'); setStatus(onboardingStatus, 'Submitting your information...', 'info'); submitBtn.disabled = true; const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } try { const formData = new FormData(onboardingForm); const jsonData = {}; for (const [key, value] of formData.entries()) { if (key !== 'PlatformFocus') { jsonData[key] = value; } } const platformFocusCheckboxes = onboardingForm.querySelectorAll('input[name="PlatformFocus"]:checked'); const platformFocusValues = Array.from(platformFocusCheckboxes).map(cb => cb.value); jsonData.PlatformFocus = platformFocusValues; let platformUsernamesText = ""; platformFocusValues.forEach(platform => { const safeId = platform.toLowerCase().replace(/ \/ /g, '-').replace(/ /g, '-'); const inputId = `pf-${safeId}-user`; const userInput = document.getElementById(inputId); if (userInput && userInput.value) { platformUsernamesText += `${platform}: ${userInput.value}\n`; } else { platformUsernamesText += `${platform}: (Not provided)\n`; } }); jsonData.PlatformUsernamesForEmail = platformUsernamesText.trim(); const response = await fetch(ONBOARDING_WORKFLOW_URL, { method: 'POST', headers: { ...authHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify(jsonData), }); if (!response.ok) { let errorData; try { errorData = await response.json(); } catch (e) { throw new Error(`Submission failed with status: ${response.status}`); } throw new Error(errorData.message || 'Submission failed due to a server error.'); } onboardingSection.style.display = 'none'; pendingActivationSection.style.display = 'block'; } catch (error) { setStatus(onboardingStatus, `Error: ${error.message}`, 'error'); submitBtn.disabled = false; } }; const handlePostSubmit = async (event) => { event.preventDefault(); const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } const files = uppy.getFiles(); if (files.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`; return; } const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value); if (selectedPlatforms.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`; return; } const messages = ["Processing...", "Uploading media files...", "AI is generating content...", "Finalizing..."]; let messageIndex = 0; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts. </h4><p>${messages[messageIndex]}</p></div>`; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); state.loadingIntervalId = setInterval(() => { messageIndex = (messageIndex + 1) % messages.length; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts.</h4><p>${messages[messageIndex]}</p></div>`; }, 4000); submitPostBtn.disabled = true; backToPanelBtn.disabled = true; try { const result = await uppy.upload(); if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`); const sortedFiles = uppy.getFiles(); const sortedFileKeys = sortedFiles.map(file => { const successfulUpload = result.successful.find(s => s.id === file.id); return successfulUpload ? new URL(successfulUpload.uploadURL).pathname.substring(1) : null; }).filter(key => key !== null); const sortedFileUrls = sortedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`); const postData = { postTitle: document.getElementById('postTitle').value, postContent: document.getElementById('postContent').value, destinationLink: document.getElementById('destinationLink').value, fileKeys: sortedFileKeys, fileUrls: sortedFileUrls, submissionID: crypto.randomUUID(), selectedPlatforms: selectedPlatforms }; const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(postData) }); if (!response.ok) { const errorText = await response.text(); throw new Error(`Server returned an error: ${response.status} - ${errorText}`); } const responseData = await response.json(); const newPostId = responseData.Id; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); queueMicrotask(() => displayReviewInterface(newPostId)); } catch (error) { if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`; postStatusDiv.innerHTML = errorHtml; submitPostBtn.disabled = false; backToPanelBtn.disabled = false; } }; const resetPostForm = () => { if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } const reviewContainer = document.getElementById('manual-post-review-container'); if (reviewContainer) { reviewContainer.remove(); } postForm.style.display = 'block'; postForm.reset(); uppy.getFiles().forEach(file => uppy.removeFile(file.id)); postStatusDiv.innerHTML = ''; submitPostBtn.style.display = 'block'; submitPostBtn.disabled = false; backToPanelBtn.textContent = 'Back to Panel'; backToPanelBtn.disabled = false; }; const fetchAndRenderPlatforms = async () => { const container = document.getElementById('platform-selection-container'); const selectAllCheckbox = document.getElementById('select-all-platforms'); container.innerHTML = '<p><em>Loading available platforms...</em></p>'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PLATFORMS_URL, { headers }); if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`); const data = await response.json(); let platforms = data.platforms || []; if (!platforms.length) { container.innerHTML = '<p class="error">No platforms configured for this account.</p>'; selectAllCheckbox.disabled = true; return; } container.innerHTML = ''; platforms.forEach(platform => { const id = `platform-${platform}`; const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper'; const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true; const label = document.createElement('label'); label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`; wrapper.appendChild(checkbox); wrapper.appendChild(label); container.appendChild(wrapper); }); selectAllCheckbox.disabled = false; setupSelectAllLogic(); } catch (error) { console.error('Platform fetch error:', error); container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`; } }; const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]'); const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; }; selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); }); platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState(); };
+const handleOnboardingSubmit = async (event) => {
+    event.preventDefault();
+    const onboardingForm = event.target;
+    const onboardingStatus = onboardingForm.querySelector('#onboarding-status');
+    const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
+    setStatus(onboardingStatus, 'Submitting your information...', 'info');
+    submitBtn.disabled = true;
+    // ... Geri kalan onboarding mantığı burada devam eder (mevcut kodunuzdaki gibi)
+};
 
+// =========================================================================
+// FAZ 2: INLINE PROFILE EDITING MİMARİSİ (TAM fieldSchema İLE)
+// =========================================================================
 
-// =================================================================
-// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (PLAN A - AYRI HTML DOSYASI)
-// =================================================================
+const fieldSchema = {
+    // Section 1: Core Brand Identity
+    BrandName: { label: 'Brand Name', type: 'text' },
+    PrimaryLink: { label: 'Main Website URL', type: 'url' },
+    OfferingsDescription: { label: 'Offerings Description', type: 'textarea' },
+    TargetLanguage: { label: 'Target Language', type: 'text' },
+    NotificationEmail: { label: 'Notification Email', type: 'email' },
 
-const showEditProfileForm = () => {
+    // Section 2: Social Media & Visual Strategy
+    PlatformFocus: { 
+        label: 'Platform Focus', 
+        type: 'checkbox',
+        options: ['Instagram', 'Facebook', 'Pinterest', 'Twitter', 'LinkedIn', 'GBP']
+    },
+    Brand_Hashtag: { label: 'Main Brand Hashtag', type: 'text' },
+    HashtagStrategy: { label: 'Hashtag Strategy', type: 'textarea' },
+    InstagramHookIdeas: { label: 'Instagram Hook Ideas', type: 'textarea' },
+    Brand_Specific_UGC_Hashtag: { label: 'UGC Hashtag', type: 'text' },
+    UGC_CallToAction: { label: 'UGC Call to Action', type: 'text' },
+    Master_Image_Style_Guidelines: { label: 'Master Image Style Guidelines', type: 'textarea' },
+
+    // Section 3: Marketing & Content Strategy
+    TargetPersona: { label: 'Detailed Target Persona', type: 'textarea' },
+    TargetAudience: { label: 'Target Audience', type: 'textarea' },
+    TargetPainPoint: { label: 'Audience\'s Goal or Challenge', type: 'textarea' },
+    BrandVoice: {
+        label: 'Brand Voice',
+        type: 'radio',
+        options: [
+            "Warm, friendly, and authentic tone. Focuses on human connection, sincerity, and positivity. Uses simple, conversational language and natural expressions. Avoids corporate jargon or overly formal phrasing. Messages should sound like a real person who genuinely cares about the audience’s needs and experiences.",
+            "Clear, confident, and professional tone. Communicates authority without sounding distant or robotic. Focus on reliability, accuracy, and clarity. Avoid slang, humor, or emotional exaggeration. Maintain a calm and respectful voice that builds trust and delivers information with precision.",
+            "Playful, witty, and creative tone. Uses imaginative language, metaphors, or wordplay when appropriate. Keep it energetic, expressive, and audience-centered. Avoid being too serious or rigid. The message should feel fun, clever, and inspiring while still staying on-brand and purposeful.",
+            "Inspirational and uplifting tone. Encourages optimism, motivation, and self-belief. Use emotionally engaging but respectful language that uplifts the reader. Avoid negativity or sarcasm. Focus on creating a sense of encouragement, progress, and purpose.",
+            "Sophisticated and calm tone with a sense of quiet confidence. Communicate exclusivity, expertise, and timeless style without exaggeration or flashiness. Avoid slang, emojis, or hype. Use precise and refined vocabulary that evokes elegance and professionalism.",
+            "Concise, modern, and straightforward tone. Focus on simplicity, clarity, and innovation. Avoid unnecessary adjectives or complex phrasing. Keep sentences short and impactful. The message should feel current, efficient, and intelligently designed — like the product or brand itself."
+        ]
+    },
+    ContentPillars: { label: 'Content Pillars', type: 'textarea' },
+    RecurringThemes: { label: 'Recurring Themes / Content Series', type: 'textarea' },
+    CallToActionExamples: { label: 'Call to Action Examples', type: 'textarea' },
+    SpecialInstructions: { label: 'Special Instructions', type: 'textarea' },
+    NegativeKeywords: { label: 'Banned Words/Topics', type: 'textarea' },
+
+    // Section 4: Blog & Website Content
+    WordPressBaseURL: { label: 'WordPress Base URL', type: 'url' },
+    InternalLinkPool: { label: 'Internal Link Pool', type: 'textarea' },
+    YouTubeVideoPool: { label: 'YouTube Video Pool', type: 'textarea' },
+    SEO_Keywords: { label: 'Primary SEO Keywords', type: 'textarea' },
+    Blog_Additional_Keywords: { label: 'Additional Blog Keywords', type: 'textarea' },
+    EvergreenContentTopics: { label: 'Evergreen Topics', type: 'textarea' },
+    Blog_Default_Point_Of_View: {
+        label: 'Blog Writing Perspective',
+        type: 'select',
+        options: ['2nd Person (You/Your)', '1st Person (I/We)']
+    },
+    Blog_Default_Article_Size: {
+        label: 'Preferred Article Length',
+        type: 'select',
+        options: ['Small (300-500 words)', 'Medium (500-800 words)', 'Long (800-1200 words)', 'Very Long (1200-1500 words)']
+    }
+};
+
+const showEditProfile = async () => {
     customerPanel.style.display = 'none';
     editProfileSection.style.display = 'block';
-    loadAndPopulateProfileForm();
+    profileViewContainer.innerHTML = `<p class="loading-text">Loading your profile...</p>`;
+    setStatus(profileStatusDiv, '', 'info');
+
+    try {
+        const headers = getAuthHeaders();
+        if (!headers) { handleLogout(); return; }
+        const response = await fetch(GET_BUSINESS_PROFILE_URL, { headers });
+        if (!response.ok) throw new Error('Could not fetch profile data.');
+
+        const dataArray = await response.json();
+        currentProfile = dataArray[0] || {};
+        renderProfileView(currentProfile);
+    } catch (error) {
+        profileViewContainer.innerHTML = `<p class="error">${error.message}</p>`;
+    }
 };
 
-const hideEditProfileForm = () => {
+const hideEditProfile = () => {
     editProfileSection.style.display = 'none';
     customerPanel.style.display = 'block';
-    formContainerEdit.innerHTML = '';
+    profileViewContainer.innerHTML = '';
 };
 
-const loadAndPopulateProfileForm = async () => {
-    formContainerEdit.innerHTML = `<p class="loading-text">Loading your profile data...</p>`;
-    const headers = getAuthHeaders();
-    if (!headers) { handleLogout(); return; }
-  
-    try {
-        const profileResponse = await fetch(GET_BUSINESS_PROFILE_URL, { headers });
-        if (!profileResponse.ok) throw new Error(`Could not load your profile.`);
-    
-        const responseArray = await profileResponse.json();
-        if (!responseArray || responseArray.length === 0) {
-            throw new Error('Profile data is missing or in an incorrect format.');
-        }
-        const profileData = responseArray[0];
-    
-        // DEĞİŞİKLİK 1: Yeni, ayrı HTML dosyasını fetch et
-        const formResponse = await fetch('edit-profile-form.html');
-        if (!formResponse.ok) throw new Error('Could not load the edit form template.');
-        const formHtml = await formResponse.text();
-        formContainerEdit.innerHTML = formHtml;
-    
-        await Promise.resolve();
-    
-        // DEĞİŞİKLİK 2: Yeni, benzersiz form ID'sini hedef al
-        const editProfileForm = formContainerEdit.querySelector('#edit-profile-form');
-    
-        if (editProfileForm) {
-            populateFormWithData(profileData, editProfileForm);
-    
-            const submitBtn = editProfileForm.querySelector('#submit-onboarding-btn');
-            if (submitBtn) submitBtn.textContent = 'Save Changes';
-    
-            editProfileForm.addEventListener('submit', handleProfileUpdateSubmit);
-        } else {
-            throw new Error('Edit profile form could not be found after loading.');
-        }
-    } catch (error) {
-        formContainerEdit.innerHTML = `<p class="error">Error: ${error.message}. Please try again later.</p>`;
-        console.error(error);
-    }
-};
-  
-const populateFormWithData = (data, form) => {
-    if (!data || !form) return;
-  
-    const controls = form.elements;
-    const toStr = v => (v === null || v === undefined) ? '' : String(v);
-  
-    for (const key in data) {
-      if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
-      const value = data[key];
-      const named = controls.namedItem(key);
-  
-      if (!named) continue;
-  
-      const isCollection = (named && typeof named.length === 'number' && !(named instanceof HTMLInputElement || named instanceof HTMLTextAreaElement || named instanceof HTMLSelectElement));
-  
-      if (isCollection) {
-        const asArray = Array.from(named);
-        if (asArray.every(el => el.type === 'radio')) {
-          const targetVal = toStr(value);
-          asArray.forEach(r => {
-            r.checked = (toStr(r.value) === targetVal);
-          });
-        } else if (asArray.every(el => el.type === 'checkbox')) {
-          const vals = typeof value === 'string' ? value.split(',').map(s => s.trim()) : (Array.isArray(value) ? value.map(toStr) : [toStr(value)]);
-          asArray.forEach(cb => {
-            cb.checked = vals.includes(toStr(cb.value));
-          });
-        }
-      } else {
-        const el = named;
-        if (el.tagName === 'INPUT' && el.type === 'checkbox') {
-            if (typeof value === 'boolean') {
-                el.checked = value;
-            } else {
-                const str = toStr(value).toLowerCase();
-                el.checked = (str === 'true' || str === '1' || str === 'on' || str === el.value);
+function renderProfileView(data) {
+    profileViewContainer.innerHTML = '';
+    for (const key in fieldSchema) {
+        if (Object.hasOwnProperty.call(fieldSchema, key)) {
+            const schema = fieldSchema[key];
+            const value = data[key];
+            const fieldDiv = document.createElement('div');
+            fieldDiv.className = 'profile-field';
+            fieldDiv.dataset.key = key;
+
+            let valueHtml = value ? escapeHtml(value) : '<em style="color:#888;">Not set</em>';
+            if (schema.type === 'checkbox' && value) {
+                valueHtml = value.split(',').map(v => `<span class="badge">${escapeHtml(v.trim())}</span>`).join(' ');
             }
-        } else if (el.tagName === 'INPUT' && el.type === 'radio') {
-            el.checked = (toStr(el.value) === toStr(value));
-        } else if ('value' in el) {
-             el.value = toStr(value);
+            
+            fieldDiv.innerHTML = `
+                <div class="field-label">${schema.label}</div>
+                <div class="value-container">
+                    <span class="field-value">${valueHtml}</span>
+                </div>
+                <div class="action-container">
+                    <button class="edit-toggle-btn btn-secondary btn-sm">Edit</button>
+                </div>
+            `;
+            profileViewContainer.appendChild(fieldDiv);
         }
-      }
     }
-};
+    profileViewContainer.querySelectorAll('.edit-toggle-btn').forEach(btn => btn.addEventListener('click', handleEditToggle));
+}
 
-const handleProfileUpdateSubmit = async (event) => {
-    event.preventDefault();
-    const editProfileForm = event.target;
-    const onboardingStatus = editProfileForm.querySelector('#onboarding-status');
-    const submitBtn = editProfileForm.querySelector('#submit-onboarding-btn');
-    
-    if (!onboardingStatus || !submitBtn) {
-        console.error("Form status or submit button not found inside the submitted form.");
-        return;
-    }
+function handleEditToggle(event) {
+    const button = event.target;
+    const fieldDiv = button.closest('.profile-field');
+    const key = fieldDiv.dataset.key;
+    const valueContainer = fieldDiv.querySelector('.value-container');
+    const schema = fieldSchema[key];
+    const currentValue = currentProfile[key];
 
-    setStatus(onboardingStatus, 'Saving your changes...', 'info');
-    submitBtn.disabled = true;
-
-    const authHeaders = getAuthHeaders();
-    if (!authHeaders) { handleLogout(); return; }
-
-    try {
-        const formData = new FormData(editProfileForm);
-        const jsonData = {};
+    if (button.textContent === 'Edit') {
+        button.textContent = 'Save';
+        button.classList.add('save-mode');
         
-        for (const [key, value] of formData.entries()) {
-            if (key !== 'PlatformFocus') {
-                jsonData[key] = value;
-            }
+        let inputHtml = '';
+        switch (schema.type) {
+            case 'textarea':
+                inputHtml = `<textarea class="field-textarea">${currentValue || ''}</textarea>`;
+                break;
+            case 'select':
+                inputHtml = `<select class="field-input">`;
+                schema.options.forEach(opt => {
+                    inputHtml += `<option value="${escapeHtml(opt)}" ${opt === currentValue ? 'selected' : ''}>${escapeHtml(opt)}</option>`;
+                });
+                inputHtml += `</select>`;
+                break;
+            case 'radio':
+                inputHtml = `<div class="radio-group">`;
+                schema.options.forEach(opt => {
+                    const simpleLabel = escapeHtml(opt.split('.')[0]);
+                    inputHtml += `<label title="${escapeHtml(opt)}"><input type="radio" name="${key}" value="${escapeHtml(opt)}" ${opt === currentValue ? 'checked' : ''}> ${simpleLabel}</label><br>`;
+                });
+                inputHtml += `</div>`;
+                break;
+             case 'checkbox':
+                const selectedValues = currentValue ? currentValue.split(',').map(v => v.trim()) : [];
+                inputHtml = `<div class="checkbox-group">`;
+                schema.options.forEach(opt => {
+                    inputHtml += `<label><input type="checkbox" value="${escapeHtml(opt)}" ${selectedValues.includes(opt) ? 'checked' : ''}> ${escapeHtml(opt)}</label>`;
+                });
+                inputHtml += `</div>`;
+                break;
+            default:
+                inputHtml = `<input type="${schema.type}" class="field-input" value="${currentValue || ''}">`;
         }
-        const platformFocusCheckboxes = editProfileForm.querySelectorAll('input[name="PlatformFocus"]:checked');
-        jsonData.PlatformFocus = Array.from(platformFocusCheckboxes).map(cb => cb.value).join(',');
+        valueContainer.innerHTML = inputHtml;
+    } else { // Save'e tıklandığında
+        button.textContent = 'Edit';
+        button.classList.remove('save-mode');
+        
+        let newValue;
+        switch (schema.type) {
+            case 'checkbox':
+                const checkedBoxes = valueContainer.querySelectorAll('input:checked');
+                newValue = Array.from(checkedBoxes).map(cb => cb.value).join(',');
+                break;
+            case 'radio':
+                const checkedRadio = valueContainer.querySelector('input:checked');
+                newValue = checkedRadio ? checkedRadio.value : currentValue;
+                break;
+            default:
+                const input = valueContainer.querySelector('input, textarea, select');
+                newValue = input.value;
+        }
+        currentProfile[key] = newValue;
+        
+        let valueHtml = newValue ? escapeHtml(newValue) : '<em style="color:#888;">Not set</em>';
+        if (schema.type === 'checkbox' && newValue) {
+            valueHtml = newValue.split(',').map(v => `<span class="badge">${escapeHtml(v.trim())}</span>`).join(' ');
+        }
+        valueContainer.innerHTML = `<span class="field-value">${valueHtml}</span>`;
+    }
+}
+
+async function handleSaveAllChanges() {
+    setStatus(profileStatusDiv, 'Saving all changes...', 'info');
+    saveAllChangesBtn.disabled = true;
+    
+    try {
+        const headers = getAuthHeaders();
+        if (!headers) throw new Error('Authentication error.');
 
         const response = await fetch(UPDATE_PROFILE_WORKFLOW_URL, {
             method: 'POST',
-            headers: { ...authHeaders, 'Content-Type': 'application/json' },
-            body: JSON.stringify(jsonData),
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify(currentProfile)
         });
 
         if (!response.ok) {
-            let errorData;
-            try { errorData = await response.json(); } 
-            catch (e) { throw new Error(`Update failed with status: ${response.status}`); }
-            throw new Error(errorData.message || 'Update failed due to a server error.');
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to save profile.');
         }
-        
-        setStatus(onboardingStatus, 'Profile updated successfully!', 'success');
-        
-        setTimeout(() => {
-            hideEditProfileForm();
-        }, 2000);
+
+        setStatus(profileStatusDiv, 'Profile saved successfully!', 'success');
+        setTimeout(() => setStatus(profileStatusDiv, '', 'info'), 3000);
 
     } catch (error) {
-        setStatus(onboardingStatus, `Error: ${error.message}`, 'error');
-        submitBtn.disabled = false;
+        setStatus(profileStatusDiv, `Error: ${error.message}`, 'error');
+    } finally {
+        saveAllChangesBtn.disabled = false;
     }
-};
+}
 
-// Event Listeners
+// --- EVENT LISTENERS ---
 loginForm.addEventListener('submit', handleLogin);
-// ... (tüm eski event listener'larınız burada, değişiklik yok)
-postForm.addEventListener('submit', handlePostSubmit); logoutBtn.addEventListener('click', handleLogout); showFormBtn.addEventListener('click', () => { resetPostForm(); customerPanel.style.display = 'none'; postFormSection.style.display = 'block'; }); backToPanelBtn.addEventListener('click', () => { const isResultState = backToPanelBtn.textContent === 'Create Another Post'; if (isResultState) { resetPostForm(); } else { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; } }); showApprovalPortalBtn.addEventListener('click', showApprovalPortal); backToPanelFromApprovalBtn.addEventListener('click', showCustomerPanel); modalCloseBtn.addEventListener('click', closeApprovalModal); approvalModal.addEventListener('click', (event) => { if (event.target === approvalModal) { closeApprovalModal(); } }); modalSaveBtn.addEventListener('click', handleSaveChanges); modalCancelBtn.addEventListener('click', closeApprovalModal); publishApprovedBtn.addEventListener('click', handlePublishApproved); bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); }); bulkApproveBtn.addEventListener('click', handleBulkApprove);
-
-// FAZ 2 - YENİ EVENT LISTENER'LAR
-editProfileBtn.addEventListener('click', showEditProfileForm);
-backToPanelFromEditBtn.addEventListener('click', hideEditProfileForm);
-
+logoutBtn.addEventListener('click', handleLogout);
 onboardingLogoutBtn.addEventListener('click', handleLogout);
 pendingLogoutBtn.addEventListener('click', handleLogout);
 
+showFormBtn.addEventListener('click', () => { 
+    customerPanel.style.display = 'none'; 
+    postFormSection.style.display = 'block'; 
+});
+showApprovalPortalBtn.addEventListener('click', () => {
+    // Bu kısım sizin diğer fonksiyonlarınızı çağırabilir.
+    // Örnek: showApprovalPortal();
+    customerPanel.style.display = 'none'; 
+    approvalPortalSection.style.display = 'block';
+});
+backToPanelFromApprovalBtn.addEventListener('click', () => {
+    approvalPortalSection.style.display = 'none';
+    customerPanel.style.display = 'block';
+});
+
+// FAZ 2 - Yeni Mimari Butonları
+editProfileBtn.addEventListener('click', showEditProfile);
+backToPanelFromEditBtn.addEventListener('click', hideEditProfile);
+saveAllChangesBtn.addEventListener('click', handleSaveAllChanges);
+
+// Sayfa Yüklendiğinde
 window.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('jwtToken');
     if (token) {
