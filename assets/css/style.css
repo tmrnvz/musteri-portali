@@ -870,6 +870,89 @@ textarea {
     font-size: 0.9rem;
 }
 
+/* =================================================== */
+/* FAZ 2 - INLINE PROFILE EDITING STYLES               */
+/* =================================================== */
+
+#profile-view-container {
+    margin-top: 2rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden; /* Kenarlıkların yuvarlak kalmasını sağlar */
+}
+
+.profile-field {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #fff;
+    transition: background-color 0.2s ease;
+}
+
+.profile-field:last-child {
+    border-bottom: none;
+}
+
+.profile-field:hover {
+    background-color: #f9f9f9;
+}
+
+.profile-field .field-label {
+    font-weight: 600;
+    color: #333;
+    width: 200px; /* Etiketlerin aynı hizada durmasını sağlar */
+    flex-shrink: 0; /* Küçülmesini engeller */
+}
+
+.profile-field .value-container {
+    flex-grow: 1; /* Kalan tüm alanı kaplar */
+    margin: 0 1rem;
+}
+
+.profile-field .field-value {
+    color: #555;
+    white-space: pre-wrap; /* Uzun metinlerin doğru görüntülenmesi için */
+    word-break: break-word;
+}
+
+.profile-field .field-input,
+.profile-field .field-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.profile-field .field-textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
+.profile-field .radio-group label,
+.profile-field .checkbox-group label {
+    margin-right: 1rem;
+    font-weight: normal;
+}
+
+.profile-field .action-container {
+    width: 100px; /* Butonların aynı hizada durmasını sağlar */
+    text-align: right;
+}
+
+.profile-field .edit-toggle-btn.save-mode {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: #fff;
+}
+
+#profile-actions-container {
+    margin-top: 1.5rem;
+    text-align: right;
+}
+
 @keyframes spin {
     to {
         transform: rotate(360deg);
