@@ -108,15 +108,22 @@
             <button type="button" id="back-to-panel-from-approval-btn" class="btn-secondary">Back to Panel</button>
         </div>
 
-        <!-- YENİ BÖLÜM: PROFİL DÜZENLEME -->
+        <!-- YENİ BÖLÜM: PROFİL DÜZENLEME (INLINE EDITING MİMARİSİ) -->
         <div id="edit-profile-section" style="display:none;">
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h2>Edit Your Brand Profile</h2>
-            <p>Update your brand information below. The changes will be applied to the content creation engine.</p>
+            <p>Update your brand information below. Click "Edit" on any field to make changes.</p>
             
-            <!-- Düzenleme formu JavaScript tarafından bu div'in içine yüklenecek -->
-            <div id="form-container-edit"></div>
+            <!-- Profil alanları JavaScript tarafından bu div'in içine dinamik olarak oluşturulacak -->
+            <div id="profile-view-container">
+                <!-- Örnek: <div class="profile-field" data-key="BrandName">...</div> -->
+            </div>
             
+            <div id="profile-actions-container">
+                <button id="save-all-changes-btn" class="btn-primary">Save All Changes</button>
+                <div id="profile-status"></div>
+            </div>
+
             <div class="panel-buttons" style="margin-top: 2rem;">
                  <button type="button" id="back-to-panel-from-edit-btn" class="btn-secondary">Back to Panel</button>
             </div>
