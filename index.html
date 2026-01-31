@@ -9,22 +9,11 @@
     <link rel="stylesheet" href="assets/css/style.css">
     <style>
         /* Platform kullanıcı adı inputlarını ve Brand Voice açıklamalarını dinamik olarak göstermek için ek stiller */
-        .platform-username-input {
-            display: none;
-            margin-left: 10px;
-            max-width: 200px;
-            padding: 0.4rem;
-            font-size: 0.9rem;
-        }
-        .checkbox-wrapper input[type="checkbox"]:checked ~ .platform-username-input {
-            display: inline-block;
-        }
-        .radio-extra-info {
-            display: none;
-        }
-        .radio-option input[type="radio"]:checked ~ .radio-extra-info {
-            display: block;
-        }
+        .platform-username-input { display: none; margin-left: 10px; max-width: 200px; padding: 0.4rem; font-size: 0.9rem; }
+        .checkbox-wrapper input[type="checkbox"]:checked ~ .platform-username-input { display: inline-block; }
+        
+        .radio-extra-info { display: none; }
+        .radio-option input[type="radio"]:checked ~ .radio-extra-info { display: block; }
     </style>
 </head>
 <body>
@@ -47,7 +36,7 @@
             <div id="status"></div>
         </div>
 
-        <!-- Customer Panel Section -->
+       <!-- Customer Panel Section -->
         <div id="customer-panel" style="display:none;">
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h1>User Panel</h1>
@@ -56,12 +45,13 @@
                 <!-- Üst Grup -->
                 <button id="show-form-btn" class="btn-primary">Create New Post</button>
                 <button id="show-approval-portal-btn" class="btn-primary">Pending Monthly Posts</button>
+                
                 <!-- Alt Grup -->
                 <button id="edit-profile-btn" class="btn-primary btn-highlight">Edit Profile</button>
                 <button id="logout-btn" class="btn-secondary">Log Out</button>
             </div>
         </div>
-        
+
         <!-- Onboarding Section -->
         <div id="onboarding-section" style="display:none;">
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
@@ -70,6 +60,7 @@
             </div>
             <h1>Welcome! Let's Set Up Your Brand Profile</h1>
             <p>Please provide the following information to help us configure your content creation engine.</p>
+            
             <!-- Form, JavaScript tarafından bu div'in içine yüklenecek -->
             <div id="form-container"></div>
         </div>
@@ -78,7 +69,7 @@
         <div id="pending-activation-section" style="display:none;">
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <div class="panel-buttons">
-                 <button id="pending-logout-btn" class="btn-secondary">Log Out</button>
+                <button id="pending-logout-btn" class="btn-secondary">Log Out</button>
             </div>
             <h2>Setup in Progress</h2>
             <p>Thank you for submitting your information. Your system is being configured and will be activated shortly. You will be notified via email once your panel is ready.</p>
@@ -105,7 +96,7 @@
             </form>
             <div id="post-status"></div>
         </div>
-        
+
         <!-- Approval Portal Section -->
         <div id="approval-portal-section" style="display:none;">
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
@@ -116,20 +107,23 @@
             <div id="publish-status"></div>
             <button type="button" id="back-to-panel-from-approval-btn" class="btn-secondary">Back to Panel</button>
         </div>
-        
+
         <!-- YENİ BÖLÜM: PROFİL DÜZENLEME -->
         <div id="edit-profile-section" style="display:none;">
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <h2>Edit Your Brand Profile</h2>
             <p>Update your brand information below. The changes will be applied to the content creation engine.</p>
+            
             <!-- Düzenleme formu JavaScript tarafından bu div'in içine yüklenecek -->
             <div id="form-container-edit"></div>
-             <div class="panel-buttons" style="margin-top: 2rem;">
-                <button type="button" id="back-to-panel-from-edit-btn" class="btn-secondary">Back to Panel</button>
+            
+            <div class="panel-buttons" style="margin-top: 2rem;">
+                 <button type="button" id="back-to-panel-from-edit-btn" class="btn-secondary">Back to Panel</button>
             </div>
         </div>
+        
     </div>
-    
+
     <!-- Modal HTML Structure -->
     <div class="modal-overlay" id="approval-modal">
         <div class="modal-content">
@@ -140,7 +134,7 @@
     </div>
     
     <script type="module" src="assets/js/script.js"></script>
+    
     <svg width="0" height="0" style="position:absolute"><symbol id="video-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z" /></symbol></svg>
-
 </body>
 </html>
