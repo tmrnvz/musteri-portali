@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL VERSION with ChatGPT's robust form population logic */
+/* assets/js/script.js - Edit Profile feature temporarily disabled */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -15,7 +15,7 @@ const PROCESS_APPROVAL_URL = 'https://ops.synqbrand.com/webhook/ef89b9df-469d-43
 const PUBLISH_APPROVED_POSTS_URL = 'https://ops.synqbrand.com/webhook/eb85bb8a-a1c4-4f0e-a50f-fc0c2afd64d0';
 const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/e1b260ea-2f4f-4620-8098-c5e9d369258b/e1b260ea-2f4f-4620-8098-c5e9d369258b/';
 
-// FAZ 2 - YENİ URL'LER
+// FAZ 2 - YENİ URL'LER (Devre dışı bırakılmadı, ileride kullanılabilir)
 const GET_BUSINESS_PROFILE_URL = 'https://ops.synqbrand.com/webhook/0dff236e-f2c4-40db-ad88-0fc59f3f779d';
 const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-59b4-4eaf-95b8-712c1e47bfbe';
 
@@ -34,11 +34,11 @@ const formContainer = document.getElementById('form-container');
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
 
-// FAZ 2 - YENİ ELEMENTLER
-const editProfileBtn = document.getElementById('edit-profile-btn');
-const editProfileSection = document.getElementById('edit-profile-section');
-const formContainerEdit = document.getElementById('form-container-edit');
-const backToPanelFromEditBtn = document.getElementById('back-to-panel-from-edit-btn');
+// FAZ 2 - YENİ ELEMENTLER (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
+// const editProfileBtn = document.getElementById('edit-profile-btn');
+// const editProfileSection = document.getElementById('edit-profile-section');
+// const formContainerEdit = document.getElementById('form-container-edit');
+// const backToPanelFromEditBtn = document.getElementById('back-to-panel-from-edit-btn');
 
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -81,7 +81,7 @@ const routeUserByRole = async (role, username) => {
     pendingActivationSection.style.display = 'none';
     postFormSection.style.display = 'none';
     approvalPortalSection.style.display = 'none';
-    editProfileSection.style.display = 'none'; 
+    // editProfileSection.style.display = 'none';  // Bu eleman artık yok, bu satır devre dışı
 
     if (role === 'customer') {
         welcomeMessage.textContent = `Welcome, ${username}!`;
@@ -104,7 +104,8 @@ const routeUserByRole = async (role, username) => {
 };
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
-const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; editProfileSection.style.display = 'none'; customerPanel.style.display = 'block'; };
+// 'editProfileSection' artık olmadığından ilgili satır kaldırıldı.
+const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; };
 
 // ... [ SİZİN MEVCUT GALERİ FONKSİYONLARINIZ BURADA DEVAM EDİYOR ] ...
 // ... [ Bu bölümde bir değişiklik yok, mevcut kodunuzu koruyun ] ...
@@ -132,9 +133,9 @@ const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElemen
 
 
 // =================================================================
-// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (CHATGPT TARAFINDAN DÜZELTİLDİ)
+// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
 // =================================================================
-
+/*
 const showEditProfileForm = () => {
     customerPanel.style.display = 'none';
     editProfileSection.style.display = 'block';
@@ -313,6 +314,7 @@ const handleProfileUpdateSubmit = async (event) => {
         submitBtn.disabled = false;
     }
 };
+*/
 
 // Event Listeners
 loginForm.addEventListener('submit', handleLogin);
@@ -330,9 +332,9 @@ publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
 
-// FAZ 2 - YENİ EVENT LISTENER'LAR
-editProfileBtn.addEventListener('click', showEditProfileForm);
-backToPanelFromEditBtn.addEventListener('click', hideEditProfileForm);
+// FAZ 2 - YENİ EVENT LISTENER'LAR (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
+// editProfileBtn.addEventListener('click', showEditProfileForm);
+// backToPanelFromEditBtn.addEventListener('click', hideEditProfileForm);
 
 onboardingLogoutBtn.addEventListener('click', handleLogout);
 pendingLogoutBtn.addEventListener('click', handleLogout);
