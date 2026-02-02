@@ -99,9 +99,14 @@ const routeUserByRole = async (role, username) => {
         // Hata veren kısım burası
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
-        if (decodedToken && decodedToken.BusinessProfile) { 
-            state.businessId = decodedToken.BusinessProfile; 
+        if (decodedToken && decodedToken.userId) { 
+            state.businessId = decodedToken.userId; 
         }
+
+        welcomeMessage.textContent = `Welcome, ${username}!`;
+        customerPanel.style.display = 'block';
+        fetchAndRenderPlatforms();
+    } 
 
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
