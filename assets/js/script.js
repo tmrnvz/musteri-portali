@@ -96,9 +96,10 @@ const routeUserByRole = async (role, username) => {
     approvalPortalSection.style.display = 'none';
 
     if (role === 'customer') {
-        // Hata veren kısım burası
+        // JWT'den Business ID'yi çek ve state'e kaydet
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
+        
         if (decodedToken && decodedToken.userId) { 
             state.businessId = decodedToken.userId; 
         }
@@ -106,12 +107,7 @@ const routeUserByRole = async (role, username) => {
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
         fetchAndRenderPlatforms();
-    } 
-
-        welcomeMessage.textContent = `Welcome, ${username}!`;
-        customerPanel.style.display = 'block';
-        fetchAndRenderPlatforms();
-    } else if (role === 'pending' || role === 'new_member') {
+    } else if (role === 'pending' || role === 'new_member') { // << Bu satır artık hata vermeyecek
         await loadAndInjectForm(); 
         onboardingSection.style.display = 'block';
     } else if (role === 'pending_activation') {
