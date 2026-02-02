@@ -96,12 +96,14 @@ const routeUserByRole = async (role, username) => {
     approvalPortalSection.style.display = 'none';
 
     if (role === 'customer') {
-        // JWT'den Business ID'yi çek ve state'e kaydet
+              // JWT'den Business ID'yi çek ve state'e kaydet (GEÇİCİ OLARAK YORUM SATIRI YAPILDI)
+        /*
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
         if (decodedToken && decodedToken.BusinessProfile) { 
             state.businessId = decodedToken.BusinessProfile; 
         }
+        */
 
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
