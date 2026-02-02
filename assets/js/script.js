@@ -96,9 +96,7 @@ const routeUserByRole = async (role, username) => {
     approvalPortalSection.style.display = 'none';
 
     if (role === 'customer') {
-        
-        if (role === 'customer') {
-        // JWT'den Business ID'yi çek ve state'e kaydet (ŞİMDİ AKTİF EDİYORUZ)
+        // Hata veren kısım burası
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
         if (decodedToken && decodedToken.BusinessProfile) { 
