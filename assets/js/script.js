@@ -1,4 +1,4 @@
-/* assets/js/script.js - Edit Profile feature temporarily disabled */
+/* assets/js/script.js - CLEANED FINAL VERSION */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -15,11 +15,7 @@ const PROCESS_APPROVAL_URL = 'https://ops.synqbrand.com/webhook/ef89b9df-469d-43
 const PUBLISH_APPROVED_POSTS_URL = 'https://ops.synqbrand.com/webhook/eb85bb8a-a1c4-4f0e-a50f-fc0c2afd64d0';
 const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/e1b260ea-2f4f-4620-8098-c5e9d369258b/e1b260ea-2f4f-4620-8098-c5e9d369258b/';
 
-// FAZ 2 - URL'LER
-const GET_BUSINESS_PROFILE_URL = 'https://ops.synqbrand.com/webhook/0dff236e-f2c4-40db-ad88-0fc59f3f779d';
-const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-59b4-4eaf-95b8-712c1e47bfbe';
-
-// LATE ENTEGRASYON URL'LERİ
+// LATE ENTEGRASYON URL'LERİ (Sadece Adresleri Tanımlıyoruz)
 const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url';
 const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data';
 
@@ -28,7 +24,7 @@ let state = {
     pendingPosts: [], 
     modalDecisions: [], 
     selectedPosts: [],
-    businessId: null
+    businessId: null // JWT'den okunan userId
 };
 
 // Element variables
@@ -41,7 +37,13 @@ const pendingActivationSection = document.getElementById('pending-activation-sec
 const formContainer = document.getElementById('form-container');
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
-const connectLaterBtn = document.getElementById('connect-later-btn');
+
+// YENİ SAYFA ELEMENTLERİ
+const showConnectPageBtn = document.getElementById('show-connect-page-btn'); 
+const connectPageSection = document.getElementById('connect-page-section');   
+const backToPanelFromConnectBtn = document.getElementById('back-to-panel-from-connect-btn');
+const platformButtonsContainer = document.getElementById('platform-buttons-container');
+
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const ICON_REJECT = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
@@ -83,6 +85,7 @@ const routeUserByRole = async (role, username) => {
     pendingActivationSection.style.display = 'none';
     postFormSection.style.display = 'none';
     approvalPortalSection.style.display = 'none';
+    connectPageSection.style.display = 'none'; // YENİ SAYFA GİZLENDİ
 
     if (role === 'customer') {
         const token = localStorage.getItem('jwtToken');
@@ -111,7 +114,22 @@ const routeUserByRole = async (role, username) => {
 };
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
-const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; };
+const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; connectPageSection.style.display = 'none'; customerPanel.style.display = 'block'; };
+
+// YENİ SAYFA GEÇİŞ FONKSİYONLARI
+const showConnectPage = () => {
+    customerPanel.style.display = 'none';
+    postFormSection.style.display = 'none';
+    approvalPortalSection.style.display = 'none';
+    connectPageSection.style.display = 'block';
+    // Buraya daha sonra bağlantı durumu kontrolü eklenecek
+};
+
+const hideConnectPage = () => {
+    connectPageSection.style.display = 'none';
+    customerPanel.style.display = 'block';
+};
+
 
 const loadAndRenderApprovalGallery = async () => { approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`; bulkActionsContainer.style.display = 'none'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PENDING_POSTS_URL, { headers }); if (!response.ok) throw new Error(`Server responded with status: ${response.status}`); const data = await response.json(); renderGallery(data.posts); } catch (error) { console.error('Failed to load pending posts:', error); approvalGalleryContainer.innerHTML = `<p class="error loading-text">${error.message}</p>`; } };
 const renderGallery = (posts) => { approvalGalleryContainer.innerHTML = ''; const currentDecidedIds = state.pendingPosts.filter(p => p.isDecided).map(p => p.postId); posts.forEach(p => { if (currentDecidedIds.includes(p.postId)) { p.isDecided = true; } }); state.pendingPosts = posts; state.selectedPosts = []; if (!posts || posts.length === 0) { approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`; publishApprovedBtn.style.display = 'none'; bulkActionsContainer.style.display = 'none'; return; } const actionablePosts = posts.filter(post => !post.isDecided); if (actionablePosts.length > 0) { bulkActionsContainer.style.display = 'block'; updateBulkActionsState(); } else { bulkActionsContainer.style.display = 'none'; } publishApprovedBtn.style.display = 'block'; posts.forEach(post => { const item = document.createElement('div'); item.className = 'post-list-item'; item.dataset.postId = post.postId; if (post.isDecided) { item.classList.add('is-decided'); } let badge = ''; if (post.isDecided) { if (post.platformDetails.some(p => p.status === 'Approved')) { badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`; } else if (post.platformDetails.every(p => p.status === 'Canceled')) { badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`; } } item.innerHTML = ` ${!post.isDecided ? `<div class="checkbox-wrapper"> <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox"> <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text"></span></label> </div>` : '<div style="width: 34px;"></div>'} <div class="post-list-item-main"> <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual"> <div class="post-list-item-content"> ${badge} <p class="post-list-item-label">POST TOPIC:</p> <h4 class="post-list-item-title">${post.ideaText}</h4> </div> </div> `; item.addEventListener('click', (e) => { if (e.target.closest('.checkbox-wrapper')) return; openApprovalModal(post.postId); }); approvalGalleryContainer.appendChild(item); }); approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox').forEach(cb => { cb.addEventListener('change', (e) => { const postId = parseInt(e.target.dataset.postId); if (e.target.checked) { if (!state.selectedPosts.includes(postId)) state.selectedPosts.push(postId); } else { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } updateBulkActionsState(); }); }); };
@@ -138,22 +156,26 @@ const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElemen
 /**
  * Late bağlantı URL'sini n8n'den ("Gidiş" workflow'u) alır ve kullanıcıyı yönlendirir.
  */
-const initiateLateConnection = async () => {
+const initiateLateConnection = async (platform) => {
     if (!state.businessId) {
         alert('Hata: Kullanıcı kimliği (Business ID) bulunamadı. Lütfen tekrar giriş yapın.');
         handleLogout();
         return;
     }
 
-    connectLaterBtn.disabled = true;
-    connectLaterBtn.textContent = 'Generating Connection Link...';
+    const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
+    if (platformBtn) {
+        platformBtn.disabled = true;
+        platformBtn.textContent = 'Generating Link...';
+    }
 
     try {
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                businessId: state.businessId
+                businessId: state.businessId,
+                platform: platform // Tıklanan platformu n8n'e gönderiyoruz
             })
         });
 
@@ -172,201 +194,24 @@ const initiateLateConnection = async () => {
         const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
         window.open(connectUrl, 'LateConnection', windowFeatures);
 
-        connectLaterBtn.textContent = 'Connect & Manage Social Accounts';
-        connectLaterBtn.disabled = false;
+        // Pencere açıldıktan sonra butonu eski haline getir
+        if (platformBtn) {
+            platformBtn.disabled = false;
+            platformBtn.textContent = `Connect ${platform.charAt(0).toUpperCase() + platform.slice(1)}`;
+        }
 
     } catch (error) {
         alert(`Hesap bağlama akışı başlatılamadı: ${error.message}`);
         console.error('Late Connection Error:', error);
-        connectLaterBtn.textContent = 'Connect & Manage Social Accounts';
-        connectLaterBtn.disabled = false;
-    }
-};
-
-
-/*
-// =================================================================
-// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
-// =================================================================
-const showEditProfileForm = () => {
-    customerPanel.style.display = 'none';
-    editProfileSection.style.display = 'block';
-    loadAndPopulateProfileForm();
-};
-
-const hideEditProfileForm = () => {
-    editProfileSection.style.display = 'none';
-    customerPanel.style.display = 'block';
-    formContainerEdit.innerHTML = '';
-};
-
-const loadAndPopulateProfileForm = async () => {
-    formContainerEdit.innerHTML = `<p class="loading-text">Loading your profile data...</p>`;
-    const headers = getAuthHeaders();
-    if (!headers) { handleLogout(); return; }
-  
-    try {
-      const profileResponse = await fetch(GET_BUSINESS_PROFILE_URL, { headers });
-      if (!profileResponse.ok) throw new Error(`Could not load your profile.`);
-  
-      const responseArray = await profileResponse.json();
-      if (!responseArray || responseArray.length === 0) {
-        throw new Error('Profile data is missing or in an incorrect format.');
-      }
-      const profileData = responseArray[0];
-  
-      const formResponse = await fetch('onboarding-form.html');
-      if (!formResponse.ok) throw new Error('Could not load the form template.');
-      const formHtml = await formResponse.text();
-      formContainerEdit.innerHTML = formHtml;
-  
-      await Promise.resolve();
-  
-      const onboardingForm = formContainerEdit.querySelector('#onboarding-form');
-  
-      if (onboardingForm) {
-        populateFormWithData(profileData, onboardingForm);
-  
-        const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
-        if (submitBtn) submitBtn.textContent = 'Save Changes';
-  
-        onboardingForm.addEventListener('submit', handleProfileUpdateSubmit);
-      } else {
-        throw new Error('Form could not be found after loading.');
-      }
-    } catch (error) {
-      formContainerEdit.innerHTML = `<p class="error">Error: ${error.message}. Please try again later.</p>`;
-      console.error(error);
-    }
-};
-  
-const populateFormWithData = (data, form) => {
-    if (!data || !form) return;
-  
-    const controls = form.elements;
-    const toStr = v => (v === null || v === undefined) ? '' : String(v);
-  
-    for (const key in data) {
-      if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
-      const value = data[key];
-      const named = controls.namedItem(key);
-  
-      if (!named) continue;
-  
-      const isCollection = (named && typeof named.length === 'number' && !(named instanceof HTMLInputElement || named instanceof HTMLTextAreaElement || named instanceof HTMLSelectElement));
-  
-      if (isCollection) {
-        const asArray = Array.from(named);
-        if (asArray.every(el => el.type === 'radio')) {
-          const targetVal = toStr(value);
-          asArray.forEach(r => {
-            r.checked = (toStr(r.value) === targetVal);
-          });
-        } else if (asArray.every(el => el.type === 'checkbox')) {
-          const vals = typeof value === 'string' ? value.split(',').map(s => s.trim()) : (Array.isArray(value) ? value.map(toStr) : [toStr(value)]);
-          asArray.forEach(cb => {
-            cb.checked = vals.includes(toStr(cb.value));
-          });
-        } else {
-          for (const el of asArray) {
-            if ('value' in el) {
-              el.value = toStr(value);
-            }
-          }
-        }
-      } else {
-        const el = named;
-        if (el.tagName === 'INPUT') {
-          const t = el.type;
-          if (t === 'checkbox') {
-            if (typeof value === 'boolean') {
-              el.checked = value;
-            } else {
-              const str = toStr(value).toLowerCase();
-              el.checked = (str === 'true' || str === '1' || str === 'on' || str === el.value);
-            }
-          } else if (t === 'radio') {
-            el.checked = (toStr(el.value) === toStr(value));
-          } else {
-            el.value = toStr(value);
-          }
-        } else if (el.tagName === 'TEXTAREA') {
-          el.value = toStr(value);
-        } else if (el.tagName === 'SELECT') {
-          el.value = toStr(value);
-          if (el.value !== toStr(value)) {
-            const opt = Array.from(el.options).find(o => toStr(o.value) === toStr(value) || toStr(o.text) === toStr(value));
-            if (opt) opt.selected = true;
-          }
-        } else {
-          if ('value' in el) el.value = toStr(value);
-        }
-      }
-    }
-  
-    if (data.PlatformFocus && typeof data.PlatformFocus === 'string') {
-      const platformFocusArray = data.PlatformFocus.split(',').map(p => p.trim());
-      const platformCheckboxes = form.querySelectorAll('input[name="PlatformFocus"]');
-      platformCheckboxes.forEach(cb => {
-        cb.checked = platformFocusArray.includes(cb.value);
-      });
-    }
-};
-
-const handleProfileUpdateSubmit = async (event) => {
-    event.preventDefault();
-    const onboardingForm = event.target;
-    const onboardingStatus = onboardingForm.querySelector('#onboarding-status');
-    const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
-    
-    if (!onboardingStatus || !submitBtn) {
-        console.error("Form status or submit button not found inside the submitted form.");
-        return;
-    }
-
-    setStatus(onboardingStatus, 'Saving your changes...', 'info');
-    submitBtn.disabled = true;
-
-    const authHeaders = getAuthHeaders();
-    if (!authHeaders) { handleLogout(); return; }
-
-    try {
-        const formData = new FormData(onboardingForm);
-        const jsonData = {};
         
-        for (const [key, value] of formData.entries()) {
-            if (key !== 'PlatformFocus') {
-                jsonData[key] = value;
-            }
+        // Hata durumunda butonu eski haline getir
+        if (platformBtn) {
+            platformBtn.disabled = false;
+            platformBtn.textContent = `Connect ${platform.charAt(0).toUpperCase() + platform.slice(1)}`;
         }
-        const platformFocusCheckboxes = onboardingForm.querySelectorAll('input[name="PlatformFocus"]:checked');
-        jsonData.PlatformFocus = Array.from(platformFocusCheckboxes).map(cb => cb.value).join(',');
-
-        const response = await fetch(UPDATE_PROFILE_WORKFLOW_URL, {
-            method: 'POST',
-            headers: { ...authHeaders, 'Content-Type': 'application/json' },
-            body: JSON.stringify(jsonData),
-        });
-
-        if (!response.ok) {
-            let errorData;
-            try { errorData = await response.json(); } 
-            catch (e) { throw new Error(`Update failed with status: ${response.status}`); }
-            throw new Error(errorData.message || 'Update failed due to a server error.');
-        }
-        
-        setStatus(onboardingStatus, 'Profile updated successfully!', 'success');
-        
-        setTimeout(() => {
-            hideEditProfileForm();
-        }, 2000);
-
-    } catch (error) {
-        setStatus(onboardingStatus, `Error: ${error.message}`, 'error');
-        submitBtn.disabled = false;
     }
 };
-*/
+
 
 // Event Listeners
 loginForm.addEventListener('submit', handleLogin);
@@ -384,13 +229,20 @@ publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
 
-if (connectLaterBtn) {
-    connectLaterBtn.addEventListener('click', initiateLateConnection);
-}
 
-// FAZ 2 - EVENT LISTENER'LAR (DEVRE DIŞI BIRAKILDI)
-// editProfileBtn.addEventListener('click', showEditProfileForm);
-// backToPanelFromEditBtn.addEventListener('click', hideEditProfileForm);
+// YENİ SAYFA GEÇİŞLERİ VE BUTON DİNLEYİCİSİ
+showConnectPageBtn.addEventListener('click', showConnectPage);
+backToPanelFromConnectBtn.addEventListener('click', hideConnectPage);
+
+// Platform butonlarına tek bir dinleyici ekleme
+platformButtonsContainer.addEventListener('click', (e) => {
+    const btn = e.target.closest('.platform-connect-btn');
+    if (btn) {
+        const platform = btn.dataset.platform; // data-platform="facebook" değerini yakala
+        initiateLateConnection(platform);
+    }
+});
+
 
 onboardingLogoutBtn.addEventListener('click', handleLogout);
 pendingLogoutBtn.addEventListener('click', handleLogout);
