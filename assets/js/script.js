@@ -152,14 +152,13 @@ const routeUserByRole = async (role, username) => {
     if (role === 'customer') {
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
-        if (decodedToken && decodedToken.userId) { 
-            state.businessId = decodedToken.userId; 
-        }
+        // **state.businessId = decodedToken.userId; // BU SATIR SİLİNDİ/YORUMA ALINDI**
 
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
         fetchAndRenderPlatforms();
-    } else if (role === 'pending' || role === 'new_member') {
+    } 
+    else if (role === 'pending' || role === 'new_member') {
         await loadAndInjectForm(); 
         onboardingSection.style.display = 'block';
     } else if (role === 'pending_activation') {
