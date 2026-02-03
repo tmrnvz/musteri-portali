@@ -28,8 +28,10 @@ let state = {
     businessId: null // JWT'den okunan userId
 };
 
+
 /**
  * NocoDB'den bağlantı ID'lerini çeker ve arayüzdeki butonları günceller.
+ * Artık userId'yi query'ye eklemek yerine JWT'yi Authorization başlığında gönderir.
  */
 const renderConnectionStatus = async () => {
     // 1. Loading durumunu ayarla
@@ -37,21 +39,26 @@ const renderConnectionStatus = async () => {
         el.textContent = 'Checking...';
         el.className = 'connection-status-text';
     });
+    
+    const headers = getAuthHeaders(); // JWT'yi Authorization header'ında alıyoruz
 
-    if (!state.businessId) {
-        document.getElementById('platform-buttons-container').innerHTML = '<p class="error">Error: Could not retrieve Business ID.</p>';
+    // Bu kontrol artık JWT'ye bakıyor, boş ID'ye değil.
+    if (!headers) {
+        document.getElementById('platform-buttons-container').innerHTML = '<p class="error">Error: Not logged in (JWT missing).</p>';
         return;
     }
 
     try {
-        // 2. Yeni workflow'u çağır (userId'yi query parametresi olarak gönderiyoruz)
-        const response = await fetch(`${LATE_GET_STATUS_URL}?userId=${state.businessId}`, {
+        // 2. Yeni workflow'u çağır (JWT'yi Authorization başlığında gönderiyoruz)
+        // Workflow, JWT'yi çözecek ve Business Profile ID'sini kendi bulacaktır.
+        const response = await fetch(LATE_GET_STATUS_URL, { 
             method: 'GET',
-            headers: getAuthHeaders()
+            headers: headers // Header'da JWT'yi gönderiyoruz
         });
 
         if (!response.ok) {
-            throw new Error(`Status check failed with status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Status check failed with status ${response.status}: ${errorText}`);
         }
 
         const data = await response.json(); // Temizlenmiş JSON objesi
@@ -81,6 +88,14 @@ const renderConnectionStatus = async () => {
                 button.dataset.status = 'disconnected';
             }
         });
+
+    } catch (error) {
+        console.error('Connection Status Render Error:', error);
+        document.getElementById('platform-buttons-container').innerHTML = `<p class="error">Error loading connection status: ${error.message}</p>`;
+    }
+};
+
+
 
     } catch (error) {
         console.error('Connection Status Render Error:', error);
