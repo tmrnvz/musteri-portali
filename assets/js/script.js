@@ -88,15 +88,18 @@ const routeUserByRole = async (role, username) => {
     connectPageSection.style.display = 'none';
 
     if (role === 'customer') {
+        // *** GİRİŞ BAŞARILI OLDU. İD EŞLEMESİNİ BURADA YAPMALIYIZ ***
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
         
-        // GİRİŞ BAŞARILI OLDUĞUNDA, SADECE ROLÜ KONTROL EDİYORUZ.
-        // Business ID'yi daha sonra ayrı bir endpoint ile çekeceğiz.
-        
+        // Eski Login Workflow'unuzun döndürdüğü 'userId' (örn: '2' veya '3') kullanılıyor.
+        // Bu ID'yi kullanarak NocoDB'de bu kullanıcının Business Profile ID'sini bulmalıyız.
+        // Bunu SİZİN Login Workflow'unuzun yapması gerekir. Şimdilik bu ID'yi alalım.
+        state.businessId = decodedToken.userId; 
+
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
-        // fetchAndRenderPlatforms(); // Bağlantı kontrolü sonra yapılacak
+        fetchAndRenderPlatforms(); // Bu, Platformları çeker
     } else if (role === 'pending' || role === 'new_member') {
         await loadAndInjectForm(); 
         onboardingSection.style.display = 'block';
