@@ -167,12 +167,15 @@ const routeUserByRole = async (role, username) => {
     if (role === 'customer') {
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
-        // **state.businessId = decodedToken.userId; // BU SATIR SİLİNDİ/YORUMA ALINDI**
-
+        
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
-        fetchAndRenderPlatforms();
-    } 
+        // fetchAndRenderPlatforms(); // <-- BU SATIRI GEÇİCİ OLARAK YORUMA ALIN
+    }
+
+
+
+        
     else if (role === 'pending' || role === 'new_member') {
         await loadAndInjectForm(); 
         onboardingSection.style.display = 'block';
