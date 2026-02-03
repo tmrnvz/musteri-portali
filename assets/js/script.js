@@ -165,18 +165,11 @@ const routeUserByRole = async (role, username) => {
     connectPageSection.style.display = 'none'; // YENİ SAYFA GİZLENDİ
 
     if (role === 'customer') {
-        const token = localStorage.getItem('jwtToken');
-        const decodedToken = parseJwt(token);
-        
+        // Burası en temel haliyle çalışmalı
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
-        // fetchAndRenderPlatforms(); // <-- BU SATIRI GEÇİCİ OLARAK YORUMA ALIN
-    }
-
-
-
-        
-    else if (role === 'pending' || role === 'new_member') {
+        // fetchAndRenderPlatforms(); // *** BAĞLANTI KONTROLÜNÜ ŞİMDİLİK YORUMA ALIYORUM ***
+    } else if (role === 'pending' || role === 'new_member') {
         await loadAndInjectForm(); 
         onboardingSection.style.display = 'block';
     } else if (role === 'pending_activation') {
