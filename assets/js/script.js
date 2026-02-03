@@ -35,7 +35,7 @@ const renderConnectionStatus = async () => {
     // 1. Loading durumunu ayarla
     document.querySelectorAll('.connection-status-text').forEach(el => {
         el.textContent = 'Checking...';
-        el.classList.remove('connected', 'disconnected');
+        el.className = 'connection-status-text';
     });
 
     if (!state.businessId) {
@@ -54,25 +54,25 @@ const renderConnectionStatus = async () => {
             throw new Error(`Status check failed with status: ${response.status}`);
         }
 
-        const data = await response.json(); // NocoDB ID'lerini içeren JSON objesi
+        const data = await response.json(); // Temizlenmiş JSON objesi
+
+        // LATE_PROFILE_ID'yi state'e kaydet (Buton tıklamaları için gerekli)
+        state.lateProfileId = data.lateProfileId; 
 
         // 3. Butonları Gelen Veriye Göre Güncelle
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
             
-            // NocoDB'deki sütun adını oluşturuyoruz (örneğin: 'later_facebook_id')
-            const idKey = `later_${platform}_id`;
-
-            // Verideki ID'nin varlığını kontrol et (undefined veya null değilse bağlıdır)
-            const isConnected = data[idKey] && data[idKey] !== null;
+            const platformStatus = data.platforms[platform];
+            const isConnected = platformStatus && platformStatus.status === 'connected';
 
             if (isConnected) {
                 // BAĞLI DURUMU
                 button.classList.add('is-connected');
                 statusTextEl.textContent = 'CONNECTED';
                 statusTextEl.classList.add('connected');
-                button.dataset.status = 'connected'; // Bağlantı durumunu kaydet
+                button.dataset.status = 'connected';
             } else {
                 // BAĞLI DEĞİL DURUMU
                 button.classList.remove('is-connected');
@@ -87,7 +87,6 @@ const renderConnectionStatus = async () => {
         document.getElementById('platform-buttons-container').innerHTML = `<p class="error">Error loading connection status: ${error.message}</p>`;
     }
 };
-
 
 
 // Element variables
