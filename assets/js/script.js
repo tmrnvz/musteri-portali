@@ -15,21 +15,20 @@ const PROCESS_APPROVAL_URL = 'https://ops.synqbrand.com/webhook/ef89b9df-469d-43
 const PUBLISH_APPROVED_POSTS_URL = 'https://ops.synqbrand.com/webhook/eb85bb8a-a1c4-4f0e-a50f-fc0c2afd64d0';
 const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/e1b260ea-2f4f-4620-8098-c5e9d369258b/e1b260ea-2f4f-4620-8098-c5e9d369258b/';
 
-// FAZ 2 - YENİ URL'LER (Devre dışı bırakılmadı, ileride kullanılabilir)
+// FAZ 2 - URL'LER
 const GET_BUSINESS_PROFILE_URL = 'https://ops.synqbrand.com/webhook/0dff236e-f2c4-40db-ad88-0fc59f3f779d';
 const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-59b4-4eaf-95b8-712c1e47bfbe';
 
-// YENİ LATE ENTEGRASYON URL'LERİ
-const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url'; // <-- Adım A Webhook'u
-const LATE_STATUS_CALLBACK_URL = 'https://ops.synqbrand.com/webhook/late-status-callback'; // <-- Adım B Webhook'u
-
+// LATE ENTEGRASYON URL'LERİ
+const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url';
+const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data';
 
 let state = { 
     loadingIntervalId: null, 
     pendingPosts: [], 
     modalDecisions: [], 
     selectedPosts: [],
-    businessId: null // <<< YENİ EKLENTİ
+    businessId: null
 };
 
 // Element variables
@@ -37,22 +36,12 @@ const loginSection = document.getElementById('login-section'); const customerPan
 const modalSaveBtn = document.getElementById('modal-save-btn'); const modalCancelBtn = document.getElementById('modal-cancel-btn'); const modalStatus = document.getElementById('modal-status');
 const publishApprovedBtn = document.getElementById('publish-approved-btn'); const publishStatus = document.getElementById('publish-status');
 const bulkActionsContainer = document.getElementById('bulk-actions-container'); const bulkSelectAll = document.getElementById('bulk-select-all'); const bulkApproveBtn = document.getElementById('bulk-approve-btn');
-
 const onboardingSection = document.getElementById('onboarding-section');
 const pendingActivationSection = document.getElementById('pending-activation-section');
 const formContainer = document.getElementById('form-container');
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
-
-// YENİ ELEMENT DEĞİŞKENİ
-const connectLaterBtn = document.getElementById('connect-later-btn'); 
-
-// FAZ 2 - YENİ ELEMENTLER (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
-// const editProfileBtn = document.getElementById('edit-profile-btn');
-// const editProfileSection = document.getElementById('edit-profile-section');
-// const formContainerEdit = document.getElementById('form-container-edit');
-// const backToPanelFromEditBtn = document.getElementById('back-to-panel-from-edit-btn');
-
+const connectLaterBtn = document.getElementById('connect-later-btn');
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const ICON_REJECT = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
@@ -96,10 +85,8 @@ const routeUserByRole = async (role, username) => {
     approvalPortalSection.style.display = 'none';
 
     if (role === 'customer') {
-        // JWT'den Business ID'yi çek ve state'e kaydet
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
-        
         if (decodedToken && decodedToken.userId) { 
             state.businessId = decodedToken.userId; 
         }
@@ -107,7 +94,7 @@ const routeUserByRole = async (role, username) => {
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
         fetchAndRenderPlatforms();
-    } else if (role === 'pending' || role === 'new_member') { // << Bu satır artık hata vermeyecek
+    } else if (role === 'pending' || role === 'new_member') {
         await loadAndInjectForm(); 
         onboardingSection.style.display = 'block';
     } else if (role === 'pending_activation') {
@@ -126,7 +113,6 @@ const routeUserByRole = async (role, username) => {
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
 const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; };
 
-// ... [ SİZİN MEVCUT GALERİ FONKSİYONLARINIZ BURADA DEVAM EDİYOR ] ...
 const loadAndRenderApprovalGallery = async () => { approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`; bulkActionsContainer.style.display = 'none'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PENDING_POSTS_URL, { headers }); if (!response.ok) throw new Error(`Server responded with status: ${response.status}`); const data = await response.json(); renderGallery(data.posts); } catch (error) { console.error('Failed to load pending posts:', error); approvalGalleryContainer.innerHTML = `<p class="error loading-text">${error.message}</p>`; } };
 const renderGallery = (posts) => { approvalGalleryContainer.innerHTML = ''; const currentDecidedIds = state.pendingPosts.filter(p => p.isDecided).map(p => p.postId); posts.forEach(p => { if (currentDecidedIds.includes(p.postId)) { p.isDecided = true; } }); state.pendingPosts = posts; state.selectedPosts = []; if (!posts || posts.length === 0) { approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`; publishApprovedBtn.style.display = 'none'; bulkActionsContainer.style.display = 'none'; return; } const actionablePosts = posts.filter(post => !post.isDecided); if (actionablePosts.length > 0) { bulkActionsContainer.style.display = 'block'; updateBulkActionsState(); } else { bulkActionsContainer.style.display = 'none'; } publishApprovedBtn.style.display = 'block'; posts.forEach(post => { const item = document.createElement('div'); item.className = 'post-list-item'; item.dataset.postId = post.postId; if (post.isDecided) { item.classList.add('is-decided'); } let badge = ''; if (post.isDecided) { if (post.platformDetails.some(p => p.status === 'Approved')) { badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`; } else if (post.platformDetails.every(p => p.status === 'Canceled')) { badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`; } } item.innerHTML = ` ${!post.isDecided ? `<div class="checkbox-wrapper"> <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox"> <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text"></span></label> </div>` : '<div style="width: 34px;"></div>'} <div class="post-list-item-main"> <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual"> <div class="post-list-item-content"> ${badge} <p class="post-list-item-label">POST TOPIC:</p> <h4 class="post-list-item-title">${post.ideaText}</h4> </div> </div> `; item.addEventListener('click', (e) => { if (e.target.closest('.checkbox-wrapper')) return; openApprovalModal(post.postId); }); approvalGalleryContainer.appendChild(item); }); approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox').forEach(cb => { cb.addEventListener('change', (e) => { const postId = parseInt(e.target.dataset.postId); if (e.target.checked) { if (!state.selectedPosts.includes(postId)) state.selectedPosts.push(postId); } else { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } updateBulkActionsState(); }); }); };
 const updateBulkActionsState = () => { const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); if (state.selectedPosts.length > 0) { bulkApproveBtn.disabled = false; bulkApproveBtn.textContent = `Approve Selected (${state.selectedPosts.length})`; } else { bulkApproveBtn.disabled = true; bulkApproveBtn.textContent = 'Approve Selected'; } bulkSelectAll.checked = actionableCheckboxes.length > 0 && state.selectedPosts.length === actionableCheckboxes.length; };
@@ -149,13 +135,8 @@ const resetPostForm = () => { if (state.loadingIntervalId) { clearInterval(state
 const fetchAndRenderPlatforms = async () => { const container = document.getElementById('platform-selection-container'); const selectAllCheckbox = document.getElementById('select-all-platforms'); container.innerHTML = '<p><em>Loading available platforms...</em></p>'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PLATFORMS_URL, { headers }); if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`); const data = await response.json(); let platforms = data.platforms || []; if (!platforms.length) { container.innerHTML = '<p class="error">No platforms configured for this account.</p>'; selectAllCheckbox.disabled = true; return; } container.innerHTML = ''; platforms.forEach(platform => { const id = `platform-${platform}`; const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper'; const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true; const label = document.createElement('label'); label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`; wrapper.appendChild(checkbox); wrapper.appendChild(label); container.appendChild(wrapper); }); selectAllCheckbox.disabled = false; setupSelectAllLogic(); } catch (error) { console.error('Platform fetch error:', error); container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`; } };
 const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]'); const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; }; selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); }); platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState(); };
 
-
-// =================================================================
-// YENİ FONKSİYON: LATE BAĞLANTI AKIŞI BAŞLATMA
-// =================================================================
-
 /**
- * Late bağlantı URL'sini n8n'den (Adım A) alır ve kullanıcıyı yönlendirir.
+ * Late bağlantı URL'sini n8n'den ("Gidiş" workflow'u) alır ve kullanıcıyı yönlendirir.
  */
 const initiateLateConnection = async () => {
     if (!state.businessId) {
@@ -168,17 +149,17 @@ const initiateLateConnection = async () => {
     connectLaterBtn.textContent = 'Generating Connection Link...';
 
     try {
-        // 1. n8n'deki Adım A Webhook'unu çağır (Business ID'yi göndererek)
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                businessId: state.businessId // Müşteri ID'sini n8n'e gönder
+                businessId: state.businessId
             })
         });
 
         if (!response.ok) {
-            throw new Error(`Connection link generation failed with status: ${response.status}`);
+            const errorText = await response.text();
+            throw new Error(`Connection link generation failed with status ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
@@ -188,11 +169,9 @@ const initiateLateConnection = async () => {
             throw new Error('n8n returned successfully but no connection URL was found.');
         }
 
-        // 2. Yeni pencerede Late bağlantı akışını aç
         const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
         window.open(connectUrl, 'LateConnection', windowFeatures);
 
-        // 3. Buton durumunu sıfırla
         connectLaterBtn.textContent = 'Connect & Manage Social Accounts';
         connectLaterBtn.disabled = false;
 
@@ -204,10 +183,11 @@ const initiateLateConnection = async () => {
     }
 };
 
-// =================================================================
-// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (MEVCUT KODLAR)
-// =================================================================
+
 /*
+// =================================================================
+// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
+// =================================================================
 const showEditProfileForm = () => {
     customerPanel.style.display = 'none';
     editProfileSection.style.display = 'block';
@@ -404,12 +384,11 @@ publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
 
-// YENİ EVENT LISTENER
 if (connectLaterBtn) {
     connectLaterBtn.addEventListener('click', initiateLateConnection);
 }
 
-// FAZ 2 - YENİ EVENT LISTENER'LAR (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
+// FAZ 2 - EVENT LISTENER'LAR (DEVRE DIŞI BIRAKILDI)
 // editProfileBtn.addEventListener('click', showEditProfileForm);
 // backToPanelFromEditBtn.addEventListener('click', hideEditProfileForm);
 
