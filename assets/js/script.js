@@ -228,7 +228,7 @@ const renderConnectionStatus = async () => {
 };
 
 
-// Event Listeners
+// Event Listeners (Düzeltilmiş ve Tam Hali)
 loginForm.addEventListener('submit', handleLogin);
 postForm.addEventListener('submit', handlePostSubmit);
 logoutBtn.addEventListener('click', handleLogout);
@@ -244,12 +244,11 @@ publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
 
-
 // YENİ SAYFA GEÇİŞLERİ VE BUTON DİNLEYİCİLERİ
 showConnectPageBtn.addEventListener('click', showConnectPage);
 backToPanelFromConnectBtn.addEventListener('click', hideConnectPage);
 
-// Platform butonlarına tek bir dinleyici ekleme
+// Platform butonlarına tek bir dinleyici ekleme (Late Bağlantısı için)
 platformButtonsContainer.addEventListener('click', (e) => {
     const btn = e.target.closest('.platform-connect-btn');
     if (btn) {
