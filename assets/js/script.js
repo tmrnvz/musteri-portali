@@ -18,6 +18,7 @@ const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/e1b260ea-2f
 // LATE ENTEGRASYON URL'LERİ (Sadece Adresleri Tanımlıyoruz)
 const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url';
 const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data';
+const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status';
 
 let state = { 
     loadingIntervalId: null, 
@@ -26,6 +27,68 @@ let state = {
     selectedPosts: [],
     businessId: null // JWT'den okunan userId
 };
+
+/**
+ * NocoDB'den bağlantı ID'lerini çeker ve arayüzdeki butonları günceller.
+ */
+const renderConnectionStatus = async () => {
+    // 1. Loading durumunu ayarla
+    document.querySelectorAll('.connection-status-text').forEach(el => {
+        el.textContent = 'Checking...';
+        el.classList.remove('connected', 'disconnected');
+    });
+
+    if (!state.businessId) {
+        document.getElementById('platform-buttons-container').innerHTML = '<p class="error">Error: Could not retrieve Business ID.</p>';
+        return;
+    }
+
+    try {
+        // 2. Yeni workflow'u çağır (userId'yi query parametresi olarak gönderiyoruz)
+        const response = await fetch(`${LATE_GET_STATUS_URL}?userId=${state.businessId}`, {
+            method: 'GET',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error(`Status check failed with status: ${response.status}`);
+        }
+
+        const data = await response.json(); // NocoDB ID'lerini içeren JSON objesi
+
+        // 3. Butonları Gelen Veriye Göre Güncelle
+        document.querySelectorAll('.platform-connect-btn').forEach(button => {
+            const platform = button.dataset.platform;
+            const statusTextEl = document.getElementById(`status-${platform}`);
+            
+            // NocoDB'deki sütun adını oluşturuyoruz (örneğin: 'later_facebook_id')
+            const idKey = `later_${platform}_id`;
+
+            // Verideki ID'nin varlığını kontrol et (undefined veya null değilse bağlıdır)
+            const isConnected = data[idKey] && data[idKey] !== null;
+
+            if (isConnected) {
+                // BAĞLI DURUMU
+                button.classList.add('is-connected');
+                statusTextEl.textContent = 'CONNECTED';
+                statusTextEl.classList.add('connected');
+                button.dataset.status = 'connected'; // Bağlantı durumunu kaydet
+            } else {
+                // BAĞLI DEĞİL DURUMU
+                button.classList.remove('is-connected');
+                statusTextEl.textContent = 'NOT CONNECTED';
+                statusTextEl.classList.add('disconnected');
+                button.dataset.status = 'disconnected';
+            }
+        });
+
+    } catch (error) {
+        console.error('Connection Status Render Error:', error);
+        document.getElementById('platform-buttons-container').innerHTML = `<p class="error">Error loading connection status: ${error.message}</p>`;
+    }
+};
+
+
 
 // Element variables
 const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms');
@@ -117,13 +180,16 @@ const showApprovalPortal = () => { customerPanel.style.display = 'none'; approva
 const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; connectPageSection.style.display = 'none'; customerPanel.style.display = 'block'; };
 
 // YENİ SAYFA GEÇİŞ FONKSİYONLARI
+
 const showConnectPage = () => {
     customerPanel.style.display = 'none';
     postFormSection.style.display = 'none';
     approvalPortalSection.style.display = 'none';
-    connectPageSection.style.display = 'block';
-    // Buraya daha sonra bağlantı durumu kontrolü eklenecek
+    connectPageSection.style.display = 'block';    
+    // YENİ: Sayfa açıldığında bağlantı durumunu yükle
+    renderConnectionStatus(); 
 };
+
 
 const hideConnectPage = () => {
     connectPageSection.style.display = 'none';
