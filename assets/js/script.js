@@ -149,18 +149,17 @@ const routeUserByRole = async (role, username) => {
     approvalPortalSection.style.display = 'none';
     connectPageSection.style.display = 'none'; // YENİ SAYFA GİZLENDİ
 
-     if (role === 'customer') {
+    if (role === 'customer') {
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
- if (decodedToken && decodedToken.userId) { // <-- BURASI YANLIŞTI
+        if (decodedToken && decodedToken.userId) { 
             state.businessId = decodedToken.userId; 
-
+        }
 
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
         fetchAndRenderPlatforms();
-    }
-    else if (role === 'pending' || role === 'new_member') {
+    } else if (role === 'pending' || role === 'new_member') {
         await loadAndInjectForm(); 
         onboardingSection.style.display = 'block';
     } else if (role === 'pending_activation') {
