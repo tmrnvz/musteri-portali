@@ -152,21 +152,9 @@ const routeUserByRole = async (role, username) => {
      if (role === 'customer') {
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
-        
-        // ÖNEMLİ: state.businessId, NocoDB'nin BusinessProfile tablosunun ana ID'si olmalı.
-        // Bu ID'yi token'dan alamadığımız için, şimdilik sadece username ile arama yapıp ID'yi bulmalıyız.
-        // VEYA (en temiz yol): JWT'ye NocoDB Id'sini ekletmeliyiz.
+ if (decodedToken && decodedToken.userId) { // <-- BURASI YANLIŞTI
+            state.businessId = decodedToken.userId; 
 
-        // GEÇİCİ OLARAK, SİSTEM ÇALIŞANA KADAR TOKEN'I YOK SAYIP,
-        // NocoDB'den gelen verideki SON KAYDIN ID'sini kullanmak için bir mekanizma ekleyelim.
-        // AMA EN TEMELİ: TOKEN'INIZI DÜZELTİN.
-
-        // Token'dan userId'yi alıyoruz (Token'daki ID: 2, 3)
-        const usersTableId = decodedToken.userId; 
-        // Buraya gelince, NocoDB'den bu userId ile BusinessProfile ID'sini bulmalıyız!
-        
-        // ŞİMDİLİK, SADECE MÜŞTERİ PANELİNİ GÖSTERMEK İÇİN KODU ÇALIŞTIRIN.
-        // state.businessId'yi daha sonra güncelleyeceğiz.
 
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
