@@ -81,4 +81,17 @@
 }
 
 /* Başarılı Durum Butonu */
-.btn-success { background-color: #4caf50 !important; border-color: #4caf50 !important; color: white !important; padding: 12px 20px !important; }
+.btn-success { 
+    background-color: #4caf50 !important; 
+    border-color: #4caf50 !important; 
+    color: white !important; 
+    padding: 12px 20px !important; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: all 0.3s; 
+    font-size: 1rem; 
+    width: 100%; 
+    text-align: left;
+    position: relative;
+    font-weight: 600;
+}
