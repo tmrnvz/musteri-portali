@@ -164,10 +164,10 @@ const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElemen
 
 // *** LATE BAĞLANTI FONKSİYONLARI ***
 const initiateLateConnection = async (platform) => {
-    if (!state.lateProfileId) { 
+    /* TAMER DEĞİŞİKLİK if (!state.lateProfileId) { 
         alert('Error: Late Profile ID is missing. Please contact support or complete setup.');
         return;
-    }
+    }*/
     const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
     if (platformBtn) {
         platformBtn.disabled = true;
@@ -179,7 +179,7 @@ const initiateLateConnection = async (platform) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 businessId: state.businessId,
-                lateProfileId: state.lateProfileId, 
+                // TAMER lateProfileId: state.lateProfileId, 
                 platform: platform
             })
         });
@@ -190,7 +190,8 @@ const initiateLateConnection = async (platform) => {
         }
 
         const data = await response.json();
-        const connectUrl = data.connectUrl;
+        // TAMER const connectUrl = data.connectUrl;
+        const connectUrl = data.authUrl;
 
         if (!connectUrl) {
             throw new Error('n8n returned successfully but no connection URL was found.');
