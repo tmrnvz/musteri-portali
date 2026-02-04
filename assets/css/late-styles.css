@@ -1,0 +1,78 @@
+/* assets/css/late-styles.css */
+
+/* YENİ SOSYAL MEDYA BAĞLANTI SAYFASI STİLLERİ - (HTML'den taşındı) */
+.platform-buttons-container { 
+    display: flex; 
+    flex-wrap: wrap; 
+    gap: 15px; 
+    margin-top: 20px;
+}
+.platform-connect-wrapper {
+    width: calc(50% - 7.5px); /* İki sütun için */
+    min-width: 200px; /* Mobil uyum için minimum genişlik */
+}
+/* Tuşları anasayfa tuşları gibi görünecek şekilde güncelledik */
+.platform-connect-btn { 
+    background-color: #3f51b5; 
+    color: white; 
+    padding: 12px 20px; 
+    border: none; 
+    border-radius: 8px; 
+    cursor: pointer; 
+    transition: background-color 0.3s; 
+    font-size: 1rem; 
+    width: 100%; 
+    text-align: left;
+    position: relative;
+}
+.platform-connect-btn:hover { background-color: #303f9f; }
+
+/* BAĞLANTI DURUMU STİLLERİ */
+.connection-status-text {
+    position: absolute;
+    right: 15px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+.connection-status-text.connected { color: #c8e6c9; }
+.connection-status-text.disconnected { color: #ffcdd2; }
+.platform-connect-btn.is-connected { background-color: #4caf50; }
+.platform-connect-btn.is-connected:hover { background-color: #388e3c; }
+
+/* YENİ BUTON STİLLERİ (Anasayfa Butonlarına Benzer) */
+
+/* Ana sayfa butonları gibi beyaz arka plan, renkli border ve metin */
+.btn-synq-secondary {
+    background-color: white;
+    color: #3f51b5; /* Primary renk */
+    border: 2px solid #3f51b5;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.btn-synq-secondary:hover {
+    background-color: #e8eaf6; /* Hafif bir mavi tonu */
+    color: #303f9f;
+}
+
+/* Başarılı durum için yeşil */
+.btn-synq-success { 
+    background-color: #4caf50; 
+    color: white; 
+    border: 2px solid #4caf50;
+    font-weight: 600;
+}
+.btn-synq-success:hover { background-color: #388e3c; }
+
+/* Başlangıçtaki Ana Buton görünümünü geri getirmek için */
+.btn-primary.btn-synq-save {
+    background-color: #3f51b5; 
+    color: white;
+    border: none;
+    font-weight: 600;
+}
