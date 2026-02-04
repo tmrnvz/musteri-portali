@@ -49,6 +49,7 @@ const showConnectPageBtn = document.getElementById('show-connect-page-btn');
 const connectPageSection = document.getElementById('connect-page-section');   
 const backToPanelFromConnectBtn = document.getElementById('back-to-panel-from-connect-btn');
 const platformButtonsContainer = document.getElementById('platform-buttons-container');
+const syncLateDataBtn = document.getElementById('sync-late-data-btn'); // *** YENİ DEĞİŞKEN EKLENDİ ***
 
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -163,57 +164,6 @@ const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElemen
 
 
 // *** LATE BAĞLANTI FONKSİYONLARI ***
-/*const initiateLateConnection = async (platform) => {
-    /* TAMER DEĞİŞİKLİK if (!state.lateProfileId) { 
-        alert('Error: Late Profile ID is missing. Please contact support or complete setup.');
-        return;
-    }
-    const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
-    if (platformBtn) {
-        platformBtn.disabled = true;
-        platformBtn.textContent = 'Generating Link...';
-    }
-    try {
-        const response = await fetch(LATE_GET_CONNECT_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                businessId: state.businessId,
-                // TAMER lateProfileId: state.lateProfileId, 
-                platform: platform
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Connection link generation failed with status ${response.status}: ${errorText}`);
-        }
-
-        const data = await response.json();
-        // TAMER const connectUrl = data.connectUrl;
-        const connectUrl = data.authUrl;
-
-        if (!connectUrl) {
-            throw new Error('n8n returned successfully but no connection URL was found.');
-        }
-
-        const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
-        window.open(connectUrl, 'LateConnection', windowFeatures);
-
-        if (platformBtn) {
-            platformBtn.disabled = false;
-            platformBtn.textContent = `Connecting ${platform.charAt(0).toUpperCase() + platform.slice(1)}...`;
-        }
-
-    } catch (error) {
-        alert(`Hesap bağlama akışı başlatılamadı: ${error.message}`);
-        console.error('Late Connection Error:', error);
-        if (platformBtn) {
-            platformBtn.disabled = false;
-            platformBtn.textContent = `Connect ${platform.charAt(0).toUpperCase() + platform.slice(1)}`; 
-        }
-    }
-}; */
 
 const initiateLateConnection = async (platform) => {
     // state.lateProfileId kontrolünü kaldırıyoruz (Workflow A kendisi çekecek)
