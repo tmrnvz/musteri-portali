@@ -244,7 +244,7 @@ const initiateLateConnection = async (platform) => {
         }
 
         const data = await response.json();
-        const connectUrl = data.authUrl; // *** DEĞİŞKEN ADI 'authUrl' OLARAK KONTROL EDİLDİ ***
+        const connectUrl = data.connectEndpoint; // *** DEĞİŞİKLİK: 'authUrl' yerine 'connectEndpoint' 
 
         if (!connectUrl) {
             throw new Error('n8n returned successfully but no connection URL was found.');
