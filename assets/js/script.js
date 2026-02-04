@@ -47,12 +47,6 @@ const pendingLogoutBtn = document.getElementById('pending-logout-btn');
 // YENİ ELEMENT DEĞİŞKENİ
 const connectLaterBtn = document.getElementById('connect-later-btn'); 
 
-// FAZ 2 - YENİ ELEMENTLER (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
-// const editProfileBtn = document.getElementById('edit-profile-btn');
-// const editProfileSection = document.getElementById('edit-profile-section');
-// const formContainerEdit = document.getElementById('form-container-edit');
-// const backToPanelFromEditBtn = document.getElementById('back-to-panel-from-edit-btn');
-
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const ICON_REJECT = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
@@ -204,189 +198,7 @@ const initiateLateConnection = async () => {
     }
 };
 
-// =================================================================
-// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (MEVCUT KODLAR)
-// =================================================================
-/*
-const showEditProfileForm = () => {
-    customerPanel.style.display = 'none';
-    editProfileSection.style.display = 'block';
-    loadAndPopulateProfileForm();
-};
 
-const hideEditProfileForm = () => {
-    editProfileSection.style.display = 'none';
-    customerPanel.style.display = 'block';
-    formContainerEdit.innerHTML = '';
-};
-
-const loadAndPopulateProfileForm = async () => {
-    formContainerEdit.innerHTML = `<p class="loading-text">Loading your profile data...</p>`;
-    const headers = getAuthHeaders();
-    if (!headers) { handleLogout(); return; }
-  
-    try {
-      const profileResponse = await fetch(GET_BUSINESS_PROFILE_URL, { headers });
-      if (!profileResponse.ok) throw new Error(`Could not load your profile.`);
-  
-      const responseArray = await profileResponse.json();
-      if (!responseArray || responseArray.length === 0) {
-        throw new Error('Profile data is missing or in an incorrect format.');
-      }
-      const profileData = responseArray[0];
-  
-      const formResponse = await fetch('onboarding-form.html');
-      if (!formResponse.ok) throw new Error('Could not load the form template.');
-      const formHtml = await formResponse.text();
-      formContainerEdit.innerHTML = formHtml;
-  
-      await Promise.resolve();
-  
-      const onboardingForm = formContainerEdit.querySelector('#onboarding-form');
-  
-      if (onboardingForm) {
-        populateFormWithData(profileData, onboardingForm);
-  
-        const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
-        if (submitBtn) submitBtn.textContent = 'Save Changes';
-  
-        onboardingForm.addEventListener('submit', handleProfileUpdateSubmit);
-      } else {
-        throw new Error('Form could not be found after loading.');
-      }
-    } catch (error) {
-      formContainerEdit.innerHTML = `<p class="error">Error: ${error.message}. Please try again later.</p>`;
-      console.error(error);
-    }
-};
-  
-const populateFormWithData = (data, form) => {
-    if (!data || !form) return;
-  
-    const controls = form.elements;
-    const toStr = v => (v === null || v === undefined) ? '' : String(v);
-  
-    for (const key in data) {
-      if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
-      const value = data[key];
-      const named = controls.namedItem(key);
-  
-      if (!named) continue;
-  
-      const isCollection = (named && typeof named.length === 'number' && !(named instanceof HTMLInputElement || named instanceof HTMLTextAreaElement || named instanceof HTMLSelectElement));
-  
-      if (isCollection) {
-        const asArray = Array.from(named);
-        if (asArray.every(el => el.type === 'radio')) {
-          const targetVal = toStr(value);
-          asArray.forEach(r => {
-            r.checked = (toStr(r.value) === targetVal);
-          });
-        } else if (asArray.every(el => el.type === 'checkbox')) {
-          const vals = typeof value === 'string' ? value.split(',').map(s => s.trim()) : (Array.isArray(value) ? value.map(toStr) : [toStr(value)]);
-          asArray.forEach(cb => {
-            cb.checked = vals.includes(toStr(cb.value));
-          });
-        } else {
-          for (const el of asArray) {
-            if ('value' in el) {
-              el.value = toStr(value);
-            }
-          }
-        }
-      } else {
-        const el = named;
-        if (el.tagName === 'INPUT') {
-          const t = el.type;
-          if (t === 'checkbox') {
-            if (typeof value === 'boolean') {
-              el.checked = value;
-            } else {
-              const str = toStr(value).toLowerCase();
-              el.checked = (str === 'true' || str === '1' || str === 'on' || str === el.value);
-            }
-          } else if (t === 'radio') {
-            el.checked = (toStr(el.value) === toStr(value));
-          } else {
-            el.value = toStr(value);
-          }
-        } else if (el.tagName === 'TEXTAREA') {
-          el.value = toStr(value);
-        } else if (el.tagName === 'SELECT') {
-          el.value = toStr(value);
-          if (el.value !== toStr(value)) {
-            const opt = Array.from(el.options).find(o => toStr(o.value) === toStr(value) || toStr(o.text) === toStr(value));
-            if (opt) opt.selected = true;
-          }
-        } else {
-          if ('value' in el) el.value = toStr(value);
-        }
-      }
-    }
-  
-    if (data.PlatformFocus && typeof data.PlatformFocus === 'string') {
-      const platformFocusArray = data.PlatformFocus.split(',').map(p => p.trim());
-      const platformCheckboxes = form.querySelectorAll('input[name="PlatformFocus"]');
-      platformCheckboxes.forEach(cb => {
-        cb.checked = platformFocusArray.includes(cb.value);
-      });
-    }
-};
-
-const handleProfileUpdateSubmit = async (event) => {
-    event.preventDefault();
-    const onboardingForm = event.target;
-    const onboardingStatus = onboardingForm.querySelector('#onboarding-status');
-    const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
-    
-    if (!onboardingStatus || !submitBtn) {
-        console.error("Form status or submit button not found inside the submitted form.");
-        return;
-    }
-
-    setStatus(onboardingStatus, 'Saving your changes...', 'info');
-    submitBtn.disabled = true;
-
-    const authHeaders = getAuthHeaders();
-    if (!authHeaders) { handleLogout(); return; }
-
-    try {
-        const formData = new FormData(onboardingForm);
-        const jsonData = {};
-        
-        for (const [key, value] of formData.entries()) {
-            if (key !== 'PlatformFocus') {
-                jsonData[key] = value;
-            }
-        }
-        const platformFocusCheckboxes = onboardingForm.querySelectorAll('input[name="PlatformFocus"]:checked');
-        jsonData.PlatformFocus = Array.from(platformFocusCheckboxes).map(cb => cb.value).join(',');
-
-        const response = await fetch(UPDATE_PROFILE_WORKFLOW_URL, {
-            method: 'POST',
-            headers: { ...authHeaders, 'Content-Type': 'application/json' },
-            body: JSON.stringify(jsonData),
-        });
-
-        if (!response.ok) {
-            let errorData;
-            try { errorData = await response.json(); } 
-            catch (e) { throw new Error(`Update failed with status: ${response.status}`); }
-            throw new Error(errorData.message || 'Update failed due to a server error.');
-        }
-        
-        setStatus(onboardingStatus, 'Profile updated successfully!', 'success');
-        
-        setTimeout(() => {
-            hideEditProfileForm();
-        }, 2000);
-
-    } catch (error) {
-        setStatus(onboardingStatus, `Error: ${error.message}`, 'error');
-        submitBtn.disabled = false;
-    }
-};
-*/
 
 // Event Listeners
 loginForm.addEventListener('submit', handleLogin);
@@ -409,9 +221,6 @@ if (connectLaterBtn) {
     connectLaterBtn.addEventListener('click', initiateLateConnection);
 }
 
-// FAZ 2 - YENİ EVENT LISTENER'LAR (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
-// editProfileBtn.addEventListener('click', showEditProfileForm);
-// backToPanelFromEditBtn.addEventListener('click', hideEditProfileForm);
 
 onboardingLogoutBtn.addEventListener('click', handleLogout);
 pendingLogoutBtn.addEventListener('click', handleLogout);
