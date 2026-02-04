@@ -1,6 +1,6 @@
-/* assets/css/late-styles.css */
+/* assets/css/late-styles.css - YENİ TASARIM */
 
-/* YENİ SOSYAL MEDYA BAĞLANTI SAYFASI STİLLERİ - (HTML'den taşındı) */
+/* Genel Bağlantı Butonu Yapısı */
 .platform-buttons-container { 
     display: flex; 
     flex-wrap: wrap; 
@@ -8,24 +8,28 @@
     margin-top: 20px;
 }
 .platform-connect-wrapper {
-    width: calc(50% - 7.5px); /* İki sütun için */
-    min-width: 200px; /* Mobil uyum için minimum genişlik */
+    width: calc(50% - 7.5px);
+    min-width: 200px;
 }
-/* Tuşları anasayfa tuşları gibi görünecek şekilde güncelledik */
+
+/* Connect Butonları - Ana Sayfa Tarzında (Beyaz Arka Plan, Renkli Border/Yazı) */
 .platform-connect-btn { 
-    background-color: #3f51b5; 
-    color: white; 
+    background-color: white; /* Arkaplan beyaz */
+    color: #3f51b5; /* Yazı rengi primary mavi */
     padding: 12px 20px; 
-    border: none; 
+    border: 2px solid #3f51b5; /* Renkli border */
     border-radius: 8px; 
     cursor: pointer; 
-    transition: background-color 0.3s; 
+    transition: all 0.3s; 
     font-size: 1rem; 
     width: 100%; 
     text-align: left;
     position: relative;
+    font-weight: 600; /* Daha belirgin font */
 }
-.platform-connect-btn:hover { background-color: #303f9f; }
+.platform-connect-btn:hover { 
+    background-color: #e8eaf6; /* Hover'da hafif mavi */
+}
 
 /* BAĞLANTI DURUMU STİLLERİ */
 .connection-status-text {
@@ -35,44 +39,46 @@
     font-size: 0.85rem;
     text-transform: uppercase;
 }
-.connection-status-text.connected { color: #c8e6c9; }
-.connection-status-text.disconnected { color: #ffcdd2; }
-.platform-connect-btn.is-connected { background-color: #4caf50; }
-.platform-connect-btn.is-connected:hover { background-color: #388e3c; }
+/* Bağlı Buton ve Text - Bağlıysa yeşil tonlar */
+.platform-connect-btn.is-connected { 
+    background-color: #e8f5e9; /* Çok açık yeşil arkaplan */
+    color: #4caf50; /* Yeşil yazı */
+    border-color: #4caf50; /* Yeşil border */
+}
+.platform-connect-btn.is-connected:hover { background-color: #c8e6c9; } /* Hover'da biraz daha koyu yeşil */
+.connection-status-text.connected { color: #4caf50; } /* Yeşil yazı */
+.connection-status-text.disconnected { color: #f44336; } /* Kırmızı yazı */
 
-/* YENİ BUTON STİLLERİ (Anasayfa Butonlarına Benzer) */
+/* YENİ KAYDET/GERİ BUTONLARI GRUBU */
+.connect-page-footer {
+    display: flex;
+    flex-direction: column; /* Alt alta hizalama */
+    gap: 15px; /* Boşluk */
+    margin-top: 30px;
+    padding-top: 20px; /* Üstteki butonlardan ayırma */
+    border-top: 1px solid #ccc; /* İnce çizgi ile ayırma */
+}
 
-/* Ana sayfa butonları gibi beyaz arka plan, renkli border ve metin */
-.btn-synq-secondary {
+/* Save Butonu - Primary Stil (Mavi) */
+#sync-late-data-btn {
+    width: 100%;
+    /* btn-primary stilinizi kullanacaktır, ek ayar gerekmez */
+}
+
+/* Back to Panel Butonu - Log Out Tarzı (Koyu Gri Border) */
+#back-to-panel-from-connect-btn {
+    width: 100%;
     background-color: white;
-    color: #3f51b5; /* Primary renk */
-    border: 2px solid #3f51b5;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
+    color: #616161; /* Koyu gri yazı */
+    border: 2px solid #616161; /* Koyu gri border */
     transition: all 0.3s;
-    font-size: 1rem;
     font-weight: 600;
 }
 
-.btn-synq-secondary:hover {
-    background-color: #e8eaf6; /* Hafif bir mavi tonu */
-    color: #303f9f;
+#back-to-panel-from-connect-btn:hover {
+    background-color: #f5f5f5;
+    color: #424242;
 }
 
-/* Başarılı durum için yeşil */
-.btn-synq-success { 
-    background-color: #4caf50; 
-    color: white; 
-    border: 2px solid #4caf50;
-    font-weight: 600;
-}
-.btn-synq-success:hover { background-color: #388e3c; }
-
-/* Başlangıçtaki Ana Buton görünümünü geri getirmek için */
-.btn-primary.btn-synq-save {
-    background-color: #3f51b5; 
-    color: white;
-    border: none;
-    font-weight: 600;
-}
+/* Başarılı Durum Butonu */
+.btn-success { background-color: #4caf50 !important; border-color: #4caf50 !important; color: white !important; }
