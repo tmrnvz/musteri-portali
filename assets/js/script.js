@@ -1,4 +1,4 @@
-/* assets/js/script.js - CLEANED BASE VERSION */
+/* assets/js/script.js - Edit Profile feature temporarily disabled */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -15,13 +15,22 @@ const PROCESS_APPROVAL_URL = 'https://ops.synqbrand.com/webhook/ef89b9df-469d-43
 const PUBLISH_APPROVED_POSTS_URL = 'https://ops.synqbrand.com/webhook/eb85bb8a-a1c4-4f0e-a50f-fc0c2afd64d0';
 const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/e1b260ea-2f4f-4620-8098-c5e9d369258b/e1b260ea-2f4f-4620-8098-c5e9d369258b/';
 
-// LATE ENTEGRASYON URL'LERİ (ŞİMDİLİK DEVRE DIŞI BIRAKIYORUZ)
-// const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url'; 
-// const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data';
-// const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; 
+// FAZ 2 - YENİ URL'LER (Devre dışı bırakılmadı, ileride kullanılabilir)
+const GET_BUSINESS_PROFILE_URL = 'https://ops.synqbrand.com/webhook/0dff236e-f2c4-40db-ad88-0fc59f3f779d';
+const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-59b4-4eaf-95b8-712c1e47bfbe';
+
+// YENİ LATE ENTEGRASYON URL'LERİ
+const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url'; // <-- Adım A Webhook'u
+const LATE_STATUS_CALLBACK_URL = 'https://ops.synqbrand.com/webhook/late-status-callback'; // <-- Adım B Webhook'u
 
 
-let state = { loadingIntervalId: null, pendingPosts: [], modalDecisions: [], selectedPosts: [] }; // businessId ve lateProfileId eklenmedi
+let state = { 
+    loadingIntervalId: null, 
+    pendingPosts: [], 
+    modalDecisions: [], 
+    selectedPosts: [],
+    businessId: null // <<< YENİ EKLENTİ
+};
 
 // Element variables
 const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms');
@@ -35,7 +44,15 @@ const formContainer = document.getElementById('form-container');
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
 
-// FAZ 2 & LATE ELEMENTLER (ŞİMDİLİK HİÇBİR ŞEY EKLEMEYECEĞİZ)
+// YENİ ELEMENT DEĞİŞKENİ
+const connectLaterBtn = document.getElementById('connect-later-btn'); 
+
+// FAZ 2 - YENİ ELEMENTLER (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
+// const editProfileBtn = document.getElementById('edit-profile-btn');
+// const editProfileSection = document.getElementById('edit-profile-section');
+// const formContainerEdit = document.getElementById('form-container-edit');
+// const backToPanelFromEditBtn = document.getElementById('back-to-panel-from-edit-btn');
+
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 const ICON_REJECT = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
@@ -77,14 +94,20 @@ const routeUserByRole = async (role, username) => {
     pendingActivationSection.style.display = 'none';
     postFormSection.style.display = 'none';
     approvalPortalSection.style.display = 'none';
-    // connectPageSection.style.display = 'none'; // Bağlantı sayfasını şimdilik gizli tutuyoruz
 
     if (role === 'customer') {
-        // Hata vermemesi için bu kısmı en basit haliyle bırakıyorum.
+        // JWT'den Business ID'yi çek ve state'e kaydet
+        const token = localStorage.getItem('jwtToken');
+        const decodedToken = parseJwt(token);
+        
+        if (decodedToken && decodedToken.userId) { 
+            state.businessId = decodedToken.userId; 
+        }
+
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
-        // fetchAndRenderPlatforms(); // Platformları çekmeyi şimdilik durdurduk
-    } else if (role === 'pending' || role === 'new_member') {
+        fetchAndRenderPlatforms();
+    } else if (role === 'pending' || role === 'new_member') { // << Bu satır artık hata vermeyecek
         await loadAndInjectForm(); 
         onboardingSection.style.display = 'block';
     } else if (role === 'pending_activation') {
@@ -103,9 +126,9 @@ const routeUserByRole = async (role, username) => {
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
 const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; };
 
-// ... [ GALERİ VE POST İŞLEMLERİ BURADA OLACAK ] ... 
+// ... [ SİZİN MEVCUT GALERİ FONKSİYONLARINIZ BURADA DEVAM EDİYOR ] ...
 const loadAndRenderApprovalGallery = async () => { approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`; bulkActionsContainer.style.display = 'none'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PENDING_POSTS_URL, { headers }); if (!response.ok) throw new Error(`Server responded with status: ${response.status}`); const data = await response.json(); renderGallery(data.posts); } catch (error) { console.error('Failed to load pending posts:', error); approvalGalleryContainer.innerHTML = `<p class="error loading-text">${error.message}</p>`; } };
-const renderGallery = (posts) => { approvalGalleryContainer.innerHTML = ''; const currentDecidedIds = state.pendingPosts.filter(p => p.isDecided).map(p => p.postId); posts.forEach(p => { if (currentDecidedIds.includes(p.postId)) { p.isDecided = true; } }); state.pendingPosts = posts; state.selectedPosts = []; if (!posts || posts.length === 0) { approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`; publishApprovedBtn.style.display = 'none'; bulkActionsContainer.style.display = 'none'; return; } const actionablePosts = posts.filter(post => !post.isDecided); if (actionablePosts.length > 0) { bulkActionsContainer.style.display = 'block'; updateBulkActionsState(); } else { bulkActionsContainer.style.display = 'none'; } publishApprovedBtn.style.display = 'block'; posts.forEach(post => { const item = document.createElement('div'); item.className = 'post-list-item'; item.dataset.postId = post.postId; if (post.isDecided) { item.classList.add('is-decided'); } let badge = ''; if (post.isDecided) { if (post.platformDetails.some(p => p.status === 'Approved')) { badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`; } else if (post.platformDetails.every(p => p.status === 'Canceled')) { badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`; } } item.innerHTML = ` ${!post.isDecided ? `<div class="checkbox-wrapper"> <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox"> <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span></label> </div>` : '<div style="width: 34px;"></div>'} <div class="post-list-item-main"> <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual"> <div class="post-list-item-content"> ${badge} <p class="post-list-item-label">POST TOPIC:</p> <h4 class="post-list-item-title">${post.ideaText}</h4> </div> </div> `; item.addEventListener('click', (e) => { if (e.target.closest('.checkbox-wrapper')) return; openApprovalModal(post.postId); }); approvalGalleryContainer.appendChild(item); }); approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox').forEach(cb => { cb.addEventListener('change', (e) => { const postId = parseInt(e.target.dataset.postId); if (e.target.checked) { if (!state.selectedPosts.includes(postId)) state.selectedPosts.push(postId); } else { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } updateBulkActionsState(); }); }); };
+const renderGallery = (posts) => { approvalGalleryContainer.innerHTML = ''; const currentDecidedIds = state.pendingPosts.filter(p => p.isDecided).map(p => p.postId); posts.forEach(p => { if (currentDecidedIds.includes(p.postId)) { p.isDecided = true; } }); state.pendingPosts = posts; state.selectedPosts = []; if (!posts || posts.length === 0) { approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`; publishApprovedBtn.style.display = 'none'; bulkActionsContainer.style.display = 'none'; return; } const actionablePosts = posts.filter(post => !post.isDecided); if (actionablePosts.length > 0) { bulkActionsContainer.style.display = 'block'; updateBulkActionsState(); } else { bulkActionsContainer.style.display = 'none'; } publishApprovedBtn.style.display = 'block'; posts.forEach(post => { const item = document.createElement('div'); item.className = 'post-list-item'; item.dataset.postId = post.postId; if (post.isDecided) { item.classList.add('is-decided'); } let badge = ''; if (post.isDecided) { if (post.platformDetails.some(p => p.status === 'Approved')) { badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`; } else if (post.platformDetails.every(p => p.status === 'Canceled')) { badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`; } } item.innerHTML = ` ${!post.isDecided ? `<div class="checkbox-wrapper"> <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox"> <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text"></span></label> </div>` : '<div style="width: 34px;"></div>'} <div class="post-list-item-main"> <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual"> <div class="post-list-item-content"> ${badge} <p class="post-list-item-label">POST TOPIC:</p> <h4 class="post-list-item-title">${post.ideaText}</h4> </div> </div> `; item.addEventListener('click', (e) => { if (e.target.closest('.checkbox-wrapper')) return; openApprovalModal(post.postId); }); approvalGalleryContainer.appendChild(item); }); approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox').forEach(cb => { cb.addEventListener('change', (e) => { const postId = parseInt(e.target.dataset.postId); if (e.target.checked) { if (!state.selectedPosts.includes(postId)) state.selectedPosts.push(postId); } else { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } updateBulkActionsState(); }); }); };
 const updateBulkActionsState = () => { const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); if (state.selectedPosts.length > 0) { bulkApproveBtn.disabled = false; bulkApproveBtn.textContent = `Approve Selected (${state.selectedPosts.length})`; } else { bulkApproveBtn.disabled = true; bulkApproveBtn.textContent = 'Approve Selected'; } bulkSelectAll.checked = actionableCheckboxes.length > 0 && state.selectedPosts.length === actionableCheckboxes.length; };
 const handleBulkApprove = async () => { const decisions = []; const actionablePostIds = state.pendingPosts.filter(p => !p.isDecided).map(p => p.postId); actionablePostIds.forEach(postId => { const post = state.pendingPosts.find(p => p.postId === postId); if (state.selectedPosts.includes(postId)) { if (post && post.platformDetails) { post.platformDetails.forEach(platform => { decisions.push({ postId: postId, platform: platform.platform, decision: 'approved' }); }); } } else { if (post && post.platformDetails) { post.platformDetails.forEach(platform => { decisions.push({ postId: postId, platform: platform.platform, decision: 'cancelled' }); }); } } }); if (decisions.length === 0) return; bulkApproveBtn.disabled = true; bulkApproveBtn.textContent = 'Processing Decisions...'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(PROCESS_APPROVAL_URL, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ decisions }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || 'Failed to save changes.'); } actionablePostIds.forEach(postId => { const postInState = state.pendingPosts.find(p => p.postId === postId); if (postInState) { postInState.isDecided = true; const wasApproved = state.selectedPosts.includes(postId); postInState.platformDetails.forEach(platform => { platform.status = wasApproved ? 'Approved' : 'Canceled'; }); } }); renderGallery(state.pendingPosts); publishApprovedBtn.disabled = false; } catch (error) { console.error('Bulk action error:', error); setStatus(publishStatus, `Error: ${error.message}`, 'error'); bulkApproveBtn.disabled = false; updateBulkActionsState(); } };
 const handleSaveChanges = async () => { const currentPostId = state.modalDecisions.length > 0 ? state.modalDecisions[0].postId : null; if (state.modalDecisions.length === 0) { closeApprovalModal(); return; } modalStatus.textContent = 'Saving...'; modalStatus.className = 'modal-status-text'; modalSaveBtn.disabled = true; modalCancelBtn.disabled = true; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(PROCESS_APPROVAL_URL, { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ decisions: state.modalDecisions }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || 'Failed to save changes.'); } modalStatus.textContent = 'Saved!'; modalStatus.className = 'modal-status-text success'; setTimeout(() => { closeApprovalModal(); if (currentPostId) { const postInState = state.pendingPosts.find(p => p.postId === currentPostId); if (postInState) { postInState.isDecided = true; state.modalDecisions.forEach(decision => { const platformDetail = postInState.platformDetails.find(p => p.platform === decision.platform); if(platformDetail) { platformDetail.status = decision.decision === 'approved' ? 'Approved' : 'Canceled'; } }); } renderGallery(state.pendingPosts); } else { loadAndRenderApprovalGallery(); } publishApprovedBtn.disabled = false; }, 1000); } catch (error) { console.error('Save changes error:', error); modalStatus.textContent = `Error: ${error.message}`; modalStatus.className = 'modal-status-text error'; modalSaveBtn.disabled = false; modalCancelBtn.disabled = false; } };
@@ -117,34 +140,45 @@ const handlePublishApproved = async () => { publishStatus.innerHTML = `<div clas
 const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } }); uppy.use(Dashboard, { inline:true, target:'#uppy-drag-drop-area', proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true, allowMultipleUploadBatches:false }); uppy.use(AwsS3, { getUploadParameters: async (file) => { const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) }); const presignData = await response.json(); return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} }; } });
 
 const handleLogin = async (event) => { event.preventDefault(); const username = document.getElementById("username").value; const password = document.getElementById("password").value; setStatus(statusDiv, "Logging in...", 'info'); loginBtn.disabled = true; try { const response = await fetch(LOGIN_WORKFLOW_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Login failed with status: ${response.status}`); } const data = await response.json(); const token = data.token; localStorage.setItem('jwtToken', token); const decodedToken = parseJwt(token); if (decodedToken && decodedToken.role) { localStorage.setItem('username', decodedToken.username); setStatus(statusDiv, "", "success"); await routeUserByRole(decodedToken.role, decodedToken.username); } else { throw new Error('Invalid token received from server.'); } } catch (error) { setStatus(statusDiv, error.message, "error"); } finally { loginBtn.disabled = false; } };
-const handleOnboardingSubmit = async (event) => { /* ... KODUNUZU BURAYA EKLEYİN ... */ };
-const handlePostSubmit = async (event) => { /* ... KODUNUZU BURAYA EKLEYİN ... */ };
+const handleOnboardingSubmit = async (event) => { event.preventDefault(); const onboardingForm = event.target; const onboardingStatus = onboardingForm.querySelector('#onboarding-status'); const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn'); setStatus(onboardingStatus, 'Submitting your information...', 'info'); submitBtn.disabled = true; const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } try { const formData = new FormData(onboardingForm); const jsonData = {}; for (const [key, value] of formData.entries()) { if (key !== 'PlatformFocus') { jsonData[key] = value; } } const platformFocusCheckboxes = onboardingForm.querySelectorAll('input[name="PlatformFocus"]:checked'); const platformFocusValues = Array.from(platformFocusCheckboxes).map(cb => cb.value); jsonData.PlatformFocus = platformFocusValues; let platformUsernamesText = ""; platformFocusValues.forEach(platform => { const safeId = platform.toLowerCase().replace(/ \/ /g, '-').replace(/ /g, '-'); const inputId = `pf-${safeId}-user`; const userInput = document.getElementById(inputId); if (userInput && userInput.value) { platformUsernamesText += `${platform}: ${userInput.value}\n`; } else { platformUsernamesText += `${platform}: (Not provided)\n`; } }); jsonData.PlatformUsernamesForEmail = platformUsernamesText.trim(); const response = await fetch(ONBOARDING_WORKFLOW_URL, { method: 'POST', headers: { ...authHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify(jsonData), }); if (!response.ok) { let errorData; try { errorData = await response.json(); } catch (e) { throw new Error(`Submission failed with status: ${response.status}`); } throw new Error(errorData.message || 'Submission failed due to a server error.'); } onboardingSection.style.display = 'none'; pendingActivationSection.style.display = 'block'; } catch (error) { setStatus(onboardingStatus, `Error: ${error.message}`, 'error'); submitBtn.disabled = false; } };
+const handlePostSubmit = async (event) => { event.preventDefault(); const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } const files = uppy.getFiles(); if (files.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`; return; } const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value); if (selectedPlatforms.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`; return; } const messages = ["Processing...", "Uploading media files...", "AI is generating content...", "Finalizing..."]; let messageIndex = 0; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts. </h4><p>${messages[messageIndex]}</p></div>`; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); state.loadingIntervalId = setInterval(() => { messageIndex = (messageIndex + 1) % messages.length; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts.</h4><p>${messages[messageIndex]}</p></div>`; }, 4000); submitPostBtn.disabled = true; backToPanelBtn.disabled = true; try { const result = await uppy.upload(); if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`); const sortedFiles = uppy.getFiles(); const sortedFileKeys = sortedFiles.map(file => { const successfulUpload = result.successful.find(s => s.id === file.id); return successfulUpload ? new URL(successfulUpload.uploadURL).pathname.substring(1) : null; }).filter(key => key !== null); const sortedFileUrls = sortedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`); const postData = { postTitle: document.getElementById('postTitle').value, postContent: document.getElementById('postContent').value, destinationLink: document.getElementById('destinationLink').value, fileKeys: sortedFileKeys, fileUrls: sortedFileUrls, submissionID: crypto.randomUUID(), selectedPlatforms: selectedPlatforms }; const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(postData) }); if (!response.ok) { const errorText = await response.text(); throw new Error(`Server returned an error: ${response.status} - ${errorText}`); } const responseData = await response.json(); const newPostId = responseData.Id; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); queueMicrotask(() => displayReviewInterface(newPostId)); } catch (error) { if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`; postStatusDiv.innerHTML = errorHtml; submitPostBtn.disabled = false; backToPanelBtn.disabled = false; } };
+const handleApproveAndPublish = async (postId) => { const approveBtn = document.getElementById('approve-and-publish-btn'); const discardBtn = document.getElementById('discard-and-restart-btn'); const reviewContainer = document.getElementById('manual-post-review-container'); if (!approveBtn || !reviewContainer) return; approveBtn.disabled = true; if(discardBtn) discardBtn.disabled = true; approveBtn.innerHTML = '<div class="spinner-tiny"></div>Approving & Publishing...'; const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } try { const response = await fetch(APPROVE_MANUAL_POST_URL, { method: 'POST', headers: { ...authHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify({ postId: postId }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Approval failed with status: ${response.status}`); } reviewContainer.innerHTML = ` <div class="status-block status-success"> <h4>SUCCESS!</h4> <p>Post #${postId} has been approved and sent to the publishing queue.</p> <p>Redirecting you to the main panel...</p> </div>`; setTimeout(() => { resetPostForm(); showCustomerPanel(); }, 2500); } catch (error) { console.error('Error approving post:', error); const errorHtml = `<div class="status-block status-error"><h4>APPROVAL FAILED!</h4><p>${error.message}</p></div>`; const footer = reviewContainer.querySelector('.review-footer-buttons'); if (footer) { const existingError = reviewContainer.querySelector('.status-error'); if (existingError) existingError.remove(); footer.insertAdjacentHTML('beforebegin', errorHtml); } approveBtn.disabled = false; if(discardBtn) discardBtn.disabled = false; approveBtn.textContent = 'Looks Good, Publish It!'; } };
+const displayReviewInterface = async (postId) => { postForm.style.display = 'none'; postStatusDiv.innerHTML = `<p class="loading-text">Loading review interface for Post #${postId}...</p>`; const authHeaders = getAuthHeaders(); try { let response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, { method: 'GET', mode: 'cors', credentials: 'omit' }); if (!response.ok) { console.warn(`Anonymous GET returned ${response.status}. Trying with auth header...`); if (authHeaders) { response = await fetch(`${GET_MANUAL_POST_BY_ID_URL}${postId}`, { method: 'GET', mode: 'cors', credentials: 'omit', headers: { ...authHeaders } }); } } if (!response.ok) { throw new Error(`Failed to fetch post details. Server returned ${response.status}`); } const postData = await response.json(); const platformDetailsArray = JSON.parse(postData.PlatformDetails); const postTitle = postData.PostIdeaTitle; const allMediaFilesArray = postData.AllMediaFiles ? JSON.parse(postData.AllMediaFiles) : []; let thumbnailsHtml = ''; if (allMediaFilesArray.length > 0) { thumbnailsHtml += '<h4 class="review-section-title">Uploaded Media</h4><div class="thumbnails-container">'; allMediaFilesArray.forEach(mediaFile => { const isMainVisual = mediaFile.url === postData.MainVisualUrl; const isVideo = /\.(mp4|mov|avi|webm)$/i.test(mediaFile.fileName); thumbnailsHtml += `<div class="thumbnail-item ${isMainVisual ? 'is-main' : ''}" title="${mediaFile.fileName}">`; if (isVideo) { thumbnailsHtml += ` <div class="video-placeholder"> <svg width="24" height="24"><use xlink:href="#video-icon"></use></svg> </div> `; } else { thumbnailsHtml += `<img src="${mediaFile.url}" alt="${mediaFile.fileName}">`; } thumbnailsHtml += `</div>`; }); thumbnailsHtml += '</div>'; } let platformsHtml = ''; if (platformDetailsArray && platformDetailsArray.length > 0) { platformsHtml += '<h4 class="review-section-title">Generated Content</h4>'; platformDetailsArray.forEach((platform, index) => { platformsHtml += ` <div class="accordion-item ${index === 0 ? 'active' : ''}"> <div class="accordion-header"><span>${platform.platform.charAt(0).toUpperCase() + platform.platform.slice(1)}</span></div> <div class="accordion-content"> <div class="content-section"> <h5>Caption</h5> <div class="content-text">${platform.caption.replace(/\\n/g, '<br>')}</div> </div> ${platform.hashtags ? ` <div class="content-section"> <h5>Hashtags</h5> <div class="content-hashtags">${platform.hashtags}</div> </div>` : ''} </div> </div>`; }); } const reviewHtml = ` <div id="manual-post-review-container"> <h3 class="modal-title">${postTitle}</h3> ${thumbnailsHtml} <div class="modal-text-content" style="padding: 1.5rem 0 2rem 0;"> <div id="review-platforms">${platformsHtml}</div> </div> <div class="review-footer-buttons"> <button id="approve-and-publish-btn" class="btn-primary">Looks Good, Publish It!</button> <button id="discard-and-restart-btn" class="btn-secondary">Make Changes & Re-generate</button> </div> </div>`; postStatusDiv.innerHTML = reviewHtml; setupReviewAccordionListeners(); document.getElementById('approve-and-publish-btn').addEventListener('click', () => handleApproveAndPublish(postId)); document.getElementById('discard-and-restart-btn').addEventListener('click', () => { resetPostForm(); postForm.style.display = 'block'; }); } catch (error) { console.error("Error displaying review interface:", error); postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>Error</h4><p>${error.message}</p></div>`; } };
+const setupReviewAccordionListeners = () => { const container = document.getElementById('review-platforms'); if (!container) return; container.querySelectorAll('.accordion-header').forEach(header => { header.addEventListener('click', () => { const activeItem = container.querySelector('.accordion-item.active'); const clickedItem = header.parentElement; if (activeItem && activeItem !== clickedItem) { activeItem.classList.remove('active'); } clickedItem.classList.toggle('active'); }); }); };
+const resetPostForm = () => { if (state.loadingIntervalId) { clearInterval(state.loadingIntervalId); state.loadingIntervalId = null; } const reviewContainer = document.getElementById('manual-post-review-container'); if (reviewContainer) { reviewContainer.remove(); } postForm.style.display = 'block'; postForm.reset(); uppy.getFiles().forEach(file => uppy.removeFile(file.id)); postStatusDiv.innerHTML = ''; submitPostBtn.style.display = 'block'; submitPostBtn.disabled = false; backToPanelBtn.textContent = 'Back to Panel'; backToPanelBtn.disabled = false; };
+const fetchAndRenderPlatforms = async () => { const container = document.getElementById('platform-selection-container'); const selectAllCheckbox = document.getElementById('select-all-platforms'); container.innerHTML = '<p><em>Loading available platforms...</em></p>'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PLATFORMS_URL, { headers }); if (!response.ok) throw new Error(`Could not fetch platforms (status ${response.status}).`); const data = await response.json(); let platforms = data.platforms || []; if (!platforms.length) { container.innerHTML = '<p class="error">No platforms configured for this account.</p>'; selectAllCheckbox.disabled = true; return; } container.innerHTML = ''; platforms.forEach(platform => { const id = `platform-${platform}`; const wrapper = document.createElement('div'); wrapper.className = 'checkbox-wrapper'; const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.id = id; checkbox.name = 'platforms'; checkbox.value = platform; checkbox.checked = true; const label = document.createElement('label'); label.htmlFor = id; label.className = 'checkbox-label'; label.innerHTML = `<span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span>`; wrapper.appendChild(checkbox); wrapper.appendChild(label); container.appendChild(wrapper); }); selectAllCheckbox.disabled = false; setupSelectAllLogic(); } catch (error) { console.error('Platform fetch error:', error); container.innerHTML = `<p class="error">${error.message || 'Failed to load platforms.'}</p>`; } };
+const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]'); const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; }; selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); }); platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState(); };
 
-// YENİ LATE BAĞLANTI FONKSİYONU (Platform adı alacak)
-const initiateLateConnection = async (platform) => {
-    if (!state.lateProfileId) { 
-        alert('Error: Late Profile ID is missing. Please contact support or complete setup.');
+
+// =================================================================
+// YENİ FONKSİYON: LATE BAĞLANTI AKIŞI BAŞLATMA
+// =================================================================
+
+/**
+ * Late bağlantı URL'sini n8n'den (Adım A) alır ve kullanıcıyı yönlendirir.
+ */
+const initiateLateConnection = async () => {
+    if (!state.businessId) {
+        alert('Hata: Kullanıcı kimliği (Business ID) bulunamadı. Lütfen tekrar giriş yapın.');
+        handleLogout();
         return;
     }
-    const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
-    if (platformBtn) {
-        platformBtn.disabled = true;
-        platformBtn.textContent = 'Generating Link...';
-    }
+
+    connectLaterBtn.disabled = true;
+    connectLaterBtn.textContent = 'Generating Connection Link...';
+
     try {
+        // 1. n8n'deki Adım A Webhook'unu çağır (Business ID'yi göndererek)
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                businessId: state.businessId,
-                lateProfileId: state.lateProfileId, 
-                platform: platform
+                businessId: state.businessId // Müşteri ID'sini n8n'e gönder
             })
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Connection link generation failed with status ${response.status}: ${errorText}`);
+            throw new Error(`Connection link generation failed with status: ${response.status}`);
         }
 
         const data = await response.json();
@@ -154,81 +188,207 @@ const initiateLateConnection = async (platform) => {
             throw new Error('n8n returned successfully but no connection URL was found.');
         }
 
+        // 2. Yeni pencerede Late bağlantı akışını aç
         const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
         window.open(connectUrl, 'LateConnection', windowFeatures);
 
-        if (platformBtn) {
-            platformBtn.disabled = false;
-            platformBtn.textContent = `Connecting ${platform.charAt(0).toUpperCase() + platform.slice(1)}...`;
-        }
+        // 3. Buton durumunu sıfırla
+        connectLaterBtn.textContent = 'Connect & Manage Social Accounts';
+        connectLaterBtn.disabled = false;
 
     } catch (error) {
         alert(`Hesap bağlama akışı başlatılamadı: ${error.message}`);
         console.error('Late Connection Error:', error);
-        if (platformBtn) {
-            platformBtn.disabled = false;
-            platformBtn.textContent = `Connect ${platform.charAt(0).toUpperCase() + platform.slice(1)}`; 
-        }
+        connectLaterBtn.textContent = 'Connect & Manage Social Accounts';
+        connectLaterBtn.disabled = false;
     }
 };
 
-// YENİ DURUM KONTROL FONKSİYONU
-const renderConnectionStatus = async () => {
-    document.querySelectorAll('.connection-status-text').forEach(el => {
-        el.textContent = 'Checking...';
-        el.className = 'connection-status-text';
-    });
-    
-    const headers = getAuthHeaders(); 
+// =================================================================
+// FAZ 2: PROFİL DÜZENLEME FONKSİYONLARI (MEVCUT KODLAR)
+// =================================================================
+/*
+const showEditProfileForm = () => {
+    customerPanel.style.display = 'none';
+    editProfileSection.style.display = 'block';
+    loadAndPopulateProfileForm();
+};
 
-    if (!headers) {
-        document.getElementById('platform-buttons-container').innerHTML = '<p class="error">Error: Not logged in (JWT missing).</p>';
+const hideEditProfileForm = () => {
+    editProfileSection.style.display = 'none';
+    customerPanel.style.display = 'block';
+    formContainerEdit.innerHTML = '';
+};
+
+const loadAndPopulateProfileForm = async () => {
+    formContainerEdit.innerHTML = `<p class="loading-text">Loading your profile data...</p>`;
+    const headers = getAuthHeaders();
+    if (!headers) { handleLogout(); return; }
+  
+    try {
+      const profileResponse = await fetch(GET_BUSINESS_PROFILE_URL, { headers });
+      if (!profileResponse.ok) throw new Error(`Could not load your profile.`);
+  
+      const responseArray = await profileResponse.json();
+      if (!responseArray || responseArray.length === 0) {
+        throw new Error('Profile data is missing or in an incorrect format.');
+      }
+      const profileData = responseArray[0];
+  
+      const formResponse = await fetch('onboarding-form.html');
+      if (!formResponse.ok) throw new Error('Could not load the form template.');
+      const formHtml = await formResponse.text();
+      formContainerEdit.innerHTML = formHtml;
+  
+      await Promise.resolve();
+  
+      const onboardingForm = formContainerEdit.querySelector('#onboarding-form');
+  
+      if (onboardingForm) {
+        populateFormWithData(profileData, onboardingForm);
+  
+        const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
+        if (submitBtn) submitBtn.textContent = 'Save Changes';
+  
+        onboardingForm.addEventListener('submit', handleProfileUpdateSubmit);
+      } else {
+        throw new Error('Form could not be found after loading.');
+      }
+    } catch (error) {
+      formContainerEdit.innerHTML = `<p class="error">Error: ${error.message}. Please try again later.</p>`;
+      console.error(error);
+    }
+};
+  
+const populateFormWithData = (data, form) => {
+    if (!data || !form) return;
+  
+    const controls = form.elements;
+    const toStr = v => (v === null || v === undefined) ? '' : String(v);
+  
+    for (const key in data) {
+      if (!Object.prototype.hasOwnProperty.call(data, key)) continue;
+      const value = data[key];
+      const named = controls.namedItem(key);
+  
+      if (!named) continue;
+  
+      const isCollection = (named && typeof named.length === 'number' && !(named instanceof HTMLInputElement || named instanceof HTMLTextAreaElement || named instanceof HTMLSelectElement));
+  
+      if (isCollection) {
+        const asArray = Array.from(named);
+        if (asArray.every(el => el.type === 'radio')) {
+          const targetVal = toStr(value);
+          asArray.forEach(r => {
+            r.checked = (toStr(r.value) === targetVal);
+          });
+        } else if (asArray.every(el => el.type === 'checkbox')) {
+          const vals = typeof value === 'string' ? value.split(',').map(s => s.trim()) : (Array.isArray(value) ? value.map(toStr) : [toStr(value)]);
+          asArray.forEach(cb => {
+            cb.checked = vals.includes(toStr(cb.value));
+          });
+        } else {
+          for (const el of asArray) {
+            if ('value' in el) {
+              el.value = toStr(value);
+            }
+          }
+        }
+      } else {
+        const el = named;
+        if (el.tagName === 'INPUT') {
+          const t = el.type;
+          if (t === 'checkbox') {
+            if (typeof value === 'boolean') {
+              el.checked = value;
+            } else {
+              const str = toStr(value).toLowerCase();
+              el.checked = (str === 'true' || str === '1' || str === 'on' || str === el.value);
+            }
+          } else if (t === 'radio') {
+            el.checked = (toStr(el.value) === toStr(value));
+          } else {
+            el.value = toStr(value);
+          }
+        } else if (el.tagName === 'TEXTAREA') {
+          el.value = toStr(value);
+        } else if (el.tagName === 'SELECT') {
+          el.value = toStr(value);
+          if (el.value !== toStr(value)) {
+            const opt = Array.from(el.options).find(o => toStr(o.value) === toStr(value) || toStr(o.text) === toStr(value));
+            if (opt) opt.selected = true;
+          }
+        } else {
+          if ('value' in el) el.value = toStr(value);
+        }
+      }
+    }
+  
+    if (data.PlatformFocus && typeof data.PlatformFocus === 'string') {
+      const platformFocusArray = data.PlatformFocus.split(',').map(p => p.trim());
+      const platformCheckboxes = form.querySelectorAll('input[name="PlatformFocus"]');
+      platformCheckboxes.forEach(cb => {
+        cb.checked = platformFocusArray.includes(cb.value);
+      });
+    }
+};
+
+const handleProfileUpdateSubmit = async (event) => {
+    event.preventDefault();
+    const onboardingForm = event.target;
+    const onboardingStatus = onboardingForm.querySelector('#onboarding-status');
+    const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn');
+    
+    if (!onboardingStatus || !submitBtn) {
+        console.error("Form status or submit button not found inside the submitted form.");
         return;
     }
 
+    setStatus(onboardingStatus, 'Saving your changes...', 'info');
+    submitBtn.disabled = true;
+
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders) { handleLogout(); return; }
+
     try {
-        const response = await fetch(LATE_GET_STATUS_URL, { 
-            method: 'GET',
-            headers: headers
+        const formData = new FormData(onboardingForm);
+        const jsonData = {};
+        
+        for (const [key, value] of formData.entries()) {
+            if (key !== 'PlatformFocus') {
+                jsonData[key] = value;
+            }
+        }
+        const platformFocusCheckboxes = onboardingForm.querySelectorAll('input[name="PlatformFocus"]:checked');
+        jsonData.PlatformFocus = Array.from(platformFocusCheckboxes).map(cb => cb.value).join(',');
+
+        const response = await fetch(UPDATE_PROFILE_WORKFLOW_URL, {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify(jsonData),
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Status check failed with status ${response.status}: ${errorText}`);
+            let errorData;
+            try { errorData = await response.json(); } 
+            catch (e) { throw new Error(`Update failed with status: ${response.status}`); }
+            throw new Error(errorData.message || 'Update failed due to a server error.');
         }
-
-        const data = await response.json(); 
-
-        state.lateProfileId = data.lateProfileId; 
-
-        document.querySelectorAll('.platform-connect-btn').forEach(button => {
-            const platform = button.dataset.platform;
-            const statusTextEl = document.getElementById(`status-${platform}`);
-            
-            const platformStatus = data.platforms[platform];
-            const isConnected = platformStatus && platformStatus.status === 'connected';
-
-            if (isConnected) {
-                button.classList.add('is-connected');
-                statusTextEl.textContent = 'CONNECTED';
-                statusTextEl.classList.add('connected');
-                button.dataset.status = 'connected';
-            } else {
-                button.classList.remove('is-connected');
-                statusTextEl.textContent = 'NOT CONNECTED';
-                statusTextEl.classList.add('disconnected');
-                button.dataset.status = 'disconnected';
-            }
-        });
+        
+        setStatus(onboardingStatus, 'Profile updated successfully!', 'success');
+        
+        setTimeout(() => {
+            hideEditProfileForm();
+        }, 2000);
 
     } catch (error) {
-        console.error('Connection Status Render Error:', error);
-        document.getElementById('platform-buttons-container').innerHTML = `<p class="error">Error loading connection status: ${error.message}</p>`;
+        setStatus(onboardingStatus, `Error: ${error.message}`, 'error');
+        submitBtn.disabled = false;
     }
 };
+*/
 
-
-// Event Listeners (Düzeltilmiş ve Tam Hali)
+// Event Listeners
 loginForm.addEventListener('submit', handleLogin);
 postForm.addEventListener('submit', handlePostSubmit);
 logoutBtn.addEventListener('click', handleLogout);
@@ -244,18 +404,14 @@ publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
 
-// YENİ SAYFA GEÇİŞLERİ VE BUTON DİNLEYİCİLERİ
-showConnectPageBtn.addEventListener('click', showConnectPage);
-backToPanelFromConnectBtn.addEventListener('click', hideConnectPage);
+// YENİ EVENT LISTENER
+if (connectLaterBtn) {
+    connectLaterBtn.addEventListener('click', initiateLateConnection);
+}
 
-// Platform butonlarına tek bir dinleyici ekleme (Late Bağlantısı için)
-platformButtonsContainer.addEventListener('click', (e) => {
-    const btn = e.target.closest('.platform-connect-btn');
-    if (btn) {
-        const platform = btn.dataset.platform; 
-        initiateLateConnection(platform); 
-    }
-});
+// FAZ 2 - YENİ EVENT LISTENER'LAR (GEÇİCİ OLARAK DEVRE DIŞI BIRAKILDI)
+// editProfileBtn.addEventListener('click', showEditProfileForm);
+// backToPanelFromEditBtn.addEventListener('click', hideEditProfileForm);
 
 onboardingLogoutBtn.addEventListener('click', handleLogout);
 pendingLogoutBtn.addEventListener('click', handleLogout);
