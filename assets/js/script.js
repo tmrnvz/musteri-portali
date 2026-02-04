@@ -216,7 +216,7 @@ const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElemen
 }; */
 
 const initiateLateConnection = async (platform) => {
-    // State kontrolünü kaldırdık, çünkü Workflow A Late_Profile_ID'yi kendisi çekecek.
+    // state.lateProfileId kontrolünü kaldırıyoruz (Workflow A kendisi çekecek)
     
     const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
     if (platformBtn) {
@@ -224,25 +224,16 @@ const initiateLateConnection = async (platform) => {
         platformBtn.textContent = 'Generating Link...';
     }
     
-    // *** YENİ: JWT Header'ı Hazırlama ***
-    const headers = getAuthHeaders();
-    if (!headers) {
-        alert('Error: Authentication token missing. Please log in again.');
-        handleLogout();
-        return;
-    }
-    // *** YENİ: JWT Header'ı Hazırlama BİTİŞ ***
-    
     try {
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
             headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': headers.Authorization // JWT Token'ı ekledik!
+                'Content-Type': 'application/json' 
+                // *** BURADAN 'Authorization': headers.Authorization SATIRI KALDIRILDI ***
             },
             body: JSON.stringify({ 
                 businessId: state.businessId,
-                // lateProfileId: state.lateProfileId, // Kaldırıldı, çünkü n8n (Workflow A) kendisi çekecek
+                // lateProfileId: state.lateProfileId, // Bu da kaldırılmıştı, kontrol amaçlı kalsın
                 platform: platform
             })
         });
@@ -253,8 +244,7 @@ const initiateLateConnection = async (platform) => {
         }
 
         const data = await response.json();
-        // *** DEĞİŞİKLİK: Yanıt değişkenini Workflow A'nın çıktısına göre güncelledik ***
-        const connectUrl = data.authUrl; 
+        const connectUrl = data.authUrl; // *** DEĞİŞKEN ADI 'authUrl' OLARAK KONTROL EDİLDİ ***
 
         if (!connectUrl) {
             throw new Error('n8n returned successfully but no connection URL was found.');
