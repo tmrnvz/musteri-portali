@@ -20,7 +20,7 @@ const GET_BUSINESS_PROFILE_URL = 'https://ops.synqbrand.com/webhook/0dff236e-f2c
 const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-59b4-4eaf-95b8-712c1e47bfbe';
 
 // YENİ LATE ENTEGRASYON URL'LERİ
-const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url'; // <-- Adım A Webhook'u
+const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; // <-- Adım A Webhook'u
 const LATE_STATUS_CALLBACK_URL = 'https://ops.synqbrand.com/webhook/late-status-callback'; // <-- Adım B Webhook'u
 
 
