@@ -81,4 +81,4 @@
 }
 
 /* Başarılı Durum Butonu */
-.btn-success { background-color: #4caf50 !important; border-color: #4caf50 !important; color: white !important; }
+.btn-success { background-color: #4caf50 !important; border-color: #4caf50 !important; color: white !important; padding: 12px 20px !important; }
