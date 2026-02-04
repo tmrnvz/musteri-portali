@@ -7,56 +7,8 @@
     <link rel="icon" href="assets/images/SynqBrand_Icon.webp" type="image/webp">
     <link href="https://releases.transloadit.com/uppy/v3.3.1/uppy.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style.css">
-    <style>
-        /* Platform kullanıcı adı inputlarını ve Brand Voice açıklamalarını dinamik olarak göstermek için ek stiller */
-        .platform-username-input { display: none; margin-left: 10px; max-width: 200px; padding: 0.4rem; font-size: 0.9rem; }
-        .checkbox-wrapper input[type="checkbox"]:checked ~ .platform-username-input { display: inline-block; }
-        
-        .radio-extra-info { display: none; }
-        .radio-option input[type="radio"]:checked ~ .radio-extra-info { display: block; }
-
-        /* YENİ SOSYAL MEDYA BAĞLANTI SAYFASI STİLLERİ */
-        /* Butonları tek bir sütunda veya ikişerli göstermek için flex-wrap kullanıldı */
-        .platform-buttons-container { 
-            display: flex; 
-            flex-wrap: wrap; 
-            gap: 15px; 
-            margin-top: 20px;
-        }
-        /* Her tuşun aynı genişlikte (örneğin %48) olması için */
-        .platform-connect-wrapper {
-            width: calc(50% - 7.5px); /* İki sütun için */
-            min-width: 200px; /* Mobil uyum için minimum genişlik */
-        }
-        /* Tuşları anasayfa tuşları gibi görünecek şekilde güncelledik */
-        .platform-connect-btn { 
-            background-color: #3f51b5; 
-            color: white; 
-            padding: 12px 20px; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            transition: background-color 0.3s; 
-            font-size: 1rem; 
-            width: 100%; /* Kapsayıcı genişliğini kullan */
-            text-align: left;
-            position: relative;
-        }
-        .platform-connect-btn:hover { background-color: #303f9f; }
-
-        /* BAĞLANTI DURUMU STİLLERİ */
-        .connection-status-text {
-            position: absolute;
-            right: 15px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-        }
-        .connection-status-text.connected { color: #c8e6c9; /* Açık Yeşil */ }
-        .connection-status-text.disconnected { color: #ffcdd2; /* Açık Kırmızı */ }
-        .platform-connect-btn.is-connected { background-color: #4caf50; }
-        .platform-connect-btn.is-connected:hover { background-color: #388e3c; }
-    </style>
+    <!-- YENİ LATE STİLLERİ BURAYA EKLENDİ -->
+    <link rel="stylesheet" href="assets/css/late-styles.css">
 </head>
 <body>
     <div class="container">
@@ -99,7 +51,7 @@
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
             <!-- BAŞLIK DEĞİŞTİRİLDİ -->
             <h2>Social Media Account Management</h2> 
-            <p>Please connect your platform accounts below. Connected accounts are marked in green.</p>
+            <p>Please connect your platform accounts below. Connected accounts are marked in green. <strong>Once all accounts are approved via the pop-up, click 'Save All Connections' to finalize.</strong></p>
             
             <div id="platform-buttons-container" class="platform-buttons-container">
                 <!-- Platform Tuşları: data-platform özelliği ve wrapper eklendi -->
@@ -113,8 +65,10 @@
                 <div class="platform-connect-wrapper"><button class="platform-connect-btn" data-platform="youtube" data-label="YouTube">Connect YouTube <span class="connection-status-text" id="status-youtube">Loading...</span></button></div>
             </div>
 
-            <div style="margin-top: 30px;">
-                <button id="back-to-panel-from-connect-btn" class="btn-secondary">Back to Panel</button>
+            <!-- YENİ BUTON EKLENDİ -->
+            <div style="margin-top: 30px; display: flex; justify-content: space-between;">
+                <button id="back-to-panel-from-connect-btn" class="btn-secondary btn-synq-secondary">Back to Panel</button>
+                <button id="sync-late-data-btn" class="btn-primary btn-synq-save">Save All Connections & Sync</button>
             </div>
         </div>
         <!-- BAĞLANTI SAYFASI BİTİŞİ -->
