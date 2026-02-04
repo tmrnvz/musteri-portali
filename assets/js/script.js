@@ -273,6 +273,53 @@ const renderConnectionStatus = async () => {
 };
 
 
+// *** YENİ: VERİ KAYDETME FONKSİYONU (WORKFLOW B'yi çağırır) ***
+const saveLateConnectionData = async () => {
+    // 1. Butonu güncelle
+    syncLateDataBtn.disabled = true;
+    syncLateDataBtn.textContent = 'Syncing Data... Please wait.';
+    
+    // 2. JWT Header'ını al (Workflow B JWT istiyor)
+    const headers = getAuthHeaders();
+    if (!headers) { 
+        handleLogout(); 
+        return; 
+    }
+
+    // 3. Workflow B'yi Çalıştır (Late ID'lerini NocoDB'ye kaydetmek için)
+    try {
+        const response = await fetch(LATE_SAVE_DATA_URL, { // LATE_SAVE_DATA_URL: Workflow B'nin adresi
+            method: 'POST',
+            headers: headers // JWT Token'ı gönderiliyor
+        });
+
+        if (!response.ok) {
+            // Hata yanıtını okumayı dener
+            const errorText = await response.text();
+            throw new Error(`Data save failed: ${errorText}`);
+        }
+
+        // 4. Başarılı
+        syncLateDataBtn.textContent = 'Sync Successful!';
+        syncLateDataBtn.classList.remove('btn-primary');
+        syncLateDataBtn.classList.remove('btn-secondary'); // Eğer varsa
+        syncLateDataBtn.classList.add('btn-success'); // Yeşil yap (Yeni CSS'de tanımladık)
+        
+        // 5. Durumları Yenile (Bağlı ikonlarını görelim)
+        renderConnectionStatus(); 
+
+    } catch (error) {
+        alert(`Save Error: ${error.message}`);
+        console.error('Save Data Error:', error);
+        syncLateDataBtn.textContent = 'Save Failed - Try Again';
+        syncLateDataBtn.disabled = false; // Tekrar denemeye izin ver
+        syncLateDataBtn.classList.remove('btn-success');
+        syncLateDataBtn.classList.add('btn-primary');
+    }
+};
+// *** saveLateConnectionData Fonksiyonu Sonu ***
+
+
 // Event Listeners
 loginForm.addEventListener('submit', handleLogin);
 postForm.addEventListener('submit', handlePostSubmit);
@@ -288,6 +335,8 @@ modalCancelBtn.addEventListener('click', closeApprovalModal);
 publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
+// YENİ KAYDET BUTONU DİNLEYİCİSİ
+syncLateDataBtn.addEventListener('click', saveLateConnectionData);
 
 
 // YENİ SAYFA GEÇİŞLERİ VE BUTON DİNLEYİCİLERİ (BU KISIM ÇALIŞMALI)
