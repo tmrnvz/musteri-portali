@@ -20,7 +20,7 @@ const GET_BUSINESS_PROFILE_URL = 'https://ops.synqbrand.com/webhook/0dff236e-f2c
 const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-59b4-4eaf-95b8-712c1e47bfbe';
 
 // LATE ENTEGRASYON URL'LERİ (Workflow A ve B'nin Adresleri)
-const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url'; // Workflow A (Gidiş)
+const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com:5678/webhook/late-get-connect-url'; // Workflow A (Gidiş)
 const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data'; // Workflow B (Geliş)
 const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; // Workflow Durum Kontrolü
 
