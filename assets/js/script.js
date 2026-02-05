@@ -191,7 +191,7 @@ const startLatePolling = async (previousSnapshot) => {
     // Stateleri durdur
     if (latePollingInterval) clearInterval(latePollingInterval);
 
-    const POLL_INTERVAL = 3000; // 3 saniyede bir kontrol et
+    const POLL_INTERVAL = 5000; // 5 saniyede bir kontrol et
     const TIMEOUT = 5 * 60 * 1000; // 5 dakika
     const startTime = Date.now();
 
