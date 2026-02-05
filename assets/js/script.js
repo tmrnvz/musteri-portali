@@ -19,10 +19,11 @@ const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/e1b260ea-2f
 const GET_BUSINESS_PROFILE_URL = 'https://ops.synqbrand.com/webhook/0dff236e-f2c4-40db-ad88-0fc59f3f779d';
 const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-59b4-4eaf-95b8-712c1e47bfbe';
 
-// LATE ENTEGRASYON URL'LERİ (Workflow A ve B'nin Adresleri)
+// LATE ENTEGRASYON URL'LERİ (Workflow A, B ve C'nin Adresleri)
 const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url'; // Workflow A (Gidiş)
-const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data'; // Workflow B (Geliş)
+const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data'; // Workflow B (Geliş - Manuel Sync)
 const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; // Workflow Durum Kontrolü
+const LATE_CHECK_ACCOUNTS_URL = 'https://ops.synqbrand.com/webhook/late-check-accounts'; // *** YENİ: Workflow C (Polling Proxy) ***
 
 
 let state = { 
@@ -52,7 +53,7 @@ const platformButtonsContainer = document.getElementById('platform-buttons-conta
 const syncLateDataBtn = document.getElementById('sync-late-data-btn'); // *** YENİ DEĞİŞKEN EKLENDİ ***
 
 
-const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></polyline></svg>`;
 const ICON_REJECT = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
 
 const getAuthHeaders = () => { const token = localStorage.getItem('jwtToken'); if (!token) return null; return { 'Authorization': `Bearer ${token}` }; };
@@ -335,6 +336,7 @@ modalCancelBtn.addEventListener('click', closeApprovalModal);
 publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
+
 // YENİ KAYDET BUTONU DİNLEYİCİSİ
 syncLateDataBtn.addEventListener('click', saveLateConnectionData);
 
