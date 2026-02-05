@@ -165,136 +165,112 @@ const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElemen
 
 // *** LATE BAĞLANTI FONKSİYONLARI ***
 
-// =======================================================
-// LATE – AUTO CLOSE POPUP + POLLING (FINAL)
-// =======================================================
-
-let latePopupRef = null;
-let latePollingInterval = null;
-
-// 1️⃣ Mevcut bağlantı snapshot'ı al
-const getLateSnapshot = async () => {
-    const headers = getAuthHeaders();
-    if (!headers) return null;
-
-    const res = await fetch(LATE_GET_STATUS_URL, { headers });
-    if (!res.ok) return null;
-
-    return await res.json();
-};
-
-// 2️⃣ Polling ile yeni bağlantıyı yakala
-const startLatePolling = async (previousSnapshot) => {
-    if (!previousSnapshot) return;
-
-    const POLL_INTERVAL = 2000;
-    const TIMEOUT = 5 * 60 * 1000;
-    const startTime = Date.now();
-
-    latePollingInterval = setInterval(async () => {
-        // Popup kullanıcı tarafından kapatıldıysa
-        if (latePopupRef && latePopupRef.closed) {
-            clearInterval(latePollingInterval);
-            latePollingInterval = null;
-            return;
-        }
-
-        // Timeout
-        if (Date.now() - startTime > TIMEOUT) {
-            clearInterval(latePollingInterval);
-            if (latePopupRef && !latePopupRef.closed) latePopupRef.close();
-            return;
-        }
-
-        try {
-            const current = await getLateSnapshot();
-            if (!current) return;
-
-            // Önceki ve şimdiki durumları karşılaştır
-            for (const platform in current.platforms) {
-                const prev = previousSnapshot.platforms?.[platform];
-                const now = current.platforms[platform];
-
-                if (
-                    prev?.status !== 'connected' &&
-                    now?.status === 'connected'
-                ) {
-                    // 🎯 BAŞARIYLA BAĞLANDI
-                    clearInterval(latePollingInterval);
-                    latePollingInterval = null;
-
-                    if (latePopupRef && !latePopupRef.closed) {
-                        latePopupRef.close();
-                    }
-
-                    // 🔔 Otomatik backend kaydı
-                    await saveLateConnectionData();
-
-                    return;
-                }
-            }
-        } catch (err) {
-            console.error('Late polling error:', err);
-        }
-    }, POLL_INTERVAL);
-};
-
-// 3️⃣ OAuth başlatıcı (AUTO)
 const initiateLateConnection = async (platform) => {
-    const platformBtn = document.querySelector(
-        `.platform-connect-btn[data-platform="${platform}"]`
-    );
-
+    // state.lateProfileId kontrolünü kaldırıyoruz (Workflow A kendisi çekecek)
+    
+    const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
     if (platformBtn) {
         platformBtn.disabled = true;
-        platformBtn.textContent = 'Opening...';
+        platformBtn.textContent = 'Generating Link...';
     }
-
+    
     try {
-        // 🔍 Snapshot al
-        const snapshotBefore = await getLateSnapshot();
-
-        // 🔗 OAuth linki al
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+            headers: { 
+                'Content-Type': 'application/json' 
+                // *** BURADAN 'Authorization': headers.Authorization SATIRI KALDIRILDI ***
+            },
+            body: JSON.stringify({ 
                 businessId: state.businessId,
+                // lateProfileId: state.lateProfileId, // Bu da kaldırılmıştı, kontrol amaçlı kalsın
                 platform: platform
             })
         });
 
         if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(errText);
+            const errorText = await response.text();
+            throw new Error(`Connection link generation failed with status ${response.status}: ${errorText}`);
         }
 
         const data = await response.json();
-        if (!data.connectEndpoint) {
-            throw new Error('No OAuth URL returned.');
+        const connectUrl = data.connectEndpoint; // *** DEĞİŞİKLİK: 'authUrl' yerine 'connectEndpoint' 
+
+        if (!connectUrl) {
+            throw new Error('n8n returned successfully but no connection URL was found.');
         }
 
-        // 🪟 Popup aç
-        latePopupRef = window.open(
-            data.connectEndpoint,
-            'LateOAuth',
-            'width=800,height=800,menubar=no,location=no,resizable=yes,scrollbars=yes'
-        );
+        const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
+        window.open(connectUrl, 'LateConnection', windowFeatures);
 
-        // 🔁 Polling başlat
-        startLatePolling(snapshotBefore);
-
-    } catch (error) {
-        alert(`Late bağlantısı başlatılamadı: ${error.message}`);
-        console.error(error);
-    } finally {
         if (platformBtn) {
             platformBtn.disabled = false;
-            platformBtn.textContent = `Connect ${platform}`;
+            platformBtn.textContent = `Connecting ${platform.charAt(0).toUpperCase() + platform.slice(1)}...`;
+        }
+
+    } catch (error) {
+        alert(`Hesap bağlama akışı başlatılamadı: ${error.message}`);
+        console.error('Late Connection Error:', error);
+        if (platformBtn) {
+            platformBtn.disabled = false;
+            platformBtn.textContent = `Connect ${platform.charAt(0).toUpperCase() + platform.slice(1)}`; 
         }
     }
 };
 
+const renderConnectionStatus = async () => {
+    document.querySelectorAll('.connection-status-text').forEach(el => {
+        el.textContent = 'Checking...';
+        el.className = 'connection-status-text';
+    });
+    
+    const headers = getAuthHeaders(); 
+
+    if (!headers) {
+        document.getElementById('platform-buttons-container').innerHTML = '<p class="error">Error: Not logged in (JWT missing).</p>';
+        return;
+    }
+
+    try {
+        const response = await fetch(LATE_GET_STATUS_URL, { 
+            method: 'GET',
+            headers: headers
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Status check failed with status ${response.status}: ${errorText}`);
+        }
+
+        const data = await response.json(); 
+
+        state.lateProfileId = data.lateProfileId; 
+
+        document.querySelectorAll('.platform-connect-btn').forEach(button => {
+            const platform = button.dataset.platform;
+            const statusTextEl = document.getElementById(`status-${platform}`);
+            
+            const platformStatus = data.platforms[platform];
+            const isConnected = platformStatus && platformStatus.status === 'connected';
+
+            if (isConnected) {
+                button.classList.add('is-connected');
+                statusTextEl.textContent = 'CONNECTED';
+                statusTextEl.classList.add('connected');
+                button.dataset.status = 'connected';
+            } else {
+                button.classList.remove('is-connected');
+                statusTextEl.textContent = 'NOT CONNECTED';
+                statusTextEl.classList.add('disconnected');
+                button.dataset.status = 'disconnected';
+            }
+        });
+
+    } catch (error) {
+        console.error('Connection Status Render Error:', error);
+        document.getElementById('platform-buttons-container').innerHTML = `<p class="error">Error loading connection status: ${error.message}</p>`;
+    }
+};
 
 
 // *** YENİ: VERİ KAYDETME FONKSİYONU (WORKFLOW B'yi çağırır) ***
