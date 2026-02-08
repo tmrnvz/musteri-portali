@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL CLEANED VERSION FOR LATE INTEGRATION */
+/* assets/js/script.js - FINAL LATE POLLING INTEGRATION */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -22,7 +22,9 @@ const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-
 // LATE ENTEGRASYON URL'LERİ (Workflow A, B ve C'nin Adresleri)
 const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url'; // Workflow A (Gidiş)
 const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data'; // Workflow B (Geliş - Manuel Sync)
-const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; // Workflow Durum Kontrolü
+const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; // Workflow Durum Kontrolü (Yeni ID eklenmediyse durum kontrolü için kullanılabilir)
+const LATE_POLLING_URL = 'https://ops.synqbrand.com/webhook/late-check-accounts'; // Workflow C (Polling - BAŞARI KONTROLÜ İÇİN KULLANILACAK)
+
 
 // Polling State (Yeni değişkenler)
 let latePopupRef = null;
@@ -38,7 +40,7 @@ let state = {
     lateProfileId: null // Late'in verdiği Profil ID'si (Status Çekmeden sonra ayarlanacak)
 };
 
-// Element variables
+// Element variables (Tüm element değişkenleri aynı kalıyor)
 const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms');
 const modalSaveBtn = document.getElementById('modal-save-btn'); const modalCancelBtn = document.getElementById('modal-cancel-btn'); const modalStatus = document.getElementById('modal-status');
 const publishApprovedBtn = document.getElementById('publish-approved-btn'); const publishStatus = document.getElementById('publish-status');
@@ -102,7 +104,6 @@ const routeUserByRole = async (role, username) => {
         const token = localStorage.getItem('jwtToken');
         const decodedToken = parseJwt(token);
         
-        // KONTROL: JWT'den gelen userId'yi alıyoruz. (Login Workflow'unuzun doğru ID'yi basması gerekiyor)
         if (decodedToken && decodedToken.userId) { 
             state.businessId = decodedToken.userId; 
         }
@@ -143,7 +144,7 @@ const hideConnectPage = () => {
     customerPanel.style.display = 'block';
 };
 
-// ... [ GALERİ VE POST İŞLEMLERİNİZ BURADA DEVAM EDİYOR ] ... 
+// ... [ GALERİ VE POST İŞLEMLERİ AYNI KALIYOR ] ... 
 const loadAndRenderApprovalGallery = async () => { approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`; bulkActionsContainer.style.display = 'none'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PENDING_POSTS_URL, { headers }); if (!response.ok) throw new Error(`Server responded with status: ${response.status}`); const data = await response.json(); renderGallery(data.posts); } catch (error) { console.error('Failed to load pending posts:', error); approvalGalleryContainer.innerHTML = `<p class="error loading-text">${error.message}</p>`; } };
 const renderGallery = (posts) => { approvalGalleryContainer.innerHTML = ''; const currentDecidedIds = state.pendingPosts.filter(p => p.isDecided).map(p => p.postId); posts.forEach(p => { if (currentDecidedIds.includes(p.postId)) { p.isDecided = true; } }); state.pendingPosts = posts; state.selectedPosts = []; if (!posts || posts.length === 0) { approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`; publishApprovedBtn.style.display = 'none'; bulkActionsContainer.style.display = 'none'; return; } const actionablePosts = posts.filter(post => !post.isDecided); if (actionablePosts.length > 0) { bulkActionsContainer.style.display = 'block'; updateBulkActionsState(); } else { bulkActionsContainer.style.display = 'none'; } publishApprovedBtn.style.display = 'block'; posts.forEach(post => { const item = document.createElement('div'); item.className = 'post-list-item'; item.dataset.postId = post.postId; if (post.isDecided) { item.classList.add('is-decided'); } let badge = ''; if (post.isDecided) { if (post.platformDetails.some(p => p.status === 'Approved')) { badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`; } else if (post.platformDetails.every(p => p.status === 'Canceled')) { badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`; } } item.innerHTML = ` ${!post.isDecided ? `<div class="checkbox-wrapper"> <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox"> <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span></label> </div>` : '<div style="width: 34px;"></div>'} <div class="post-list-item-main"> <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual"> <div class="post-list-item-content"> ${badge} <p class="post-list-item-label">POST TOPIC:</p> <h4 class="post-list-item-title">${post.ideaText}</h4> </div> </div> `; item.addEventListener('click', (e) => { if (e.target.closest('.checkbox-wrapper')) return; openApprovalModal(post.postId); }); approvalGalleryContainer.appendChild(item); }); approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox').forEach(cb => { cb.addEventListener('change', (e) => { const postId = parseInt(e.target.dataset.postId); if (e.target.checked) { if (!state.selectedPosts.includes(postId)) state.selectedPosts.push(postId); } else { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } updateBulkActionsState(); }); }); };
 const updateBulkActionsState = () => { const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); if (state.selectedPosts.length > 0) { bulkApproveBtn.disabled = false; bulkApproveBtn.textContent = `Approve Selected (${state.selectedPosts.length})`; } else { bulkApproveBtn.disabled = true; bulkApproveBtn.textContent = 'Approve Selected'; } bulkSelectAll.checked = actionableCheckboxes.length > 0 && state.selectedPosts.length === actionableCheckboxes.length; };
@@ -213,7 +214,7 @@ const startLatePolling = async (previousSnapshot) => {
             }
 
             try {
-                const current = await getLateStatusSnapshot();
+                const current = await getLateStatusSnapshot(); // <-- BU KISIM DÜZELTİLECEK
                 
                 // Önceki ve şimdiki durumları karşılaştır
                 for (const platform in current.platforms) {
@@ -365,55 +366,48 @@ const renderConnectionStatus = async () => {
 };
 
 
-// *** YENİ: VERİ KAYDETME FONKSİYONU (WORKFLOW B'yi çağırır) ***
+// *** VERİ KAYDETME FONKSİYONU (WORKFLOW B'yi çağırır) ***
 const saveLateConnectionData = async () => {
-    // 1. Butonu güncelle
     syncLateDataBtn.disabled = true;
     syncLateDataBtn.textContent = 'Syncing Data... Please wait.';
+    syncLateDataBtn.classList.remove('btn-success');
     
-    // 2. JWT Header'ını al (Workflow B JWT istiyor)
     const headers = getAuthHeaders();
     if (!headers) { 
         handleLogout(); 
         return; 
     }
 
-    // 3. Workflow B'yi Çalıştır (Late ID'lerini NocoDB'ye kaydetmek için)
     try {
-        const response = await fetch(LATE_SAVE_DATA_URL, { // LATE_SAVE_DATA_URL: Workflow B'nin adresi
+        const response = await fetch(LATE_SAVE_DATA_URL, { 
             method: 'POST',
-            headers: headers // JWT Token'ı gönderiliyor
+            headers: headers 
         });
 
         if (!response.ok) {
-            // Hata yanıtını okumayı dener
             const errorText = await response.text();
             throw new Error(`Data save failed: ${errorText}`);
         }
 
-        // 4. Başarılı
         syncLateDataBtn.textContent = 'Sync Successful!';
         syncLateDataBtn.classList.remove('btn-primary');
-        syncLateDataBtn.classList.remove('btn-secondary'); // Eğer varsa
-        syncLateDataBtn.classList.add('btn-success'); // Yeşil yap (Yeni CSS'de tanımladık)
+        syncLateDataBtn.classList.add('btn-success');
         
-        // 5. Durumları Yenile (Bağlı ikonlarını görelim)
         renderConnectionStatus(); 
 
     } catch (error) {
-        alert(`Save Error: ${error.message}`);
         console.error('Save Data Error:', error);
         syncLateDataBtn.textContent = 'Save Failed - Try Again';
-        syncLateDataBtn.disabled = false; // Tekrar denemeye izin ver
+        syncLateDataBtn.disabled = false;
         syncLateDataBtn.classList.remove('btn-success');
         syncLateDataBtn.classList.add('btn-primary');
-        throw error; // initiateLateConnection'ın hatayı yakalamasını sağlar
+        throw error;
     }
 };
 // *** saveLateConnectionData Fonksiyonu Sonu ***
 
 
-// Event Listeners
+// Event Listeners (Aynı kalıyor)
 loginForm.addEventListener('submit', handleLogin);
 postForm.addEventListener('submit', handlePostSubmit);
 logoutBtn.addEventListener('click', handleLogout);
@@ -429,11 +423,11 @@ publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
 
-// YENİ KAYDET BUTONU DİNLEYİCİSİ
+// YENİ KAYDET BUTONU DİNLEYİCİSİ (Aynı kalıyor)
 syncLateDataBtn.addEventListener('click', saveLateConnectionData);
 
 
-// YENİ SAYFA GEÇİŞLERİ VE BUTON DİNLEYİCİLERİ (BU KISIM ÇALIŞMALI)
+// YENİ SAYFA GEÇİŞLERİ VE BUTON DİNLEYİCİLERİ 
 showConnectPageBtn.addEventListener('click', showConnectPage);
 backToPanelFromConnectBtn.addEventListener('click', hideConnectPage);
 
