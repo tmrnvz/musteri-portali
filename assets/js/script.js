@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL LATE POLLING INTEGRATION - Düzeltilmiş Versiyon */
+/* assets/js/script.js - FINAL LATE POLLING INTEGRATION - Kesin Düzeltilmiş Versiyon */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -175,8 +175,7 @@ const getLateStatusSnapshot = async () => {
     const headers = getAuthHeaders(); 
     if (!headers) throw new Error("JWT missing for status check.");
 
-    // *** DÜZELTME BAŞLANGICI ***
-    // Eskiden LATE_GET_STATUS_URL kullanılıyordu. Şimdi Workflow C'yi çağırıyoruz.
+    // *** DÜZELTME YAPILDI: Workflow C'nin URL'si ve POST metodu kullanılıyor ***
     const response = await fetch(LATE_POLLING_URL, { // Düzeltme: LATE_POLLING_URL (Workflow C) kullanılıyor
         method: 'POST', // Workflow C POST ile tetikleniyor
         headers: {
@@ -191,11 +190,16 @@ const getLateStatusSnapshot = async () => {
         throw new Error(`Polling check failed: ${errorText}`);
     }
     
-    // Workflow C'nin yanıtını doğrudan döndürmesi gerekiyor.
-    // Workflow C'nin yanıtı, "Respond with Accounts Data" (JSON.stringify($json)) olduğu için,
-    // basitçe bu JSON'u alıyoruz.
-    return await response.json(); 
-    // *** DÜZELTME SONU ***
+    // Workflow C'nin çıktısı JSON.stringify($json) olduğu için, response.json() ile parse edilmiş halini alırız.
+    // Ancak, n8n yanıtı bazen string olabilir, bu yüzden güvenli olmak için string ise parse edelim.
+    const responseText = await response.text();
+    try {
+        return JSON.parse(responseText);
+    } catch (e) {
+        // Eğer JSON değilse (örneğin sadece bir string), basitçe dönen değeri al.
+        // Bu, Workflow C'nin yanıt yapısına bağlıdır. Burada JSON.parse başarısız olursa, yanıtı string olarak ele alalım.
+        return { body: responseText }; 
+    }
 };
 
 const startLatePolling = async (previousSnapshot) => {
@@ -224,31 +228,33 @@ const startLatePolling = async (previousSnapshot) => {
             }
 
             try {
-                // *** DÜZELTME: getLateStatusSnapshot() artık Workflow C'yi çağırıyor ***
-                const currentResponse = await getLateStatusSnapshot();
+                const currentFullResponse = await getLateStatusSnapshot();
                 
-                // Workflow C'nin yanıtı (JSON.stringify) olduğu için, response'u parse etmemiz gerekebilir.
-                // Workflow C'nin çıktısı basit bir JSON.stringify($json) ise, currentResponse bir string olabilir.
-                // Ancak response.json() çağrısı ile alacağımız için JSON olarak varsayalım.
-                const current = JSON.parse(currentResponse.body); // Workflow C'nin çıktısını JSON olarak al
+                // Workflow C'nin çıktısı (JSON.stringify) olduğu için, output'u almalıyız.
+                // Sizin çıktınızda 'accounts' anahtarını bulduk.
+                let current;
+                if (typeof currentFullResponse === 'object' && currentFullResponse.accounts) {
+                    current = currentFullResponse; // Eğer zaten JSON objesiyse
+                } else {
+                    // Eğer string ise (JSON.stringify'dan dolayı), parse etmeye çalış
+                    try {
+                         current = JSON.parse(currentFullResponse.body || currentFullResponse);
+                    } catch(e) {
+                        // Hata durumunda, Workflow C'nin çıktısını doğrudan alalım (Fallback)
+                        current = currentFullResponse;
+                    }
+                }
+                
+                const currentAccounts = current.accounts || []; // Workflow C'den gelen hesap listesi
 
                 // Önceki başarılı hesap ID'lerini al (Snapshot'tan)
                 const existingAccountIds = Object.values(previousSnapshot.platforms)
                     .filter(p => p.status === 'connected' && p.id)
                     .map(p => p.id);
                 
-                // Şimdiki hesap ID'lerini al (Workflow C'nin yanıtından)
-                // Workflow C'nin yanıt yapısına tam hakim olmasak da,
-                // Late Desteği'nin önerdiği gibi, yeni bir ID'nin *görünüp görünmediğini* kontrol etmeliyiz.
-                
-                // Basitleştirilmiş Kontrol: Eğer Snapshot'tan bu yana yeni bir hesap listesi varsa, bağlantı tamamlanmıştır.
-                // Hesap listesini almanın en temiz yolu, o anda Late'te kaç hesap olduğunu bulmaktır.
-                
-                // Workflow C'nin döndürdüğü JSON yapısını varsayıyoruz: { accounts: [...] }
-                const currentAccounts = current.accounts || []; // Varsayım: Workflow C'nin çıktısı {accounts: [{_id: '...', platform: '...'}]}
-                
+                // Yeni bir hesap ID'si (Late tarafından verilen _id) var mı kontrol et
                 const newAccountFound = currentAccounts.some(account => 
-                    !existingAccountIds.includes(account._id)
+                    account._id && !existingAccountIds.includes(account._id)
                 );
                 
                 if (newAccountFound) {
