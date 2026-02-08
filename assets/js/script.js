@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL LATE POLLING INTEGRATION - Kesin Düzeltilmiş Versiyon */
+/* assets/js/script.js - FINAL LATE POLLING INTEGRATION - "Late vs Late" Mantığı */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -22,11 +22,11 @@ const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-
 // LATE ENTEGRASYON URL'LERİ (Workflow A, B ve C'nin Adresleri)
 const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url'; // Workflow A (Gidiş)
 const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data'; // Workflow B (Geliş - Manuel Sync)
-const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; // Workflow Durum Kontrolü (UI Durum Yenileme için tutuluyor)
-const LATE_POLLING_URL = 'https://ops.synqbrand.com/webhook/late-check-accounts'; // Workflow C (Polling - BAŞARI KONTROLÜ İÇİN KULLANILACAK)
+const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; // Workflow Durum Kontrolü (SADECE UI GÜNCELLEME İÇİN)
+const LATE_POLLING_URL = 'https://ops.synqbrand.com/webhook/late-check-accounts'; // Workflow C (Polling - "LATE vs LATE" İÇİN KULLANILACAK)
 
 
-// Polling State (Yeni değişkenler)
+// Polling State
 let latePopupRef = null;
 let latePollingInterval = null;
 
@@ -36,11 +36,11 @@ let state = {
     pendingPosts: [], 
     modalDecisions: [], 
     selectedPosts: [],
-    businessId: null, // NocoDB Business Profile ID'si (Girişten sonra ayarlanacak)
-    lateProfileId: null // Late'in verdiği Profil ID'si (Status Çekmeden sonra ayarlanacak)
+    businessId: null,
+    lateProfileId: null
 };
 
-// Element variables (Aynı kalıyor)
+// Element variables
 const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms');
 const modalSaveBtn = document.getElementById('modal-save-btn'); const modalCancelBtn = document.getElementById('modal-cancel-btn'); const modalStatus = document.getElementById('modal-status');
 const publishApprovedBtn = document.getElementById('publish-approved-btn'); const publishStatus = document.getElementById('publish-status');
@@ -130,13 +130,12 @@ const routeUserByRole = async (role, username) => {
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
 const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; connectPageSection.style.display = 'none'; customerPanel.style.display = 'block'; };
 
-// YENİ SAYFA GEÇİŞ FONKSİYONLARI
 const showConnectPage = () => {
     customerPanel.style.display = 'none';
     postFormSection.style.display = 'none';
     approvalPortalSection.style.display = 'none';
     connectPageSection.style.display = 'block';
-    renderConnectionStatus(); // YENİ: Durum Kontrolü Çağrısı
+    renderConnectionStatus();
 };
 
 const hideConnectPage = () => {
@@ -144,7 +143,6 @@ const hideConnectPage = () => {
     customerPanel.style.display = 'block';
 };
 
-// ... [ GALERİ VE POST İŞLEMLERİ AYNI KALIYOR ] ... 
 const loadAndRenderApprovalGallery = async () => { approvalGalleryContainer.innerHTML = `<p class="loading-text">Loading content...</p>`; bulkActionsContainer.style.display = 'none'; const headers = getAuthHeaders(); if (!headers) { handleLogout(); return; } try { const response = await fetch(GET_PENDING_POSTS_URL, { headers }); if (!response.ok) throw new Error(`Server responded with status: ${response.status}`); const data = await response.json(); renderGallery(data.posts); } catch (error) { console.error('Failed to load pending posts:', error); approvalGalleryContainer.innerHTML = `<p class="error loading-text">${error.message}</p>`; } };
 const renderGallery = (posts) => { approvalGalleryContainer.innerHTML = ''; const currentDecidedIds = state.pendingPosts.filter(p => p.isDecided).map(p => p.postId); posts.forEach(p => { if (currentDecidedIds.includes(p.postId)) { p.isDecided = true; } }); state.pendingPosts = posts; state.selectedPosts = []; if (!posts || posts.length === 0) { approvalGalleryContainer.innerHTML = `<p class="empty-text">There is no content awaiting your approval. Great job!</p>`; publishApprovedBtn.style.display = 'none'; bulkActionsContainer.style.display = 'none'; return; } const actionablePosts = posts.filter(post => !post.isDecided); if (actionablePosts.length > 0) { bulkActionsContainer.style.display = 'block'; updateBulkActionsState(); } else { bulkActionsContainer.style.display = 'none'; } publishApprovedBtn.style.display = 'block'; posts.forEach(post => { const item = document.createElement('div'); item.className = 'post-list-item'; item.dataset.postId = post.postId; if (post.isDecided) { item.classList.add('is-decided'); } let badge = ''; if (post.isDecided) { if (post.platformDetails.some(p => p.status === 'Approved')) { badge = `<div class="post-list-item-status-badge">Ready for Publish</div>`; } else if (post.platformDetails.every(p => p.status === 'Canceled')) { badge = `<div class="post-list-item-status-badge cancelled">Cancelled</div>`; } } item.innerHTML = ` ${!post.isDecided ? `<div class="checkbox-wrapper"> <input type="checkbox" id="select-post-${post.postId}" data-post-id="${post.postId}" class="bulk-select-checkbox"> <label for="select-post-${post.postId}" class="checkbox-label"><span class="checkbox-custom"></span></label> </div>` : '<div style="width: 34px;"></div>'} <div class="post-list-item-main"> <img src="${post.mainVisualUrl}" alt="Visual for ${post.ideaText.substring(0, 30)}" class="post-list-item-visual"> <div class="post-list-item-content"> ${badge} <p class="post-list-item-label">POST TOPIC:</p> <h4 class="post-list-item-title">${post.ideaText}</h4> </div> </div> `; item.addEventListener('click', (e) => { if (e.target.closest('.checkbox-wrapper')) return; openApprovalModal(post.postId); }); approvalGalleryContainer.appendChild(item); }); approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox').forEach(cb => { cb.addEventListener('change', (e) => { const postId = parseInt(e.target.dataset.postId); if (e.target.checked) { if (!state.selectedPosts.includes(postId)) state.selectedPosts.push(postId); } else { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } updateBulkActionsState(); }); }); };
 const updateBulkActionsState = () => { const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); if (state.selectedPosts.length > 0) { bulkApproveBtn.disabled = false; bulkApproveBtn.textContent = `Approve Selected (${state.selectedPosts.length})`; } else { bulkApproveBtn.disabled = true; bulkApproveBtn.textContent = 'Approve Selected'; } bulkSelectAll.checked = actionableCheckboxes.length > 0 && state.selectedPosts.length === actionableCheckboxes.length; };
@@ -159,7 +157,7 @@ const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSi
 
 const handleLogin = async (event) => { event.preventDefault(); const username = document.getElementById("username").value; const password = document.getElementById("password").value; setStatus(statusDiv, "Logging in...", 'info'); loginBtn.disabled = true; try { const response = await fetch(LOGIN_WORKFLOW_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Login failed with status: ${response.status}`); } const data = await response.json(); const token = data.token; localStorage.setItem('jwtToken', token); const decodedToken = parseJwt(token); if (decodedToken && decodedToken.role) { localStorage.setItem('username', decodedToken.username); setStatus(statusDiv, "", "success"); await routeUserByRole(decodedToken.role, decodedToken.username); } else { throw new Error('Invalid token received from server.'); } } catch (error) { setStatus(statusDiv, error.message, "error"); } finally { loginBtn.disabled = false; } };
 const handleOnboardingSubmit = async (event) => { event.preventDefault(); const onboardingForm = event.target; const onboardingStatus = onboardingForm.querySelector('#onboarding-status'); const submitBtn = onboardingForm.querySelector('#submit-onboarding-btn'); setStatus(onboardingStatus, 'Submitting your information...', 'info'); submitBtn.disabled = true; const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } try { const formData = new FormData(onboardingForm); const jsonData = {}; for (const [key, value] of formData.entries()) { if (key !== 'PlatformFocus') { jsonData[key] = value; } } const platformFocusCheckboxes = onboardingForm.querySelectorAll('input[name="PlatformFocus"]:checked'); const platformFocusValues = Array.from(platformFocusCheckboxes).map(cb => cb.value); jsonData.PlatformFocus = platformFocusValues; let platformUsernamesText = ""; platformFocusValues.forEach(platform => { const safeId = platform.toLowerCase().replace(/ \/ /g, '-').replace(/ /g, '-'); const inputId = `pf-${safeId}-user`; const userInput = document.getElementById(inputId); if (userInput && userInput.value) { platformUsernamesText += `${platform}: ${userInput.value}\n`; } else { platformUsernamesText += `${platform}: (Not provided)\n`; } }); jsonData.PlatformUsernamesForEmail = platformUsernamesText.trim(); const response = await fetch(ONBOARDING_WORKFLOW_URL, { method: 'POST', headers: { ...authHeaders, 'Content-Type': 'application/json' }, body: JSON.stringify(jsonData), }); if (!response.ok) { let errorData; try { errorData = await response.json(); } catch (e) { throw new Error(`Submission failed with status: ${response.status}`); } throw new Error(errorData.message || 'Submission failed due to a server error.'); } onboardingSection.style.display = 'none'; pendingActivationSection.style.display = 'block'; } catch (error) { setStatus(onboardingStatus, `Error: ${error.message}`, 'error'); submitBtn.disabled = false; } };
-const handlePostSubmit = async (event) => { event.preventDefault(); const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } const files = uppy.getFiles(); if (files.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`; return; } const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value); if (selectedPlatforms.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`; return; } const messages = ["Processing...", "Uploading media files...", "AI is generating content...", "Finalizing..."]; let messageIndex = 0; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts. </h4><p>${messages[messageIndex]}</p></div>`; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); state.loadingIntervalId = setInterval(() => { messageIndex = (messageIndex + 1) % messages.length; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts.</h4><p>${messages[messageIndex]}</p></div>`; }, 4000); submitPostBtn.disabled = true; backToPanelBtn.disabled = true; try { const result = await uppy.upload(); if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`); const sortedFiles = uppy.getFiles(); const sortedFileKeys = sortedFiles.map(file => { const successfulUpload = result.successful.find(s => s.id === file.id); return successfulUpload ? new URL(successfulUpload.uploadURL).pathname.substring(1) : null; }).filter(key => key !== null); const sortedFileUrls = sortedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`); const postData = { postTitle: document.getElementById('postTitle').value, postContent: document.getElementById('postContent').value, destinationLink: document.getElementById('destinationLink').value, fileKeys: sortedFileKeys, fileUrls: sortedFileUrls, submissionID: crypto.randomUUID(), selectedPlatforms: selectedPlatforms }; const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(postData) }); if (!response.ok) { const errorText = await response.text(); throw new Error(`Server returned an error: ${response.status} - ${errorText}`); } const responseData = await response.json(); const newPostId = responseData.Id; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); queueMicrotask(() => displayReviewInterface(newPostId)); } catch (error) { if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`; postStatusDiv.innerHTML = errorHtml; submitBtn.disabled = false; backToPanelBtn.disabled = false; } };
+const handlePostSubmit = async (event) => { event.preventDefault(); const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } const files = uppy.getFiles(); if (files.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`; return; } const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value); if (selectedPlatforms.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`; return; } const messages = ["Processing...", "Uploading media files...", "AI is generating content...", "Finalizing..."]; let messageIndex = 0; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts. </h4><p>${messages[messageIndex]}</p></div>`; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); state.loadingIntervalId = setInterval(() => { messageIndex = (messageIndex + 1) % messages.length; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts.</h4><p>${messages[messageIndex]}</p></div>`; }, 4000); submitPostBtn.disabled = true; backToPanelBtn.disabled = true; try { const result = await uppy.upload(); if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`); const sortedFiles = uppy.getFiles(); const sortedFileKeys = sortedFiles.map(file => { const successfulUpload = result.successful.find(s => s.id === file.id); return successfulUpload ? new URL(successfulUpload.uploadURL).pathname.substring(1) : null; }).filter(key => key !== null); const sortedFileUrls = sortedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`); const postData = { postTitle: document.getElementById('postTitle').value, postContent: document.getElementById('postContent').value, destinationLink: document.getElementById('destinationLink').value, fileKeys: sortedFileKeys, fileUrls: sortedFileUrls, submissionID: crypto.randomUUID(), selectedPlatforms: selectedPlatforms }; const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(postData) }); if (!response.ok) { const errorText = await response.text(); throw new Error(`Server returned an error: ${response.status} - ${errorText}`); } const responseData = await response.json(); const newPostId = responseData.Id; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); queueMicrotask(() => displayReviewInterface(newPostId)); } catch (error) { if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`; postStatusDiv.innerHTML = errorHtml; submitPostBtn.disabled = false; backToPanelBtn.disabled = false; } };
 const handleApproveAndPublish = async (postId) => { /* ... KODUNUZU BURAYA EKLEYİN ... */ };
 const displayReviewInterface = async (postId) => { /* ... KODUNUZU BURAYA EKLEYİN ... */ };
 const setupReviewAccordionListeners = () => { /* ... KODUNUZU BURAYA EKLEYİN ... */ };
@@ -168,122 +166,105 @@ const fetchAndRenderPlatforms = async () => { const container = document.getElem
 const setupSelectAllLogic = () => { const selectAllCheckbox = document.getElementById('select-all-platforms'); const platformCheckboxes = document.querySelectorAll('input[name="platforms"]'); const syncSelectAllState = () => { const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked); selectAllCheckbox.checked = allChecked; }; selectAllCheckbox.addEventListener('change', () => { platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; }); }); platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); }); syncSelectAllState(); };
 
 
-// *** LATE BAĞLANTI FONKSİYONLARI ***
+// *** LATE BAĞLANTI FONKSİYONLARI (DÜZELTİLMİŞ) ***
 
-// Polling Helper Functions START //
-const getLateStatusSnapshot = async () => {
-    const headers = getAuthHeaders(); 
-    if (!headers) throw new Error("JWT missing for status check.");
+// YENİ: Sadece Workflow C'yi çağıran temiz bir fonksiyon
+const fetchLateAccounts = async () => {
+    const headers = getAuthHeaders();
+    if (!headers) {
+        throw new Error("Authentication error: JWT token is missing.");
+    }
 
-    // *** DÜZELTME YAPILDI: Workflow C'nin URL'si ve POST metodu kullanılıyor ***
-    const response = await fetch(LATE_POLLING_URL, { // Düzeltme: LATE_POLLING_URL (Workflow C) kullanılıyor
-        method: 'POST', // Workflow C POST ile tetikleniyor
+    // Workflow C'yi çağır: LATE_POLLING_URL
+    const response = await fetch(LATE_POLLING_URL, {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             ...headers
         },
-        body: JSON.stringify({ lateProfileId: state.lateProfileId }) // Workflow C'nin beklediği payload
+        body: JSON.stringify({ lateProfileId: state.lateProfileId })
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Polling check failed: ${errorText}`);
+        throw new Error(`Polling check failed (Workflow C): ${errorText}`);
     }
     
     // Workflow C'nin çıktısı JSON.stringify($json) olduğu için, response.json() ile parse edilmiş halini alırız.
-    // Ancak, n8n yanıtı bazen string olabilir, bu yüzden güvenli olmak için string ise parse edelim.
     const responseText = await response.text();
     try {
-        return JSON.parse(responseText);
+        const data = JSON.parse(responseText);
+        // Kontrol: Polling Workflow'unun beklendiği gibi 'accounts' dizisi döndürdüğünden emin ol
+        if (!data || !Array.isArray(data.accounts)) {
+             throw new Error("Invalid response format from Workflow C (Missing 'accounts' array).");
+        }
+        return data; // { accounts: [...] } yapısını döndür
     } catch (e) {
-        // Eğer JSON değilse (örneğin sadece bir string), basitçe dönen değeri al.
-        // Bu, Workflow C'nin yanıt yapısına bağlıdır. Burada JSON.parse başarısız olursa, yanıtı string olarak ele alalım.
-        return { body: responseText }; 
+        throw new Error(`Invalid JSON response from Workflow C: ${e.message}`);
     }
 };
 
-const startLatePolling = async (previousSnapshot) => {
-    // Stateleri durdur
+
+// YENİDEN YAZILDI: "Late vs Late" mantığını kullanır
+const startLatePolling = async (snapshotBefore) => {
     if (latePollingInterval) clearInterval(latePollingInterval);
 
     const POLL_INTERVAL = 3000; // 3 saniyede bir kontrol et
     const TIMEOUT = 5 * 60 * 1000; // 5 dakika
     const startTime = Date.now();
+    
+    // HATA DÜZELTMESİ: snapshotBefore'un yapısı { accounts: [...] } olduğu için,
+    // doğrudan accounts dizisindeki _id'leri alıyoruz.
+    const previousAccountIds = (snapshotBefore.accounts || []).map(acc => acc._id).filter(id => id); // null/undefined ID'leri temizle
 
     return new Promise((resolve, reject) => {
         latePollingInterval = setInterval(async () => {
-            // Popup kullanıcı tarafından kapatıldıysa
             if (latePopupRef && latePopupRef.closed) {
                 clearInterval(latePollingInterval);
-                reject(new Error("Popup closed manually."));
+                reject(new Error("Popup was closed manually by the user."));
                 return;
             }
 
-            // Timeout
             if (Date.now() - startTime > TIMEOUT) {
                 clearInterval(latePollingInterval);
                 if (latePopupRef && !latePopupRef.closed) latePopupRef.close();
-                reject(new Error("Connection timed out. Please try again."));
+                reject(new Error("Connection timed out after 5 minutes."));
                 return;
             }
 
             try {
-                const currentFullResponse = await getLateStatusSnapshot();
+                // Her döngüde Late'ten güncel durumu çek
+                const currentResponse = await fetchLateAccounts(); // LATE_POLLING_URL'yi çağırır
+                const currentAccounts = currentResponse.accounts || []; // { accounts: [...] } yapısından 'accounts' dizisini alır
                 
-                // Workflow C'nin çıktısı (JSON.stringify) olduğu için, output'u almalıyız.
-                // Sizin çıktınızda 'accounts' anahtarını bulduk.
-                let current;
-                if (typeof currentFullResponse === 'object' && currentFullResponse.accounts) {
-                    current = currentFullResponse; // Eğer zaten JSON objesiyse
-                } else {
-                    // Eğer string ise (JSON.stringify'dan dolayı), parse etmeye çalış
-                    try {
-                         current = JSON.parse(currentFullResponse.body || currentFullResponse);
-                    } catch(e) {
-                        // Hata durumunda, Workflow C'nin çıktısını doğrudan alalım (Fallback)
-                        current = currentFullResponse;
-                    }
-                }
-                
-                const currentAccounts = current.accounts || []; // Workflow C'den gelen hesap listesi
-
-                // Önceki başarılı hesap ID'lerini al (Snapshot'tan)
-                const existingAccountIds = Object.values(previousSnapshot.platforms)
-                    .filter(p => p.status === 'connected' && p.id)
-                    .map(p => p.id);
-                
-                // Yeni bir hesap ID'si (Late tarafından verilen _id) var mı kontrol et
+                // Güncel listede olup da, ilk snapshot'ta olmayan bir ID var mı diye kontrol et
                 const newAccountFound = currentAccounts.some(account => 
-                    account._id && !existingAccountIds.includes(account._id)
+                    account._id && !previousAccountIds.includes(account._id)
                 );
                 
                 if (newAccountFound) {
-                    // 🎯 BAŞARIYLA BAĞLANDI
                     clearInterval(latePollingInterval);
-                    
                     if (latePopupRef && !latePopupRef.closed) {
-                        latePopupRef.close(); // Popup'ı otomatik kapat
+                        latePopupRef.close();
                     }
-                    
-                    // Polling başarılı, kaydetme adımını tetikle
-                    resolve(true); 
+                    resolve(true); // Başarılı, promise'i çöz
                     return;
                 }
-            } catch (err) {
-                console.error('Late polling error:', err);
-                clearInterval(latePollingInterval);
-                reject(err);
+            } catch (error) {
+                // Hata durumunda döngüden çık, aksi takdirde sonsuz döngü ve hata yığını oluşur
+                console.error('Error during polling:', error);
+                clearInterval(latePollingInterval); 
+                reject(new Error(`Polling process encountered a fatal error: ${error.message}`));
             }
         }, POLL_INTERVAL);
     });
 };
 
-// Polling Helper Functions END //
 
-
+// GÜNCELLENDİ: Snapshot almak için doğru fonksiyonu çağırır
 const initiateLateConnection = async (platform) => {
     if (!state.lateProfileId) { 
-        alert('Error: Late Profile ID is missing. Please try refreshing the connection status first.');
+        alert('Error: Late Profile ID is missing. Please refresh the page and try again.');
         return;
     }
     
@@ -294,8 +275,8 @@ const initiateLateConnection = async (platform) => {
     }
     
     try {
-        // 1. Mevcut Durumu Al (Snapshot - Workflow B/Status'tan)
-        const snapshotBefore = await getLateStatusSnapshot();
+        // 1. Snapshot'ı al (Popup açılmadan ÖNCE Late'in durumu - Polling Workflow'u ile)
+        const snapshotBefore = await fetchLateAccounts();
 
         // 2. Auth URL'yi al (Workflow A)
         const response = await fetch(LATE_GET_CONNECT_URL, {
@@ -307,17 +288,12 @@ const initiateLateConnection = async (platform) => {
             })
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Connection link generation failed with status ${response.status}: ${errorText}`);
-        }
+        if (!response.ok) throw new Error(`Failed to get connection URL: ${await response.text()}`);
 
         const data = await response.json();
         const connectUrl = data.connectEndpoint; 
 
-        if (!connectUrl) {
-            throw new Error('n8n returned successfully but no connection URL was found.');
-        }
+        if (!connectUrl) throw new Error('Connection URL was not returned from the server.');
 
         // 3. Popup'ı aç
         const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
@@ -327,28 +303,24 @@ const initiateLateConnection = async (platform) => {
             throw new Error("Popup blocked by browser. Please allow popups for this site.");
         }
         
-        platformBtn.textContent = 'Authorizing... (Waiting for completion)';
+        platformBtn.textContent = 'Authorizing... (Please complete in popup)';
 
-        // 4. Polling sonucunu bekle (Workflow C'yi çağırır)
-        await startLatePolling(snapshotBefore); // Polling başarılıysa resolve olur.
+        // 4. Polling'i başlat ve sonucunu bekle
+        await startLatePolling(snapshotBefore);
 
-        // 5. BAŞARILI: Otomatik Kayıt (Workflow B'yi çağır)
-        await saveLateConnectionData(); // Kayıt işlemini yap (Bu fonksiyon buton durumunu günceller)
+        // 5. BAŞARILI: Veriyi kaydet (Workflow B'yi çağır) ve UI'ı güncelle
+        await saveLateConnectionData();
         
-        alert(`Success: ${platform.toUpperCase()} connected and synchronized!`);
-        renderConnectionStatus(); // Tüm UI durumlarını günceller
+        alert(`Success! ${platform.toUpperCase()} has been connected and synced.`);
+        renderConnectionStatus();
 
     } catch (error) {
         console.error('Late Connection Error:', error);
-        alert(`Hesap bağlama akışı başarısız oldu: ${error.message}`);
+        alert(`The connection process failed: ${error.message}`);
         
         if (platformBtn) {
             platformBtn.disabled = false;
-            const currentStatusTextEl = document.getElementById(`status-${platform}`);
-            if (currentStatusTextEl) {
-                 currentStatusTextEl.textContent = 'NOT CONNECTED';
-                 currentStatusTextEl.className = 'connection-status-text disconnected';
-            }
+            renderConnectionStatus();
         }
     } finally {
         if (latePollingInterval) clearInterval(latePollingInterval);
@@ -364,44 +336,47 @@ const renderConnectionStatus = async () => {
     });
     
     const headers = getAuthHeaders(); 
-
     if (!headers) {
-        document.getElementById('platform-buttons-container').innerHTML = '<p class="error">Error: Not logged in (JWT missing).</p>';
+        document.getElementById('platform-buttons-container').innerHTML = '<p class="error">Error: Not logged in.</p>';
         return;
     }
 
     try {
+        // BU FONKSİYON, NocoDB'deki durumu gösterir. Bu yüzden LATE_GET_STATUS_URL doğru.
         const response = await fetch(LATE_GET_STATUS_URL, { 
             method: 'GET',
             headers: headers
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Status check failed with status ${response.status}: ${errorText}`);
-        }
+        if (!response.ok) throw new Error(`Status check failed: ${await response.text()}`);
 
         const data = await response.json(); 
 
-        state.lateProfileId = data.lateProfileId; 
+        const statusData = Array.isArray(data) ? data[0] : data;
+
+        if (!statusData || !statusData.lateProfileId) {
+             console.warn("Could not retrieve lateProfileId from status workflow. It might be set on first connection.");
+        } else {
+            state.lateProfileId = statusData.lateProfileId; 
+        }
 
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
             
-            const platformStatus = data.platforms[platform];
+            const platformStatus = statusData?.platforms?.[platform];
             const isConnected = platformStatus && platformStatus.status === 'connected';
+
+            button.disabled = false;
 
             if (isConnected) {
                 button.classList.add('is-connected');
                 statusTextEl.textContent = 'CONNECTED';
                 statusTextEl.classList.add('connected');
-                button.dataset.status = 'connected';
             } else {
                 button.classList.remove('is-connected');
                 statusTextEl.textContent = 'NOT CONNECTED';
                 statusTextEl.classList.add('disconnected');
-                button.dataset.status = 'disconnected';
             }
         });
 
@@ -412,16 +387,15 @@ const renderConnectionStatus = async () => {
 };
 
 
-// *** VERİ KAYDETME FONKSİYONU (WORKFLOW B'yi çağırır) ***
 const saveLateConnectionData = async () => {
     syncLateDataBtn.disabled = true;
-    syncLateDataBtn.textContent = 'Syncing Data... Please wait.';
-    syncLateDataBtn.classList.remove('btn-success');
+    syncLateDataBtn.textContent = 'Syncing...';
+    syncLateDataBtn.classList.remove('btn-success', 'btn-primary');
     
     const headers = getAuthHeaders();
     if (!headers) { 
-        handleLogout(); 
-        return; 
+        handleLogout();
+        throw new Error("Authentication failed before saving data.");
     }
 
     try {
@@ -430,35 +404,27 @@ const saveLateConnectionData = async () => {
             headers: headers 
         });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Data save failed: ${errorText}`);
-        }
+        if (!response.ok) throw new Error(`Data sync failed: ${await response.text()}`);
 
         syncLateDataBtn.textContent = 'Sync Successful!';
-        syncLateDataBtn.classList.remove('btn-primary');
         syncLateDataBtn.classList.add('btn-success');
         
-        renderConnectionStatus(); 
-
     } catch (error) {
         console.error('Save Data Error:', error);
-        syncLateDataBtn.textContent = 'Save Failed - Try Again';
-        syncLateDataBtn.disabled = false;
-        syncLateDataBtn.classList.remove('btn-success');
+        syncLateDataBtn.textContent = 'Sync Failed - Try Again';
         syncLateDataBtn.classList.add('btn-primary');
+        syncLateDataBtn.disabled = false;
         throw error;
     }
 };
-// *** saveLateConnectionData Fonksiyonu Sonu ***
 
 
 // Event Listeners (Aynı kalıyor)
 loginForm.addEventListener('submit', handleLogin);
 postForm.addEventListener('submit', handlePostSubmit);
 logoutBtn.addEventListener('click', handleLogout);
-showFormBtn.addEventListener('click', () => { resetPostForm(); customerPanel.style.display = 'none'; postFormSection.style.display = 'block'; });
-backToPanelBtn.addEventListener('click', () => { const isResultState = backToPanelBtn.textContent === 'Create Another Post'; if (isResultState) { resetPostForm(); } else { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; } });
+showFormBtn.addEventListener('click', () => { /* resetPostForm(); */ customerPanel.style.display = 'none'; postFormSection.style.display = 'block'; });
+backToPanelBtn.addEventListener('click', () => { const isResultState = backToPanelBtn.textContent === 'Create Another Post'; if (isResultState) { /* resetPostForm(); */ } else { postFormSection.style.display = 'none'; customerPanel.style.display = 'block'; } });
 showApprovalPortalBtn.addEventListener('click', showApprovalPortal);
 backToPanelFromApprovalBtn.addEventListener('click', showCustomerPanel);
 modalCloseBtn.addEventListener('click', closeApprovalModal);
@@ -469,15 +435,11 @@ publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
 
-// YENİ KAYDET BUTONU DİNLEYİCİSİ (Aynı kalıyor)
 syncLateDataBtn.addEventListener('click', saveLateConnectionData);
 
-
-// YENİ SAYFA GEÇİŞLERİ VE BUTON DİNLEYİCİLERİ 
 showConnectPageBtn.addEventListener('click', showConnectPage);
 backToPanelFromConnectBtn.addEventListener('click', hideConnectPage);
 
-// Platform butonlarına tek bir dinleyici ekleme
 platformButtonsContainer.addEventListener('click', (e) => {
     const btn = e.target.closest('.platform-connect-btn');
     if (btn) {
