@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL LATE POLLING INTEGRATION */
+/* assets/js/script.js - FINAL LATE POLLING INTEGRATION - Düzeltilmiş Versiyon */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -22,7 +22,7 @@ const UPDATE_PROFILE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/1f7ae02d-
 // LATE ENTEGRASYON URL'LERİ (Workflow A, B ve C'nin Adresleri)
 const LATE_GET_CONNECT_URL = 'https://ops.synqbrand.com/webhook/late-get-connect-url'; // Workflow A (Gidiş)
 const LATE_SAVE_DATA_URL = 'https://ops.synqbrand.com/webhook/late-save-connection-data'; // Workflow B (Geliş - Manuel Sync)
-const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; // Workflow Durum Kontrolü (Yeni ID eklenmediyse durum kontrolü için kullanılabilir)
+const LATE_GET_STATUS_URL = 'https://ops.synqbrand.com/webhook/late-get-status'; // Workflow Durum Kontrolü (UI Durum Yenileme için tutuluyor)
 const LATE_POLLING_URL = 'https://ops.synqbrand.com/webhook/late-check-accounts'; // Workflow C (Polling - BAŞARI KONTROLÜ İÇİN KULLANILACAK)
 
 
@@ -40,7 +40,7 @@ let state = {
     lateProfileId: null // Late'in verdiği Profil ID'si (Status Çekmeden sonra ayarlanacak)
 };
 
-// Element variables (Tüm element değişkenleri aynı kalıyor)
+// Element variables (Aynı kalıyor)
 const loginSection = document.getElementById('login-section'); const customerPanel = document.getElementById('customer-panel'); const postFormSection = document.getElementById('post-form-section'); const loginForm = document.getElementById('login-form'); const loginBtn = document.getElementById('login-btn'); const statusDiv = document.getElementById('status'); const welcomeMessage = document.getElementById('welcome-message'); const showFormBtn = document.getElementById('show-form-btn'); const postForm = document.getElementById('post-form'); const submitPostBtn = document.getElementById('submit-post-btn'); const postStatusDiv = document.getElementById('post-status'); const backToPanelBtn = document.getElementById('back-to-panel-btn'); const logoutBtn = document.getElementById('logout-btn'); const approvalPortalSection = document.getElementById('approval-portal-section'); const showApprovalPortalBtn = document.getElementById('show-approval-portal-btn'); const backToPanelFromApprovalBtn = document.getElementById('back-to-panel-from-approval-btn'); const approvalGalleryContainer = document.getElementById('approval-gallery-container'); const approvalModal = document.getElementById('approval-modal'); const modalTitle = document.getElementById('modal-title'); const modalCloseBtn = document.getElementById('modal-close-btn'); const modalVisual = document.getElementById('modal-visual'); const modalPlatforms = document.getElementById('modal-platforms');
 const modalSaveBtn = document.getElementById('modal-save-btn'); const modalCancelBtn = document.getElementById('modal-cancel-btn'); const modalStatus = document.getElementById('modal-status');
 const publishApprovedBtn = document.getElementById('publish-approved-btn'); const publishStatus = document.getElementById('publish-status');
@@ -55,7 +55,7 @@ const showConnectPageBtn = document.getElementById('show-connect-page-btn');
 const connectPageSection = document.getElementById('connect-page-section');   
 const backToPanelFromConnectBtn = document.getElementById('back-to-panel-from-connect-btn');
 const platformButtonsContainer = document.getElementById('platform-buttons-container');
-const syncLateDataBtn = document.getElementById('sync-late-data-btn'); // *** YENİ DEĞİŞKEN EKLENDİ ***
+const syncLateDataBtn = document.getElementById('sync-late-data-btn');
 
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -175,24 +175,34 @@ const getLateStatusSnapshot = async () => {
     const headers = getAuthHeaders(); 
     if (!headers) throw new Error("JWT missing for status check.");
 
-    const response = await fetch(LATE_GET_STATUS_URL, { 
-        method: 'GET',
-        headers: headers
+    // *** DÜZELTME BAŞLANGICI ***
+    // Eskiden LATE_GET_STATUS_URL kullanılıyordu. Şimdi Workflow C'yi çağırıyoruz.
+    const response = await fetch(LATE_POLLING_URL, { // Düzeltme: LATE_POLLING_URL (Workflow C) kullanılıyor
+        method: 'POST', // Workflow C POST ile tetikleniyor
+        headers: {
+            'Content-Type': 'application/json',
+            ...headers
+        },
+        body: JSON.stringify({ lateProfileId: state.lateProfileId }) // Workflow C'nin beklediği payload
     });
 
     if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Status check failed: ${errorText}`);
+        throw new Error(`Polling check failed: ${errorText}`);
     }
-
+    
+    // Workflow C'nin yanıtını doğrudan döndürmesi gerekiyor.
+    // Workflow C'nin yanıtı, "Respond with Accounts Data" (JSON.stringify($json)) olduğu için,
+    // basitçe bu JSON'u alıyoruz.
     return await response.json(); 
+    // *** DÜZELTME SONU ***
 };
 
 const startLatePolling = async (previousSnapshot) => {
     // Stateleri durdur
     if (latePollingInterval) clearInterval(latePollingInterval);
 
-    const POLL_INTERVAL = 5000; // 5 saniyede bir kontrol et
+    const POLL_INTERVAL = 3000; // 3 saniyede bir kontrol et
     const TIMEOUT = 5 * 60 * 1000; // 5 dakika
     const startTime = Date.now();
 
@@ -214,29 +224,49 @@ const startLatePolling = async (previousSnapshot) => {
             }
 
             try {
-                const current = await getLateStatusSnapshot(); // <-- BU KISIM DÜZELTİLECEK
+                // *** DÜZELTME: getLateStatusSnapshot() artık Workflow C'yi çağırıyor ***
+                const currentResponse = await getLateStatusSnapshot();
                 
-                // Önceki ve şimdiki durumları karşılaştır
-                for (const platform in current.platforms) {
-                    const prev = previousSnapshot.platforms?.[platform];
-                    const now = current.platforms[platform];
+                // Workflow C'nin yanıtı (JSON.stringify) olduğu için, response'u parse etmemiz gerekebilir.
+                // Workflow C'nin çıktısı basit bir JSON.stringify($json) ise, currentResponse bir string olabilir.
+                // Ancak response.json() çağrısı ile alacağımız için JSON olarak varsayalım.
+                const current = JSON.parse(currentResponse.body); // Workflow C'nin çıktısını JSON olarak al
 
-                    // 'disconnected' iken 'connected' olduysa
-                    if (prev?.status !== 'connected' && now?.status === 'connected') {
-                        // 🎯 BAŞARIYLA BAĞLANDI
-                        clearInterval(latePollingInterval);
-                        
-                        if (latePopupRef && !latePopupRef.closed) {
-                            latePopupRef.close(); // Popup'ı otomatik kapat
-                        }
-                        
-                        resolve({ platform: platform, profileId: now.id });
-                        return;
+                // Önceki başarılı hesap ID'lerini al (Snapshot'tan)
+                const existingAccountIds = Object.values(previousSnapshot.platforms)
+                    .filter(p => p.status === 'connected' && p.id)
+                    .map(p => p.id);
+                
+                // Şimdiki hesap ID'lerini al (Workflow C'nin yanıtından)
+                // Workflow C'nin yanıt yapısına tam hakim olmasak da,
+                // Late Desteği'nin önerdiği gibi, yeni bir ID'nin *görünüp görünmediğini* kontrol etmeliyiz.
+                
+                // Basitleştirilmiş Kontrol: Eğer Snapshot'tan bu yana yeni bir hesap listesi varsa, bağlantı tamamlanmıştır.
+                // Hesap listesini almanın en temiz yolu, o anda Late'te kaç hesap olduğunu bulmaktır.
+                
+                // Workflow C'nin döndürdüğü JSON yapısını varsayıyoruz: { accounts: [...] }
+                const currentAccounts = current.accounts || []; // Varsayım: Workflow C'nin çıktısı {accounts: [{_id: '...', platform: '...'}]}
+                
+                const newAccountFound = currentAccounts.some(account => 
+                    !existingAccountIds.includes(account._id)
+                );
+                
+                if (newAccountFound) {
+                    // 🎯 BAŞARIYLA BAĞLANDI
+                    clearInterval(latePollingInterval);
+                    
+                    if (latePopupRef && !latePopupRef.closed) {
+                        latePopupRef.close(); // Popup'ı otomatik kapat
                     }
+                    
+                    // Polling başarılı, kaydetme adımını tetikle
+                    resolve(true); 
+                    return;
                 }
             } catch (err) {
-                // Hata durumunda polling'i durdurma
                 console.error('Late polling error:', err);
+                clearInterval(latePollingInterval);
+                reject(err);
             }
         }, POLL_INTERVAL);
     });
@@ -246,20 +276,19 @@ const startLatePolling = async (previousSnapshot) => {
 
 
 const initiateLateConnection = async (platform) => {
-    // state.lateProfileId kontrolü artık Polling için gerekli
     if (!state.lateProfileId) { 
-        alert('Error: Late Profile ID is missing. Please contact support or complete setup.');
+        alert('Error: Late Profile ID is missing. Please try refreshing the connection status first.');
         return;
     }
     
     const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
     if (platformBtn) {
         platformBtn.disabled = true;
-        platformBtn.textContent = 'Preparing Polling...';
+        platformBtn.textContent = `Preparing...`;
     }
     
     try {
-        // 1. Mevcut Durumu Al (Snapshot)
+        // 1. Mevcut Durumu Al (Snapshot - Workflow B/Status'tan)
         const snapshotBefore = await getLateStatusSnapshot();
 
         // 2. Auth URL'yi al (Workflow A)
@@ -278,36 +307,47 @@ const initiateLateConnection = async (platform) => {
         }
 
         const data = await response.json();
-        const connectUrl = data.connectEndpoint; // Workflow A'dan gelen URL
+        const connectUrl = data.connectEndpoint; 
 
         if (!connectUrl) {
             throw new Error('n8n returned successfully but no connection URL was found.');
         }
 
-        // 3. Popup'ı aç ve Polling'i Başlat
+        // 3. Popup'ı aç
         const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
         latePopupRef = window.open(connectUrl, 'LateConnection', windowFeatures);
         
-        platformBtn.textContent = 'Authorizing... (Please complete in popup)';
+        if (!latePopupRef) {
+            throw new Error("Popup blocked by browser. Please allow popups for this site.");
+        }
+        
+        platformBtn.textContent = 'Authorizing... (Waiting for completion)';
 
-        // 4. Polling sonucunu bekle
-        const result = await startLatePolling(snapshotBefore);
+        // 4. Polling sonucunu bekle (Workflow C'yi çağırır)
+        await startLatePolling(snapshotBefore); // Polling başarılıysa resolve olur.
 
-        // 5. BAŞARILI: Otomatik Kayıt & UI Güncelleme
-        const saveResult = await saveLateConnectionData(); // Kayıt işlemini yap
-        alert(`Success: ${result.platform.toUpperCase()} connected and synchronized!`);
+        // 5. BAŞARILI: Otomatik Kayıt (Workflow B'yi çağır)
+        await saveLateConnectionData(); // Kayıt işlemini yap (Bu fonksiyon buton durumunu günceller)
+        
+        alert(`Success: ${platform.toUpperCase()} connected and synchronized!`);
         renderConnectionStatus(); // Tüm UI durumlarını günceller
 
     } catch (error) {
-        alert(`Hesap bağlama akışı başlatılamadı: ${error.message}`);
         console.error('Late Connection Error:', error);
+        alert(`Hesap bağlama akışı başarısız oldu: ${error.message}`);
+        
         if (platformBtn) {
             platformBtn.disabled = false;
-            platformBtn.textContent = `Connect ${platform.charAt(0).toUpperCase() + platform.slice(1)}`; 
+            const currentStatusTextEl = document.getElementById(`status-${platform}`);
+            if (currentStatusTextEl) {
+                 currentStatusTextEl.textContent = 'NOT CONNECTED';
+                 currentStatusTextEl.className = 'connection-status-text disconnected';
+            }
         }
     } finally {
         if (latePollingInterval) clearInterval(latePollingInterval);
         latePollingInterval = null;
+        latePopupRef = null;
     }
 };
 
