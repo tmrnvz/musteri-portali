@@ -55,7 +55,7 @@ const showConnectPageBtn = document.getElementById('show-connect-page-btn');
 const connectPageSection = document.getElementById('connect-page-section');    
 const backToPanelFromConnectBtn = document.getElementById('back-to-panel-from-connect-btn');
 const platformButtonsContainer = document.getElementById('platform-buttons-container');
-const syncLateDataBtn = document.getElementById('sync-late-data-btn');
+//const syncLateDataBtn = document.getElementById('sync-late-data-btn');
 
 
 const ICON_APPROVE = `<svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
@@ -399,7 +399,7 @@ modalCancelBtn.addEventListener('click', closeApprovalModal);
 publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
-syncLateDataBtn.addEventListener('click', saveLateConnectionData);
+//syncLateDataBtn.addEventListener('click', saveLateConnectionData);
 showConnectPageBtn.addEventListener('click', showConnectPage);
 backToPanelFromConnectBtn.addEventListener('click', hideConnectPage);
 platformButtonsContainer.addEventListener('click', (e) => {
