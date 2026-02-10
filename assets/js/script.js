@@ -52,7 +52,7 @@ const formContainer = document.getElementById('form-container');
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
 const showConnectPageBtn = document.getElementById('show-connect-page-btn'); 
-const connectPageSection = document.getElementById('connect-page-section');   
+const connectPageSection = document.getElementById('connect-page-section');    
 const backToPanelFromConnectBtn = document.getElementById('back-to-panel-from-connect-btn');
 const platformButtonsContainer = document.getElementById('platform-buttons-container');
 const syncLateDataBtn = document.getElementById('sync-late-data-btn');
@@ -248,14 +248,16 @@ const startLatePolling = async (previousSnapshot) => {
                 const currentAccounts = current.accounts || []; // Workflow C'den gelen hesap listesi
 
                 // Önceki başarılı hesap ID'lerini al (Snapshot'tan)
-                const existingAccountIds = Object.values(previousSnapshot.platforms)
-                    .filter(p => p.status === 'connected' && p.id)
-                    .map(p => p.id);
+                // DÜZELTME: Format uyumsuzluğunu gidermek için Object.values üzerinden doğru ID'leri çekiyoruz
+                const existingAccountIds = Object.values(previousSnapshot.platforms || {})
+                    .filter(p => p && p.status === 'connected' && (p.id || p._id))
+                    .map(p => p.id || p._id);
                 
-                // Yeni bir hesap ID'si (Late tarafından verilen _id) var mı kontrol et
-                const newAccountFound = currentAccounts.some(account => 
-                    account._id && !existingAccountIds.includes(account._id)
-                );
+                // Yeni bir hesap ID'si (Late tarafından verilen _id veya id) var mı kontrol et
+                const newAccountFound = currentAccounts.some(account => {
+                    const accId = account._id || account.id;
+                    return accId && !existingAccountIds.includes(accId);
+                });
                 
                 if (newAccountFound) {
                     // 🎯 BAŞARIYLA BAĞLANDI
@@ -295,6 +297,7 @@ const initiateLateConnection = async (platform) => {
     
     try {
         // 1. Mevcut Durumu Al (Snapshot - Workflow B/Status'tan)
+        // NOT: getLateStatusSnapshot zaten LATE_POLLING_URL üzerinden güncel LATE verisini alıyor.
         const snapshotBefore = await getLateStatusSnapshot();
 
         // 2. Auth URL'yi al (Workflow A)
@@ -332,7 +335,7 @@ const initiateLateConnection = async (platform) => {
         // 4. Polling sonucunu bekle (Workflow C'yi çağırır)
         await startLatePolling(snapshotBefore); // Polling başarılıysa resolve olur.
 
-        // 5. BAŞARILI: Otomatik Kayıt (Workflow B'yi çağır)
+        // 5. BAŞARI: Otomatik Kayıt (Workflow B'yi çağır)
         await saveLateConnectionData(); // Kayıt işlemini yap (Bu fonksiyon buton durumunu günceller)
         
         alert(`Success: ${platform.toUpperCase()} connected and synchronized!`);
