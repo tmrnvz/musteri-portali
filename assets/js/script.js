@@ -110,6 +110,15 @@ const routeUserByRole = async (role, username) => {
 
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
+        
+        // --- AKILLI SAĞLIK KONTROLÜ ENTEGRASYONU ---
+        // Önce NocoDB'den mevcut durumları ve profil ID'yi çekiyoruz
+        renderConnectionStatus().then(() => {
+            // Profil ID netleştikten sonra arka planda Late API sağlık kontrolünü başlat
+            runSystemHealthCheck();
+        });
+        // ------------------------------------------
+        
         fetchAndRenderPlatforms();
     } else if (role === 'pending' || role === 'new_member') {
         await loadAndInjectForm(); 
@@ -129,6 +138,44 @@ const routeUserByRole = async (role, username) => {
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
 const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; connectPageSection.style.display = 'none'; customerPanel.style.display = 'block'; };
+
+
+// YENİ: Health Check Fonksiyonu
+const runSystemHealthCheck = async () => {
+    const alertBar = document.getElementById('global-alert-bar');
+    const token = localStorage.getItem('jwtToken');
+    
+    // lateProfileId'nin state içinde olduğundan emin olalım
+    if (!state.lateProfileId || !alertBar || !token) return;
+
+    try {
+        const response = await fetch('https://ops.synqbrand.com/webhook/late-system-health-check', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ lateProfileId: state.lateProfileId })
+        });
+
+        if (!response.ok) throw new Error('Health check request failed');
+        
+        const data = await response.json();
+
+        // Eğer n8n'den hasIssues: true gelirse barı göster
+        if (data.hasIssues && data.failedPlatforms.length > 0) {
+            const platformNames = data.failedPlatforms.join(', ');
+            alertBar.innerHTML = `⚠️ <strong>Action Required:</strong> Your connection to <strong>${platformNames}</strong> has expired. 
+                                  <a href="#" onclick="showConnectPage()">Click here to reconnect.</a>`;
+            alertBar.style.display = 'block';
+        } else {
+            alertBar.style.display = 'none'; // Sorun yoksa gizle
+        }
+    } catch (error) {
+        console.error("Health Check Error:", error);
+    }
+};
+
 
 // YENİ SAYFA GEÇİŞ FONKSİYONLARI
 const showConnectPage = () => {
