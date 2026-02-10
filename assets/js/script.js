@@ -165,8 +165,10 @@ const runSystemHealthCheck = async () => {
         // Eğer n8n'den hasIssues: true gelirse barı göster
         if (data.hasIssues && data.failedPlatforms.length > 0) {
             const platformNames = data.failedPlatforms.join(', ');
-            alertBar.innerHTML = `⚠️ <strong>Action Required:</strong> Your connection to <strong>${platformNames}</strong> has expired. 
-                                  <a href="#" onclick="showConnectPage()">Click here to reconnect.</a>`;
+            // Linke tıklandığında sadece sayfayı açan fonksiyonu tetikler
+alertBar.innerHTML = `⚠️ <strong>Action Required:</strong> Your connection to <strong>${platformNames}</strong> has expired. 
+                      <a href="javascript:void(0)" onclick="showConnectPage()">Click here to reconnect.</a>`;
+            
             alertBar.style.display = 'block';
         } else {
             alertBar.style.display = 'none'; // Sorun yoksa gizle
