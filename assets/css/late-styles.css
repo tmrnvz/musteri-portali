@@ -94,3 +94,19 @@
     position: relative;
     font-weight: 600;
 }
+
+.global-alert-bar {
+    background-color: #fff3cd; /* Hafif sarı/turuncu */
+    color: #856404;
+    padding: 15px;
+    border: 1px solid #ffeeba;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-weight: bold;
+    text-align: center;
+}
+.global-alert-bar a {
+    color: #856404;
+    text-decoration: underline;
+    cursor: pointer;
+}
