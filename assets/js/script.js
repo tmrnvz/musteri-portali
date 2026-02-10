@@ -263,76 +263,64 @@ const startLatePolling = async (initialAccountIds) => {
 
 // Polling Helper Functions END //
 
-
 const initiateLateConnection = async (platform) => {
     if (!state.lateProfileId) { 
-        alert('Error: Late Profile ID is missing. Please try refreshing the connection status first.');
+        alert('Error: Late Profile ID is missing.');
         return;
     }
     
     const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
+    // Orijinal HTML yapısını (ikon + metin + span) en başta yedekleyelim
+    const originalHTML = platformBtn.innerHTML;
+
     if (platformBtn) {
         platformBtn.disabled = true;
-        platformBtn.textContent = `Preparing...`;
+        // İSTEDİĞİN DEĞİŞİKLİK: "Setup" ifadesi
+        const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
+        platformBtn.textContent = `${platformName} Setup...`; 
     }
     
     try {
-        // --- LATE VS LATE ADIMI 1: BAŞLANGIÇ LİSTESİNİ LATE'TEN AL ---
         const initialLateData = await getLateStatusSnapshot();
-        let initialAccounts = [];
-        if (typeof initialLateData === 'object' && initialLateData.accounts) {
-            initialAccounts = initialLateData.accounts;
-        } else {
-            try { initialAccounts = JSON.parse(initialLateData.body || initialLateData).accounts || []; } catch(e) {}
-        }
-        const initialAccountIds = initialAccounts.map(a => a._id || a.id);
+        const initialAccountIds = (initialLateData.accounts || []).map(a => a._id || a.id);
 
-        // ADIM 2: Auth URL'yi al (Workflow A)
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ businessId: state.businessId, platform: platform })
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Connection link generation failed: ${errorText}`);
-        }
-
         const data = await response.json();
-        const connectUrl = data.connectEndpoint; 
-
-        if (!connectUrl) throw new Error('No connection URL found.');
-
-        // ADIM 3: Popup'ı aç
-        const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
-        latePopupRef = window.open(connectUrl, 'LateConnection', windowFeatures);
         
-        if (!latePopupRef) throw new Error("Popup blocked by browser.");
+        latePopupRef = window.open(data.connectEndpoint, 'LateAuth', 'width=800,height=800');
         
-        platformBtn.textContent = 'Authorizing...';
+        if (!latePopupRef) throw new Error("Popup engellendi!");
 
-        // --- LATE VS LATE ADIMI 4: POLLING BAŞLAT ---
+        // POLLING (Düzgün çalışan kapanma mekanizması)
         await startLatePolling(initialAccountIds); 
 
-        // ADIM 5: BAŞARI SONRASI SYNC
+        // BAŞARI: Otomatik Kayıt
         await saveLateConnectionData(); 
         
         alert(`Success: ${platform.toUpperCase()} connected!`);
-        renderConnectionStatus(); 
 
     } catch (error) {
         console.error('Late Connection Error:', error);
-        alert(`Bağlantı hatası: ${error.message}`);
-        if (platformBtn) {
-            platformBtn.disabled = false;
-            const statusEl = document.getElementById(`status-${platform}`);
-            if (statusEl) { statusEl.textContent = 'NOT CONNECTED'; statusEl.className = 'connection-status-text disconnected'; }
-        }
+        alert(`Hata: ${error.message}`);
+        // Hata olursa butonu o anki orijinal haline geri döndür
+        if (platformBtn) platformBtn.innerHTML = originalHTML;
     } finally {
         if (latePollingInterval) clearInterval(latePollingInterval);
         latePollingInterval = null;
         latePopupRef = null;
+        
+        // KRİTİK DOKUNUŞ: 
+        // Önce butonun HTML yapısını (içindeki span'ları) geri yükle, 
+        // sonra NocoDB'den güncel statüyü çek.
+        if (platformBtn) {
+            platformBtn.innerHTML = originalHTML;
+            platformBtn.disabled = false;
+        }
+        await renderConnectionStatus(); 
     }
 };
 
