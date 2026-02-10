@@ -265,15 +265,19 @@ const startLatePolling = async (initialAccountIds) => {
 
 
 const initiateLateConnection = async (platform) => {
+    // Profil ID kontrolü (Önceki sisteminizle aynı)
     if (!state.lateProfileId) { 
         alert('Error: Late Profile ID is missing. Please try refreshing the connection status first.');
         return;
     }
     
+    // Tıklanan butonu ve içindeki status yazısını bul (Görseldeki takılmayı çözmek için)
     const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
+    const statusTextEl = document.getElementById(`status-${platform}`);
+
     if (platformBtn) {
         platformBtn.disabled = true;
-        platformBtn.textContent = `Preparing...`;
+        platformBtn.textContent = `Authorizing...`; // Görseldeki o meşhur yazı
     }
     
     try {
@@ -310,29 +314,38 @@ const initiateLateConnection = async (platform) => {
         
         if (!latePopupRef) throw new Error("Popup blocked by browser.");
         
-        platformBtn.textContent = 'Authorizing...';
-
-        // --- LATE VS LATE ADIMI 4: POLLING BAŞLAT ---
+        // ADIM 4: POLLING BAŞLAT (Yeni hesap gelene kadar bekler)
         await startLatePolling(initialAccountIds); 
 
-        // ADIM 5: BAŞARI SONRASI SYNC
+        // ADIM 5: BAŞARI SONRASI OTOMATİK SYNC (Workflow B'yi tetikler)
         await saveLateConnectionData(); 
         
-        alert(`Success: ${platform.toUpperCase()} connected!`);
-        renderConnectionStatus(); 
+        alert(`Success: ${platform.toUpperCase()} connected and synchronized!`);
 
     } catch (error) {
         console.error('Late Connection Error:', error);
-        alert(`Bağlantı hatası: ${error.message}`);
-        if (platformBtn) {
-            platformBtn.disabled = false;
-            const statusEl = document.getElementById(`status-${platform}`);
-            if (statusEl) { statusEl.textContent = 'NOT CONNECTED'; statusEl.className = 'connection-status-text disconnected'; }
+        // Hata durumunda mesaj kutusu açılır
+        alert(`Bağlantı başarısız: ${error.message}`); 
+        
+        // Hata olursa butonu eski haline getir
+        if (statusTextEl) {
+            statusTextEl.textContent = 'NOT CONNECTED';
+            statusTextEl.className = 'connection-status-text disconnected';
         }
     } finally {
+        // DÖNGÜYÜ TEMİZLE
         if (latePollingInterval) clearInterval(latePollingInterval);
         latePollingInterval = null;
         latePopupRef = null;
+        
+        // *** TAKILMAYI ÇÖZEN KRİTİK ADIM ***
+        // Sayfadaki tüm butonları ve durumları NocoDB'deki son halini çekerek güncelle
+        await renderConnectionStatus(); 
+        
+        // Butonu tekrar tıklanabilir yap
+        if (platformBtn) {
+            platformBtn.disabled = false;
+        }
     }
 };
 
