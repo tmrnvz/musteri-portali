@@ -167,7 +167,7 @@ const runSystemHealthCheck = async () => {
             const platformNames = data.failedPlatforms.join(', ');
             // Linke tıklandığında sadece sayfayı açan fonksiyonu tetikler
 alertBar.innerHTML = `⚠️ <strong>Action Required:</strong> Your connection to <strong>${platformNames}</strong> has expired. 
-                      <a href="javascript:void(0)" onclick="showConnectPage()">Click here to reconnect.</a>`;
+                      Please use the <strong>Social Media Connections</strong> button below to reconnect.`;
             
             alertBar.style.display = 'block';
         } else {
