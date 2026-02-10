@@ -263,22 +263,21 @@ const startLatePolling = async (initialAccountIds) => {
 
 // Polling Helper Functions END //
 
+
 const initiateLateConnection = async (platform) => {
     if (!state.lateProfileId) { 
-        alert('Error: Late Profile ID is missing. Please refresh.');
+        alert('Error: Late Profile ID is missing. Please try refreshing the connection status first.');
         return;
     }
     
     const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
-    const statusTextEl = document.getElementById(`status-${platform}`);
-
     if (platformBtn) {
         platformBtn.disabled = true;
-        platformBtn.textContent = `Authorizing...`;
+        platformBtn.textContent = `Preparing...`;
     }
     
     try {
-        // SNAPSHOT AL
+        // --- LATE VS LATE ADIMI 1: BAŞLANGIÇ LİSTESİNİ LATE'TEN AL ---
         const initialLateData = await getLateStatusSnapshot();
         let initialAccounts = [];
         if (typeof initialLateData === 'object' && initialLateData.accounts) {
@@ -288,52 +287,54 @@ const initiateLateConnection = async (platform) => {
         }
         const initialAccountIds = initialAccounts.map(a => a._id || a.id);
 
-        // AUTH URL AL
+        // ADIM 2: Auth URL'yi al (Workflow A)
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ businessId: state.businessId, platform: platform })
         });
-        const data = await response.json();
-        
-        latePopupRef = window.open(data.connectEndpoint, 'LateAuth', 'width=800,height=800');
-        if (!latePopupRef) throw new Error("Popup engellendi! Lütfen izin verin.");
 
-        // POLLING BAŞLAT
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Connection link generation failed: ${errorText}`);
+        }
+
+        const data = await response.json();
+        const connectUrl = data.connectEndpoint; 
+
+        if (!connectUrl) throw new Error('No connection URL found.');
+
+        // ADIM 3: Popup'ı aç
+        const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
+        latePopupRef = window.open(connectUrl, 'LateConnection', windowFeatures);
+        
+        if (!latePopupRef) throw new Error("Popup blocked by browser.");
+        
+        platformBtn.textContent = 'Authorizing...';
+
+        // --- LATE VS LATE ADIMI 4: POLLING BAŞLAT ---
         await startLatePolling(initialAccountIds); 
 
-        // BAŞARI: ÖNCE VERİTABANINA KAYDET
+        // ADIM 5: BAŞARI SONRASI SYNC
         await saveLateConnectionData(); 
         
-        // KRİTİK DÜZELTME: Alert'ten önce arayüzü güncelle ki yeşil buton hemen görünsün
-        await renderConnectionStatus(); 
-        
-        alert(`Success: ${platform.toUpperCase()} connected and synchronized!`);
+        alert(`Success: ${platform.toUpperCase()} connected!`);
+        renderConnectionStatus(); 
 
     } catch (error) {
         console.error('Late Connection Error:', error);
-        // Hata tipine göre kullanıcıya bilgi ver
-        if (error.message === "Popup closed manually.") {
-            alert("Bağlantı iptal edildi: Pencereyi erken kapattınız.");
-        } else if (error.message === "Connection timed out. Please try again.") {
-            alert("Zaman aşımı: İşlem çok uzun sürdü, lütfen tekrar deneyin.");
-        } else {
-            alert(`Bağlantı hatası: ${error.message}`);
+        alert(`Bağlantı hatası: ${error.message}`);
+        if (platformBtn) {
+            platformBtn.disabled = false;
+            const statusEl = document.getElementById(`status-${platform}`);
+            if (statusEl) { statusEl.textContent = 'NOT CONNECTED'; statusEl.className = 'connection-status-text disconnected'; }
         }
-        
-        // Hata durumunda statüyü geri çek
-        await renderConnectionStatus();
     } finally {
         if (latePollingInterval) clearInterval(latePollingInterval);
         latePollingInterval = null;
         latePopupRef = null;
-        
-        if (platformBtn) {
-            platformBtn.disabled = false;
-        }
     }
 };
-
 
 const renderConnectionStatus = async () => {
     document.querySelectorAll('.connection-status-text').forEach(el => {
