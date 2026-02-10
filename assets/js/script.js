@@ -1,4 +1,4 @@
-/* assets/js/script.js - FINAL LATE POLLING INTEGRATION - Kesin Düzeltilmiş Versiyon */
+/* assets/js/script.js - FINAL LATE POLLING INTEGRATION - Late vs Late Versiyon */
 
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
@@ -175,14 +175,13 @@ const getLateStatusSnapshot = async () => {
     const headers = getAuthHeaders(); 
     if (!headers) throw new Error("JWT missing for status check.");
 
-    // *** DÜZELTME YAPILDI: Workflow C'nin URL'si ve POST metodu kullanılıyor ***
-    const response = await fetch(LATE_POLLING_URL, { // Düzeltme: LATE_POLLING_URL (Workflow C) kullanılıyor
-        method: 'POST', // Workflow C POST ile tetikleniyor
+    const response = await fetch(LATE_POLLING_URL, { 
+        method: 'POST', 
         headers: {
             'Content-Type': 'application/json',
             ...headers
         },
-        body: JSON.stringify({ lateProfileId: state.lateProfileId }) // Workflow C'nin beklediği payload
+        body: JSON.stringify({ lateProfileId: state.lateProfileId }) 
     });
 
     if (!response.ok) {
@@ -190,36 +189,33 @@ const getLateStatusSnapshot = async () => {
         throw new Error(`Polling check failed: ${errorText}`);
     }
     
-    // Workflow C'nin çıktısı JSON.stringify($json) olduğu için, response.json() ile parse edilmiş halini alırız.
-    // Ancak, n8n yanıtı bazen string olabilir, bu yüzden güvenli olmak için string ise parse edelim.
     const responseText = await response.text();
     try {
         return JSON.parse(responseText);
     } catch (e) {
-        // Eğer JSON değilse (örneğin sadece bir string), basitçe dönen değeri al.
-        // Bu, Workflow C'nin yanıt yapısına bağlıdır. Burada JSON.parse başarısız olursa, yanıtı string olarak ele alalım.
         return { body: responseText }; 
     }
 };
 
-const startLatePolling = async (previousSnapshot) => {
-    // Stateleri durdur
+/**
+ * LATE VS LATE POLLING MEKANİZMASI
+ * @param {Array} initialAccountIds - İşlem başlamadan hemen önce Late'ten alınan ID listesi
+ */
+const startLatePolling = async (initialAccountIds) => {
     if (latePollingInterval) clearInterval(latePollingInterval);
 
-    const POLL_INTERVAL = 3000; // 3 saniyede bir kontrol et
-    const TIMEOUT = 5 * 60 * 1000; // 5 dakika
+    const POLL_INTERVAL = 3000; 
+    const TIMEOUT = 5 * 60 * 1000; 
     const startTime = Date.now();
 
     return new Promise((resolve, reject) => {
         latePollingInterval = setInterval(async () => {
-            // Popup kullanıcı tarafından kapatıldıysa
             if (latePopupRef && latePopupRef.closed) {
                 clearInterval(latePollingInterval);
                 reject(new Error("Popup closed manually."));
                 return;
             }
 
-            // Timeout
             if (Date.now() - startTime > TIMEOUT) {
                 clearInterval(latePollingInterval);
                 if (latePopupRef && !latePopupRef.closed) latePopupRef.close();
@@ -230,44 +226,29 @@ const startLatePolling = async (previousSnapshot) => {
             try {
                 const currentFullResponse = await getLateStatusSnapshot();
                 
-                // Workflow C'nin çıktısı (JSON.stringify) olduğu için, output'u almalıyız.
-                // Sizin çıktınızda 'accounts' anahtarını bulduk.
                 let current;
                 if (typeof currentFullResponse === 'object' && currentFullResponse.accounts) {
-                    current = currentFullResponse; // Eğer zaten JSON objesiyse
+                    current = currentFullResponse; 
                 } else {
-                    // Eğer string ise (JSON.stringify'dan dolayı), parse etmeye çalış
                     try {
                          current = JSON.parse(currentFullResponse.body || currentFullResponse);
                     } catch(e) {
-                        // Hata durumunda, Workflow C'nin çıktısını doğrudan alalım (Fallback)
                         current = currentFullResponse;
                     }
                 }
                 
-                const currentAccounts = current.accounts || []; // Workflow C'den gelen hesap listesi
+                const currentAccounts = current.accounts || []; 
+                const currentAccountIds = currentAccounts.map(account => account._id || account.id);
 
-                // Önceki başarılı hesap ID'lerini al (Snapshot'tan)
-                // DÜZELTME: Format uyumsuzluğunu gidermek için Object.values üzerinden doğru ID'leri çekiyoruz
-                const existingAccountIds = Object.values(previousSnapshot.platforms || {})
-                    .filter(p => p && p.status === 'connected' && (p.id || p._id))
-                    .map(p => p.id || p._id);
-                
-                // Yeni bir hesap ID'si (Late tarafından verilen _id veya id) var mı kontrol et
-                const newAccountFound = currentAccounts.some(account => {
-                    const accId = account._id || account.id;
-                    return accId && !existingAccountIds.includes(accId);
-                });
+                // LATE VS LATE KARŞILAŞTIRMASI: 
+                // Late'in kendi güncel listesinde, başlangıç listesinde olmayan bir ID var mı?
+                const newAccountFound = currentAccountIds.some(id => id && !initialAccountIds.includes(id));
                 
                 if (newAccountFound) {
-                    // 🎯 BAŞARIYLA BAĞLANDI
                     clearInterval(latePollingInterval);
-                    
                     if (latePopupRef && !latePopupRef.closed) {
-                        latePopupRef.close(); // Popup'ı otomatik kapat
+                        latePopupRef.close(); 
                     }
-                    
-                    // Polling başarılı, kaydetme adımını tetikle
                     resolve(true); 
                     return;
                 }
@@ -296,62 +277,57 @@ const initiateLateConnection = async (platform) => {
     }
     
     try {
-        // 1. Mevcut Durumu Al (Snapshot - Workflow B/Status'tan)
-        // NOT: getLateStatusSnapshot zaten LATE_POLLING_URL üzerinden güncel LATE verisini alıyor.
-        const snapshotBefore = await getLateStatusSnapshot();
+        // --- LATE VS LATE ADIMI 1: BAŞLANGIÇ LİSTESİNİ LATE'TEN AL ---
+        const initialLateData = await getLateStatusSnapshot();
+        let initialAccounts = [];
+        if (typeof initialLateData === 'object' && initialLateData.accounts) {
+            initialAccounts = initialLateData.accounts;
+        } else {
+            try { initialAccounts = JSON.parse(initialLateData.body || initialLateData).accounts || []; } catch(e) {}
+        }
+        const initialAccountIds = initialAccounts.map(a => a._id || a.id);
 
-        // 2. Auth URL'yi al (Workflow A)
+        // ADIM 2: Auth URL'yi al (Workflow A)
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                businessId: state.businessId,
-                platform: platform
-            })
+            body: JSON.stringify({ businessId: state.businessId, platform: platform })
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Connection link generation failed with status ${response.status}: ${errorText}`);
+            throw new Error(`Connection link generation failed: ${errorText}`);
         }
 
         const data = await response.json();
         const connectUrl = data.connectEndpoint; 
 
-        if (!connectUrl) {
-            throw new Error('n8n returned successfully but no connection URL was found.');
-        }
+        if (!connectUrl) throw new Error('No connection URL found.');
 
-        // 3. Popup'ı aç
+        // ADIM 3: Popup'ı aç
         const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
         latePopupRef = window.open(connectUrl, 'LateConnection', windowFeatures);
         
-        if (!latePopupRef) {
-            throw new Error("Popup blocked by browser. Please allow popups for this site.");
-        }
+        if (!latePopupRef) throw new Error("Popup blocked by browser.");
         
-        platformBtn.textContent = 'Authorizing... (Waiting for completion)';
+        platformBtn.textContent = 'Authorizing...';
 
-        // 4. Polling sonucunu bekle (Workflow C'yi çağırır)
-        await startLatePolling(snapshotBefore); // Polling başarılıysa resolve olur.
+        // --- LATE VS LATE ADIMI 4: POLLING BAŞLAT ---
+        await startLatePolling(initialAccountIds); 
 
-        // 5. BAŞARI: Otomatik Kayıt (Workflow B'yi çağır)
-        await saveLateConnectionData(); // Kayıt işlemini yap (Bu fonksiyon buton durumunu günceller)
+        // ADIM 5: BAŞARI SONRASI SYNC
+        await saveLateConnectionData(); 
         
-        alert(`Success: ${platform.toUpperCase()} connected and synchronized!`);
-        renderConnectionStatus(); // Tüm UI durumlarını günceller
+        alert(`Success: ${platform.toUpperCase()} connected!`);
+        renderConnectionStatus(); 
 
     } catch (error) {
         console.error('Late Connection Error:', error);
-        alert(`Hesap bağlama akışı başarısız oldu: ${error.message}`);
-        
+        alert(`Bağlantı hatası: ${error.message}`);
         if (platformBtn) {
             platformBtn.disabled = false;
-            const currentStatusTextEl = document.getElementById(`status-${platform}`);
-            if (currentStatusTextEl) {
-                 currentStatusTextEl.textContent = 'NOT CONNECTED';
-                 currentStatusTextEl.className = 'connection-status-text disconnected';
-            }
+            const statusEl = document.getElementById(`status-${platform}`);
+            if (statusEl) { statusEl.textContent = 'NOT CONNECTED'; statusEl.className = 'connection-status-text disconnected'; }
         }
     } finally {
         if (latePollingInterval) clearInterval(latePollingInterval);
@@ -367,23 +343,11 @@ const renderConnectionStatus = async () => {
     });
     
     const headers = getAuthHeaders(); 
-
-    if (!headers) {
-        document.getElementById('platform-buttons-container').innerHTML = '<p class="error">Error: Not logged in (JWT missing).</p>';
-        return;
-    }
+    if (!headers) return;
 
     try {
-        const response = await fetch(LATE_GET_STATUS_URL, { 
-            method: 'GET',
-            headers: headers
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Status check failed with status ${response.status}: ${errorText}`);
-        }
-
+        const response = await fetch(LATE_GET_STATUS_URL, { method: 'GET', headers: headers });
+        if (!response.ok) throw new Error(`Status check failed`);
         const data = await response.json(); 
 
         state.lateProfileId = data.lateProfileId; 
@@ -391,7 +355,6 @@ const renderConnectionStatus = async () => {
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
-            
             const platformStatus = data.platforms[platform];
             const isConnected = platformStatus && platformStatus.status === 'connected';
 
@@ -408,52 +371,29 @@ const renderConnectionStatus = async () => {
             }
         });
 
-    } catch (error) {
-        console.error('Connection Status Render Error:', error);
-        document.getElementById('platform-buttons-container').innerHTML = `<p class="error">Error loading connection status: ${error.message}</p>`;
-    }
+    } catch (error) { console.error(error); }
 };
 
 
-// *** VERİ KAYDETME FONKSİYONU (WORKFLOW B'yi çağırır) ***
+// *** VERİ KAYDETME FONKSİYONU ***
 const saveLateConnectionData = async () => {
     syncLateDataBtn.disabled = true;
-    syncLateDataBtn.textContent = 'Syncing Data... Please wait.';
-    syncLateDataBtn.classList.remove('btn-success');
-    
+    syncLateDataBtn.textContent = 'Syncing Data...';
     const headers = getAuthHeaders();
-    if (!headers) { 
-        handleLogout(); 
-        return; 
-    }
+    if (!headers) { handleLogout(); return; }
 
     try {
-        const response = await fetch(LATE_SAVE_DATA_URL, { 
-            method: 'POST',
-            headers: headers 
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Data save failed: ${errorText}`);
-        }
-
+        const response = await fetch(LATE_SAVE_DATA_URL, { method: 'POST', headers: headers });
+        if (!response.ok) throw new Error(`Data save failed`);
         syncLateDataBtn.textContent = 'Sync Successful!';
-        syncLateDataBtn.classList.remove('btn-primary');
         syncLateDataBtn.classList.add('btn-success');
-        
         renderConnectionStatus(); 
-
     } catch (error) {
-        console.error('Save Data Error:', error);
-        syncLateDataBtn.textContent = 'Save Failed - Try Again';
+        console.error(error);
+        syncLateDataBtn.textContent = 'Save Failed';
         syncLateDataBtn.disabled = false;
-        syncLateDataBtn.classList.remove('btn-success');
-        syncLateDataBtn.classList.add('btn-primary');
-        throw error;
     }
 };
-// *** saveLateConnectionData Fonksiyonu Sonu ***
 
 
 // Event Listeners (Aynı kalıyor)
@@ -471,24 +411,13 @@ modalCancelBtn.addEventListener('click', closeApprovalModal);
 publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
-
-// YENİ KAYDET BUTONU DİNLEYİCİSİ (Aynı kalıyor)
 syncLateDataBtn.addEventListener('click', saveLateConnectionData);
-
-
-// YENİ SAYFA GEÇİŞLERİ VE BUTON DİNLEYİCİLERİ 
 showConnectPageBtn.addEventListener('click', showConnectPage);
 backToPanelFromConnectBtn.addEventListener('click', hideConnectPage);
-
-// Platform butonlarına tek bir dinleyici ekleme
 platformButtonsContainer.addEventListener('click', (e) => {
     const btn = e.target.closest('.platform-connect-btn');
-    if (btn) {
-        const platform = btn.dataset.platform; 
-        initiateLateConnection(platform); 
-    }
+    if (btn) initiateLateConnection(btn.dataset.platform);
 });
-
 onboardingLogoutBtn.addEventListener('click', handleLogout);
 pendingLogoutBtn.addEventListener('click', handleLogout);
 
