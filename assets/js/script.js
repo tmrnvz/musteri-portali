@@ -263,25 +263,22 @@ const startLatePolling = async (initialAccountIds) => {
 
 // Polling Helper Functions END //
 
-
 const initiateLateConnection = async (platform) => {
-    // Profil ID kontrolü (Önceki sisteminizle aynı)
     if (!state.lateProfileId) { 
-        alert('Error: Late Profile ID is missing. Please try refreshing the connection status first.');
+        alert('Error: Late Profile ID is missing. Please refresh.');
         return;
     }
     
-    // Tıklanan butonu ve içindeki status yazısını bul (Görseldeki takılmayı çözmek için)
     const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
     const statusTextEl = document.getElementById(`status-${platform}`);
 
     if (platformBtn) {
         platformBtn.disabled = true;
-        platformBtn.textContent = `Authorizing...`; // Görseldeki o meşhur yazı
+        platformBtn.textContent = `Authorizing...`;
     }
     
     try {
-        // --- LATE VS LATE ADIMI 1: BAŞLANGIÇ LİSTESİNİ LATE'TEN AL ---
+        // SNAPSHOT AL
         const initialLateData = await getLateStatusSnapshot();
         let initialAccounts = [];
         if (typeof initialLateData === 'object' && initialLateData.accounts) {
@@ -291,63 +288,52 @@ const initiateLateConnection = async (platform) => {
         }
         const initialAccountIds = initialAccounts.map(a => a._id || a.id);
 
-        // ADIM 2: Auth URL'yi al (Workflow A)
+        // AUTH URL AL
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ businessId: state.businessId, platform: platform })
         });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Connection link generation failed: ${errorText}`);
-        }
-
         const data = await response.json();
-        const connectUrl = data.connectEndpoint; 
-
-        if (!connectUrl) throw new Error('No connection URL found.');
-
-        // ADIM 3: Popup'ı aç
-        const windowFeatures = "menubar=no,location=no,resizable=yes,scrollbars=yes,status=no,width=800,height=800";
-        latePopupRef = window.open(connectUrl, 'LateConnection', windowFeatures);
         
-        if (!latePopupRef) throw new Error("Popup blocked by browser.");
-        
-        // ADIM 4: POLLING BAŞLAT (Yeni hesap gelene kadar bekler)
+        latePopupRef = window.open(data.connectEndpoint, 'LateAuth', 'width=800,height=800');
+        if (!latePopupRef) throw new Error("Popup engellendi! Lütfen izin verin.");
+
+        // POLLING BAŞLAT
         await startLatePolling(initialAccountIds); 
 
-        // ADIM 5: BAŞARI SONRASI OTOMATİK SYNC (Workflow B'yi tetikler)
+        // BAŞARI: ÖNCE VERİTABANINA KAYDET
         await saveLateConnectionData(); 
+        
+        // KRİTİK DÜZELTME: Alert'ten önce arayüzü güncelle ki yeşil buton hemen görünsün
+        await renderConnectionStatus(); 
         
         alert(`Success: ${platform.toUpperCase()} connected and synchronized!`);
 
     } catch (error) {
         console.error('Late Connection Error:', error);
-        // Hata durumunda mesaj kutusu açılır
-        alert(`Bağlantı başarısız: ${error.message}`); 
-        
-        // Hata olursa butonu eski haline getir
-        if (statusTextEl) {
-            statusTextEl.textContent = 'NOT CONNECTED';
-            statusTextEl.className = 'connection-status-text disconnected';
+        // Hata tipine göre kullanıcıya bilgi ver
+        if (error.message === "Popup closed manually.") {
+            alert("Bağlantı iptal edildi: Pencereyi erken kapattınız.");
+        } else if (error.message === "Connection timed out. Please try again.") {
+            alert("Zaman aşımı: İşlem çok uzun sürdü, lütfen tekrar deneyin.");
+        } else {
+            alert(`Bağlantı hatası: ${error.message}`);
         }
+        
+        // Hata durumunda statüyü geri çek
+        await renderConnectionStatus();
     } finally {
-        // DÖNGÜYÜ TEMİZLE
         if (latePollingInterval) clearInterval(latePollingInterval);
         latePollingInterval = null;
         latePopupRef = null;
         
-        // *** TAKILMAYI ÇÖZEN KRİTİK ADIM ***
-        // Sayfadaki tüm butonları ve durumları NocoDB'deki son halini çekerek güncelle
-        await renderConnectionStatus(); 
-        
-        // Butonu tekrar tıklanabilir yap
         if (platformBtn) {
             platformBtn.disabled = false;
         }
     }
 };
+
 
 const renderConnectionStatus = async () => {
     document.querySelectorAll('.connection-status-text').forEach(el => {
