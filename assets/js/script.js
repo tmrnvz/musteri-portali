@@ -273,32 +273,27 @@ const startLatePolling = async (initialAccountIds) => {
             }
 
             try {
-                const currentFullResponse = await getLateStatusSnapshot();
-                
-                let current;
-                if (typeof currentFullResponse === 'object' && currentFullResponse.accounts) {
-                    current = currentFullResponse; 
-                } else {
-                    try {
-                         current = JSON.parse(currentFullResponse.body || currentFullResponse);
-                    } catch(e) {
-                        current = currentFullResponse;
-                    }
-                }
-                
+                const current = await getLateStatusSnapshot();
                 const currentAccounts = current.accounts || []; 
                 const currentAccountIds = currentAccounts.map(account => account._id || account.id);
 
-                // LATE VS LATE KARŞILAŞTIRMASI: 
-                // Late'in kendi güncel listesinde, başlangıç listesinde olmayan bir ID var mı?
+                // 1. DURUM: Yeni bir ID eklendi mi? (İlk bağlantı senaryosu)
                 const newAccountFound = currentAccountIds.some(id => id && !initialAccountIds.includes(id));
+
+                // 2. DURUM: Mevcut hesaplardan biri "Reconnected" oldu mu? (isActive: true kontrolü)
+                // Late çıktısında tüm hesapların isActive durumunu kontrol ediyoruz
+                const allAccountsActive = currentAccounts.every(acc => acc.isActive === true);
                 
-                if (newAccountFound) {
-                    clearInterval(latePollingInterval);
-                    if (latePopupRef && !latePopupRef.closed) {
-                        latePopupRef.close(); 
-                    }
-                    resolve(true); 
+                // Başlangıçta isActive: false olan bir hesap şimdi true olduysa bu da bir başarıdır
+                if (newAccountFound || allAccountsActive) {
+                    // Kısa bir bekleme ekleyelim ki n8n tarafındaki işlemler tam tamamlansın
+                    setTimeout(() => {
+                        clearInterval(latePollingInterval);
+                        if (latePopupRef && !latePopupRef.closed) {
+                            latePopupRef.close(); 
+                        }
+                        resolve(true); 
+                    }, 1000);
                     return;
                 }
             } catch (err) {
