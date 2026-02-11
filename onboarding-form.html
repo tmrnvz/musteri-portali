@@ -19,7 +19,7 @@
         <div class="form-group">
             <label for="offeringsDescription">Offerings Description</label>
             <textarea id="offeringsDescription" name="OfferingsDescription" required></textarea>
-            <p class="helper-text">Please describe what you sell and what makes you different. Be specific about materials or customization. <br> <i>Example: Instead of "Mugs", use "Customizable ceramic mugs that can be personalized with names or photos, dishwasher safe."</i></p>
+            <p class="helper-text">Please describe what you sell and what makes you different. Be specific about materials or customization to help AI write better content. <br> <i>Example: Instead of "Mugs", use "Customizable ceramic mugs that can be personalized with names or photos, dishwasher safe."</i></p>
         </div>
 
         <div class="form-group">
@@ -48,7 +48,7 @@
         <div class="form-group">
             <label for="notificationEmail">Notification Email</label>
             <input type="email" id="notificationEmail" name="NotificationEmail" required>
-            <p class="helper-text">The email address where you'd like to receive system notifications. <br> <i>Example: hello@your-business.com</i></p>
+            <p class="helper-text">Where you'd like to receive system notifications. <br> <i>Example: hello@your-business.com</i></p>
         </div>
     </div>
 
@@ -58,7 +58,7 @@
 
         <div class="form-group">
             <label>Platform Focus & Usernames</label>
-            <p class="helper-text">Select the platforms you want us to create content for and enter your current handle for each.</p>
+            <p class="helper-text">Select your platforms and enter your current username/handle for each.</p>
             <div id="platform-selection-container">
                 <div class="checkbox-wrapper"><input type="checkbox" id="pf-instagram" name="PlatformFocus" value="Instagram"><label for="pf-instagram" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Instagram</span></label><input type="text" id="pf-instagram-user" class="platform-username-input" placeholder="@username"></div>
                 <div class="checkbox-wrapper"><input type="checkbox" id="pf-facebook" name="PlatformFocus" value="Facebook"><label for="pf-facebook" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Facebook</span></label><input type="text" id="pf-facebook-user" class="platform-username-input" placeholder="Page username"></div>
@@ -78,25 +78,25 @@
         <div class="form-group">
             <label for="hashtagStrategy">Hashtag Pool & Strategy</label>
             <textarea id="hashtagStrategy" name="HashtagStrategy"></textarea>
-            <p class="helper-text">Group your hashtags by category. AI will mix them based on post topics. <br> <i>Example: General: #gift #custom; Product: #custommug #printondemand; Community: #etsyfinds</i></p>
+            <p class="helper-text">Please group your hashtags by category. AI will mix them based on post topics. <br> <i>Example: <br>General: #gift #personalized <br>Product: #custommug #specialdesign <br>Community: #etsyfinds #giftideas</i></p>
         </div>
 
         <div class="form-group">
             <label for="instagramHookIdeas">Instagram Hook Ideas</label>
             <textarea id="instagramHookIdeas" name="InstagramHookIdeas"></textarea>
-            <p class="helper-text">Short, attention-grabbing sentences to start your posts. <br> <i>Example: ["✨ Gift idea alert!", "Tired of boring gifts?"]</i></p>
+            <p class="helper-text">Provide short, attention-grabbing sentences for the start of your posts. <br> <i>Example: ["✨ Gift idea alert!", "Tired of boring gifts?", "Want to make them smile? 😊"]</i></p>
         </div>
 
         <div class="form-group">
             <label for="ugcHashtag">UGC Hashtag</label>
             <input type="text" id="ugcHashtag" name="Brand_Specific_UGC_Hashtag">
-            <p class="helper-text">The hashtag customers use when sharing your products. <br> <i>Example: #DizaynAtelierGiftsMoments</i></p>
+            <p class="helper-text">The hashtag you want customers to use when sharing photos of your products. <br> <i>Example: #DizaynAtelierGiftsMoments</i></p>
         </div>
 
         <div class="form-group">
             <label for="ugcCallToAction">UGC Call to Action</label>
             <input type="text" id="ugcCallToAction" name="UGC_CallToAction">
-            <p class="helper-text">Text to encourage customer sharing. <br> <i>Example: Share your @DizaynAtelierGifts moments with #DizaynAtelierGifts for a feature! 📸</i></p>
+            <p class="helper-text">Text to encourage customers to share their content. <br> <i>Example: Share your @DizaynAtelierGifts moments with #DizaynAtelierGifts for a chance to be featured! 📸</i></p>
         </div>
         
         <div class="form-group">
@@ -105,110 +105,97 @@
             
             <div class="radio-option">
                 <input type="radio" id="imgStyle1" name="Master_Image_Style_Guidelines" value="Clean professional commercial photography style, structured composition, strong visual hierarchy, neutral and balanced color palette, soft diffused daylight or controlled studio lighting, medium depth of field, realistic textures, sharp focus, minimal background distractions, modern corporate aesthetic, high resolution, vertical 4:5 composition" required>
-                <label for="imgStyle1">Clean & Corporate</label>
-                <p class="radio-description">Professional and organized. Ideal for Tech, Health, and B2B.</p>
+                <label for="imgStyle1"><span class="radio-custom"></span>Clean & Corporate</label>
+                <p class="radio-description">Professional, trusted, and organized visuals. Ideal for B2B, Tech, and Health.</p>
             </div>
 
             <div class="radio-option">
                 <input type="radio" id="imgStyle2" name="Master_Image_Style_Guidelines" value="Authentic lifestyle photography, natural light, warm and realistic tones, candid composition, real-world environment, organic textures, soft shadows, storytelling atmosphere, medium depth of field, 35mm lens look, natural color grading, human-centered framing, photorealistic details, vertical 4:5 framing">
-                <label for="imgStyle2">Authentic & Human</label>
-                <p class="radio-description">Natural and warm. Ideal for local businesses and services.</p>
+                <label for="imgStyle2"><span class="radio-custom"></span>Authentic & Human</label>
+                <p class="radio-description">Natural, warm, and real-life visuals. Ideal for local businesses and services.</p>
             </div>
 
             <div class="radio-option">
                 <input type="radio" id="imgStyle3" name="Master_Image_Style_Guidelines" value="Luxury editorial photography style, refined and elegant composition, controlled soft studio lighting, subtle dramatic shadows, premium neutral or dark background, shallow depth of field, 85mm lens aesthetic, cinematic tonal contrast, high-end commercial realism, vertical 4:5 social media composition">
-                <label for="imgStyle3">Premium & Refined</label>
-                <p class="radio-description">Luxurious and sophisticated. Ideal for Fashion and Jewelry.</p>
+                <label for="imgStyle3"><span class="radio-custom"></span>Premium & Refined</label>
+                <p class="radio-description">Luxurious, high-quality, and sophisticated. Ideal for Fashion, Jewelry, and Design.</p>
             </div>
 
             <div class="radio-option">
-                <input type="radio" id="imgStyle4" name="Master_Image_Style_Guidelines" value="High contrast commercial photography, bold color grading, dynamic composition, strong lighting direction, sharp highlights and deep shadows, energetic atmosphere, wide or low-angle perspective, crisp textures, vibrant yet controlled saturation, dramatic depth, advertising campaign aesthetic, ultra detailed photorealism, vertical 4:5 format">
-                <label for="imgStyle4">Bold & Impactful</label>
-                <p class="radio-description">Powerful and energetic. Ideal for Sports and Campaigns.</p>
+                <input type="radio" id="imgStyle4" name="Master_Image_Style_Guidelines" value="High contrast commercial photography, bold color grading, dynamic composition, strong lighting direction, sharp highlights and deep shadows, energetic atmosphere, wide or low-angle perspective, crisp textures, vibrant yet controlled saturation, dramatic depth, impactful framing, advertising campaign aesthetic, ultra detailed photorealism, vertical 4:5 format">
+                <label for="imgStyle4"><span class="radio-custom"></span>Bold & Impactful</label>
+                <p class="radio-description">Strong, energetic, and eye-catching. Ideal for Campaigns and Performance brands.</p>
             </div>
 
             <div class="radio-option">
                 <input type="radio" id="imgStyle5" name="Master_Image_Style_Guidelines" value="Modern social media photography aesthetic, clean composition with subtle creativity, balanced bright lighting, smooth shadows, contemporary color palette, realistic textures, medium depth of field, visually appealing but uncluttered scene, photorealistic clarity, optimized for Instagram-style vertical 4:5 format">
-                <label for="imgStyle5">Modern Social</label>
-                <p class="radio-description">Clean and trendy. Ideal for E-commerce and Creators.</p>
+                <label for="imgStyle5"><span class="radio-custom"></span>Modern Social</label>
+                <p class="radio-description">Clean, trendy, and social media-optimized. Ideal for E-commerce and Content Creators.</p>
             </div>
 
             <div class="radio-option">
                 <input type="radio" id="imgStyle6" name="Master_Image_Style_Guidelines" value="Analyze brand industry, audience, tone, and visual mood preference. Generate a cohesive and photorealistic commercial photography style that aligns with the brand personality. Maintain professional lighting, realistic textures, strong composition, sharp focus, balanced exposure, and vertical 4:5 framing">
-                <label for="imgStyle6">Smart Auto (AI Selects)</label>
-                <p class="radio-description">Let AI determine the best style based on your brand identity.</p>
+                <label for="imgStyle6"><span class="radio-custom"></span>Smart Auto (AI Selects)</label>
+                <p class="radio-description">The best style will be automatically determined based on your brand identity.</p>
             </div>
         </div>
     </div>
 
     <div class="form-section">
         <h3>Section 3: Marketing & Content Strategy</h3>
-        <p class="section-description">Define your audience and set AI behavior rules.</p>
+        <p class="section-description">Define your audience, brand voice, and set AI writing behavior.</p>
         
         <div class="form-group">
             <label for="targetPersona">Ideal Customer Persona</label>
             <textarea id="targetPersona" name="TargetPersona" required></textarea>
-            <p class="helper-text">Describe a single "ideal" person who buys from you. <br> <i>Example: "Jane, a 32-year-old office worker in NY who loves her dog and values meaningful gifts."</i></p>
+            <p class="helper-text">Imagine a single 'ideal' person who buys from you. What are they like? <br> <i>Example: "Jane, 32, NY office worker. Loves her dog, values meaningful, humorous gifts, and shops on Etsy."</i></p>
         </div>
 
         <div class="form-group">
             <label for="targetAudience">General Target Audience</label>
             <textarea id="targetAudience" name="TargetAudience" required></textarea>
-            <p class="helper-text">Define the broader market. <br> <i>Example: "Individuals aged 25-50 in the USA/Europe interested in home decor."</i></p>
+            <p class="helper-text">Describe the broader market. Where are they and what do they need? <br> <i>Example: "Individuals aged 25-55 in USA/Europe seeking unique, personalized gifts instead of generic items."</i></p>
         </div>
         
         <div class="form-group">
-            <label for="targetPainPoint">Audience's Challenge</label>
+            <label for="targetPainPoint">Audience's Goal or Challenge</label>
             <textarea id="targetPainPoint" name="TargetPainPoint" required></textarea>
-            <p class="helper-text">What problem does your brand solve? Write it from their perspective. <br> <i>Example: "I am tired of boring gifts. I want something meaningful that shows I care."</i></p>
+            <p class="helper-text">What challenge are they facing that your brand can help with? Write it from their perspective. <br> <i>Example: "Finding a truly special gift is time-consuming. I want a memorable, high-quality item that shows I put in thought."</i></p>
         </div>
 
         <div class="form-group">
             <label>Brand Voice</label>
-            <p class="helper-text">Choose the personality of your brand.</p>
-            
+            <p class="helper-text">Choose the personality that best fits your brand's communication style.</p>
             <div class="radio-option">
                 <input type="radio" id="voice1" name="BrandVoice" value="Warm, friendly, and authentic tone..." required>
-                <label for="voice1">Friendly & Authentic</label>
+                <label for="voice1"><span class="radio-custom"></span>Friendly & Authentic</label>
             </div>
             <div class="radio-option">
                 <input type="radio" id="voice2" name="BrandVoice" value="Clear, confident, and professional tone...">
-                <label for="voice2">Professional & Trustworthy</label>
+                <label for="voice2"><span class="radio-custom"></span>Professional & Trustworthy</label>
             </div>
             <div class="radio-option">
                 <input type="radio" id="voice3" name="BrandVoice" value="Playful, witty, and creative tone...">
-                <label for="voice3">Creative & Playful</label>
+                <label for="voice3"><span class="radio-custom"></span>Creative & Playful</label>
             </div>
-            <div class="radio-option">
-                <input type="radio" id="voice4" name="BrandVoice" value="Inspirational and uplifting tone...">
-                <label for="voice4">Inspirational & Empowering</label>
             </div>
-            <div class="radio-option">
-                <input type="radio" id="voice5" name="BrandVoice" value="Sophisticated and calm tone...">
-                <label for="voice5">Elegant & Refined</label>
-            </div>
-            <div class="radio-option">
-                <input type="radio" id="voice6" name="BrandVoice" value="Concise, modern, and straightforward tone...">
-                <label for="voice6">Modern & Minimal</label>
-            </div>
-        </div>
 
         <div class="form-group">
             <label for="contentPillars">Main Content Topics (3–5 is ideal)</label>
             <textarea id="contentPillars" name="ContentPillars" required></textarea>
-            <p class="helper-text">Core themes to create a balanced monthly plan. <br> <i>Example: Signature products, Behind the scenes, Customer stories</i></p>
+            <p class="helper-text">Choose core themes to create a balanced monthly plan. <br> <i>Example: Signature products, Behind the scenes, Customer stories, Seasonal gift guides</i></p>
         </div>
 
         <div class="form-group">
             <label for="recurringThemes">Weekly or Monthly Routines</label>
             <textarea id="recurringThemes" name="RecurringThemes"></textarea>
-            <p class="helper-text">Any content to be repeated on a schedule. <br> <i>Example: Every Monday expert tip, Friday special offer</i></p>
+            <p class="helper-text">Any content series to be repeated on a schedule. <br> <i>Example: Every Monday expert tip, Friday special offer, Monthly new product launch</i></p>
         </div>
 
         <div class="form-group">
             <label for="callToActionExamples">Call to Action Examples</label>
             <textarea id="callToActionExamples" name="CallToActionExamples"></textarea>
-            <p class="helper-text">Typical calls to action you'd like to use.</p>
+            <p class="helper-text">List some typical calls to action you'd like to use. <br> <i>Example: "Click the link in bio to shop!", "Design your personalized gift now!"</i></p>
         </div>
 
         <div class="form-group">
@@ -217,25 +204,25 @@
             
             <div class="checkbox-group-container">
                 <p><b>Emoji Usage:</b></p>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Do not use any emojis."><span class="checkbox-label-text">No Emojis</span></label>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Use maximum 1-2 relevant emojis at the very end."><span class="checkbox-label-text">Minimalist</span></label>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Use emojis naturally throughout the text."><span class="checkbox-label-text">Engaging</span></label>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-noemoji" name="ai-behavior" value="Do not use any emojis."><label for="be-noemoji" class="checkbox-label"><span class="checkbox-custom"></span>No Emojis</label></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-minemoji" name="ai-behavior" value="Use maximum 1-2 relevant emojis at the very end."><label for="be-minemoji" class="checkbox-label"><span class="checkbox-custom"></span>Minimalist</label></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-engemoji" name="ai-behavior" value="Use emojis naturally throughout the text to enhance engagement."><label for="be-engemoji" class="checkbox-label"><span class="checkbox-custom"></span>Engaging</label></div>
                 
                 <p><b>Formatting & Layout:</b></p>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Start with a high-impact, short hook sentence."><span class="checkbox-label-text">Hook Focused</span></label>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Use bullet points for readability."><span class="checkbox-label-text">Bullet Points</span></label>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Keep sentences short and high-impact."><span class="checkbox-label-text">Short Sentences</span></label>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Add line breaks after every sentence."><span class="checkbox-label-text">Line Breaks</span></label>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-hook" name="ai-behavior" value="Start with a high-impact, short hook sentence."><label for="be-hook" class="checkbox-label"><span class="checkbox-custom"></span>Hook Focused</label></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-bullet" name="ai-behavior" value="Use bullet points for better readability."><label for="be-bullet" class="checkbox-label"><span class="checkbox-custom"></span>Bullet Points</label></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-short" name="ai-behavior" value="Keep sentences short and high-impact."><label for="be-short" class="checkbox-label"><span class="checkbox-custom"></span>Short Sentences</label></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-break" name="ai-behavior" value="Add line breaks after every sentence for readability."><label for="be-break" class="checkbox-label"><span class="checkbox-custom"></span>Line Breaks</label></div>
 
                 <p><b>Tone & Engagement:</b></p>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Focus on trust; avoid aggressive sales language."><span class="checkbox-label-text">No Hard Sell</span></label>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Always end with a question for the audience."><span class="checkbox-label-text">Ask Questions</span></label>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Gently suggest visiting the link for more info."><span class="checkbox-label-text">Soft CTA</span></label>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Use urgent language like 'Limited time'."><span class="checkbox-label-text">Urgency</span></label>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-nohard" name="ai-behavior" value="Focus on building trust; do not use aggressive sales language."><label for="be-nohard" class="checkbox-label"><span class="checkbox-custom"></span>No Hard Sell</label></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-ask" name="ai-behavior" value="Always end the post with a thoughtful question for the audience."><label for="be-ask" class="checkbox-label"><span class="checkbox-custom"></span>Ask Questions</label></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-soft" name="ai-behavior" value="Gently suggest visiting the profile or link for more info."><label for="be-soft" class="checkbox-label"><span class="checkbox-custom"></span>Soft CTA</label></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-urgent" name="ai-behavior" value="Use urgent language like 'Limited time' or 'Explore now'."><label for="be-urgent" class="checkbox-label"><span class="checkbox-custom"></span>Urgency</label></div>
 
                 <p><b>Strict Prohibitions:</b></p>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Do not include hashtags inside text; move them to the end."><span class="checkbox-label-text">No Hashtags in Text</span></label>
-                <label class="checkbox-wrapper"><input type="checkbox" name="ai-behavior" value="Avoid technical jargon; write very simply."><span class="checkbox-label-text">No Jargon</span></label>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-notext" name="ai-behavior" value="Do not include hashtags inside the main text; move them all to the end."><label for="be-notext" class="checkbox-label"><span class="checkbox-custom"></span>No Hashtags in Text</label></div>
+                <div class="checkbox-wrapper"><input type="checkbox" id="be-nojargon" name="ai-behavior" value="Avoid technical jargon; write so a 12-year-old can understand."><label for="be-nojargon" class="checkbox-label"><span class="checkbox-custom"></span>No Jargon</label></div>
             </div>
             <input type="hidden" id="specialInstructions" name="SpecialInstructions">
         </div>
@@ -243,7 +230,7 @@
         <div class="form-group">
             <label for="negativeKeywords">Banned Words/Topics</label>
             <textarea id="negativeKeywords" name="NegativeKeywords"></textarea>
-            <p class="helper-text">Example: cheap, low-quality, political content</p>
+            <p class="helper-text">List any topics you want to avoid completely. <br> <i>Example: cheap, low-quality, politics, religious content</i></p>
         </div>
     </div>
 
@@ -254,25 +241,25 @@
         <div class="form-group">
             <label for="wordPressBaseURL">WordPress Website URL</label>
             <input type="url" id="wordPressBaseURL" name="WordPressBaseURL">
-            <p class="helper-text">Your main URL. <b>Note:</b> SEOPress (Free) must be installed.</p>
+            <p class="helper-text">Ana site adresiniz. <b>Önemli:</b> SEO verilerinin otomatik işlenmesi için sitenizde **SEOPress (Ücretsiz sürüm)** kurulu olmalıdır.</p>
         </div>
 
         <div class="form-group">
             <label for="internalLinkPool">Internal Link Pool</label>
             <textarea id="internalLinkPool" name="InternalLinkPool"></textarea>
-            <p class="helper-text">Pages from your website to link to (one URL per line).</p>
+            <p class="helper-text">Specific pages from your website to link to (one URL per line).</p>
         </div>
 
         <div class="form-group">
             <label for="youTubeVideoPool">YouTube Video Pool</label>
             <textarea id="youTubeVideoPool" name="YouTubeVideoPool"></textarea>
-            <p class="helper-text">YouTube videos to embed (one URL per line).</p>
+            <p class="helper-text">Your YouTube videos to embed in blog posts (one URL per line).</p>
         </div>
 
         <div class="form-group">
             <label for="seoKeywords">Primary SEO Keywords</label>
             <textarea id="seoKeywords" name="SEO_Keywords"></textarea>
-            <p class="helper-text">Enter up to 5 keywords separated by commas.</p>
+            <p class="helper-text">List 5-10 keywords separated by commas. <br> <i>Example: personalized gifts, custom design shop, etc.</i></p>
         </div>
 
         <div class="form-group">
@@ -283,6 +270,7 @@
         <div class="form-group">
             <label for="evergreenTopics">Evergreen Topics</label>
             <textarea id="evergreenTopics" name="EvergreenContentTopics"></textarea>
+            <p class="helper-text">Timeless blog post ideas (e.g., 'How to Choose the Perfect Gift').</p>
         </div>
 
         <div class="form-group">
@@ -302,6 +290,7 @@
         <div class="form-group">
             <label for="gbpLocationName">Business Name on Google</label>
             <input type="text" id="gbpLocationName" name="GBP_Location_Name">
+            <p class="helper-text">Exactly as it appears on Google Maps. <br> <i>Example: DizaynAtelierGifts</i></p>
         </div>
 
         <div class="form-group">
@@ -319,6 +308,7 @@
                 <option value="GET_OFFER">Get Offer</option>
                 <option value="CALL">Call</option>
             </select>
+            <p class="helper-text">Standard Google button text for all automatic posts.</p>
         </div>
     </div>
 
@@ -329,7 +319,7 @@
         <div class="form-group">
             <label for="etsyShopUrl">Etsy Shop URL</label>
             <input type="url" id="etsyShopUrl" name="Etsy_Shop_URL">
-            <p class="helper-text">Example: https://www.etsy.com/shop/YourShopName</p>
+            <p class="helper-text">The main link to your Etsy storefront. <br> <i>Example: https://www.etsy.com/shop/YourShopName</i></p>
         </div>
     </div>
 
