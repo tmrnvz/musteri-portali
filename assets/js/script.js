@@ -373,7 +373,9 @@ const initiateLateConnection = async (platform) => {
     }
 };
 
+
 const renderConnectionStatus = async () => {
+    // Önce butonları "Checking..." durumuna çekelim
     document.querySelectorAll('.connection-status-text').forEach(el => {
         el.textContent = 'Checking...';
         el.className = 'connection-status-text';
@@ -383,32 +385,44 @@ const renderConnectionStatus = async () => {
     if (!headers) return;
 
     try {
+        // Mevcut NocoDB verilerini ve profil ID'yi çeken workflow (Workflow B/Status)
         const response = await fetch(LATE_GET_STATUS_URL, { method: 'GET', headers: headers });
         if (!response.ok) throw new Error(`Status check failed`);
         const data = await response.json(); 
 
         state.lateProfileId = data.lateProfileId; 
 
+        // Dashboard Alert için kullanılan Health Check'ten gelen veriyi de burada kullanabiliriz
+        // Eğer data.platforms içinde isActive bilgisi de geliyorsa (Workflow upgrade sonrası):
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
-            const platformStatus = data.platforms[platform];
-            const isConnected = platformStatus && platformStatus.status === 'connected';
+            const platformData = data.platforms[platform]; // NocoDB'deki kayıt
 
-            if (isConnected) {
-                button.classList.add('is-connected');
-                statusTextEl.textContent = 'CONNECTED';
-                statusTextEl.classList.add('connected');
-                button.dataset.status = 'connected';
+            // Reset classes
+            button.classList.remove('is-connected', 'needs-reconnect');
+            statusTextEl.className = 'connection-status-text';
+
+            if (platformData && platformData.status === 'connected') {
+                // KRİTİK: isActive false ise RECONNECT yazdır ve sarı yap
+                if (platformData.isActive === false) {
+                    button.classList.add('needs-reconnect');
+                    statusTextEl.textContent = 'RECONNECT';
+                    statusTextEl.classList.add('warning'); // CSS'te sarı/turuncu tanımlı olmalı
+                } else {
+                    button.classList.add('is-connected');
+                    statusTextEl.textContent = 'CONNECTED';
+                    statusTextEl.classList.add('connected');
+                }
             } else {
-                button.classList.remove('is-connected');
                 statusTextEl.textContent = 'NOT CONNECTED';
                 statusTextEl.classList.add('disconnected');
-                button.dataset.status = 'disconnected';
             }
         });
 
-    } catch (error) { console.error(error); }
+    } catch (error) { 
+        console.error("Status update error:", error); 
+    }
 };
 
 
