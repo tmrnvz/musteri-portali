@@ -375,7 +375,7 @@ const initiateLateConnection = async (platform) => {
 
 
 const renderConnectionStatus = async () => {
-    // Önce butonları "Checking..." durumuna çekelim
+    // 1. Arayüzü Hazırla: Tüm butonları "Checking..." durumuna çek
     document.querySelectorAll('.connection-status-text').forEach(el => {
         el.textContent = 'Checking...';
         el.className = 'connection-status-text';
@@ -385,36 +385,47 @@ const renderConnectionStatus = async () => {
     if (!headers) return;
 
     try {
-        // Mevcut NocoDB verilerini ve profil ID'yi çeken workflow (Workflow B/Status)
+        // 2. ADIM: NocoDB'den mevcut kayıtlı ID'leri çek (Hızlı Başlangıç)
         const response = await fetch(LATE_GET_STATUS_URL, { method: 'GET', headers: headers });
         if (!response.ok) throw new Error(`Status check failed`);
         const data = await response.json(); 
 
-        state.lateProfileId = data.lateProfileId; 
+        state.lateProfileId = data.lateProfileId; // Sonraki sorgu için profil ID'yi kaydet
 
-        // Dashboard Alert için kullanılan Health Check'ten gelen veriyi de burada kullanabiliriz
-        // Eğer data.platforms içinde isActive bilgisi de geliyorsa (Workflow upgrade sonrası):
+        // 3. ADIM: Late API Health Check Workflow'unu Çağır (Gerçek Zamanlı Durum)
+        const healthResponse = await fetch('https://ops.synqbrand.com/webhook/late-system-health-check', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...headers },
+            body: JSON.stringify({ lateProfileId: state.lateProfileId })
+        });
+        const healthData = await healthResponse.json(); // hasIssues ve failedPlatforms listesini alıyoruz
+
+        // 4. ADIM: Butonları NocoDB + Late API verisine göre boya
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
-            const platformData = data.platforms[platform]; // NocoDB'deki kayıt
+            const platformData = data.platforms[platform]; // NocoDB kaydı
+            
+            // Late'ten gelen listede bu platform "failed" (isActive: false) olarak işaretlenmiş mi?
+            const isFailed = healthData.hasIssues && healthData.failedPlatforms.includes(platform.toUpperCase());
 
-            // Reset classes
             button.classList.remove('is-connected', 'needs-reconnect');
             statusTextEl.className = 'connection-status-text';
 
             if (platformData && platformData.status === 'connected') {
-                // KRİTİK: isActive false ise RECONNECT yazdır ve sarı yap
-                if (platformData.isActive === false) {
+                if (isFailed) {
+                    // KAYIT VAR AMA TOKEN GEÇERSİZ (RECONNECT DURUMU)
                     button.classList.add('needs-reconnect');
                     statusTextEl.textContent = 'RECONNECT';
-                    statusTextEl.classList.add('warning'); // CSS'te sarı/turuncu tanımlı olmalı
+                    statusTextEl.classList.add('warning');
                 } else {
+                    // BAĞLANTI TAMAM VE AKTİF
                     button.classList.add('is-connected');
                     statusTextEl.textContent = 'CONNECTED';
                     statusTextEl.classList.add('connected');
                 }
             } else {
+                // HİÇ BAĞLANMAMIŞ
                 statusTextEl.textContent = 'NOT CONNECTED';
                 statusTextEl.classList.add('disconnected');
             }
