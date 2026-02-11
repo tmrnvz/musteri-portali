@@ -110,3 +110,19 @@
     text-decoration: underline;
     cursor: pointer;
 }
+
+/* Reconnect durumu için uyarı rengi */
+.connection-status-text.warning {
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.platform-connect-btn.needs-reconnect {
+    border-color: #ffc107;
+    background-color: #fff9e6;
+}
+
