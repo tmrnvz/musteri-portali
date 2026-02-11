@@ -432,23 +432,26 @@ const renderConnectionStatus = async () => {
 };
 
 
-// *** VERİ KAYDETME FONKSİYONU ***
+// *** VERİ KAYDETME FONKSİYONU (OTOMATİK ÇALIŞAN VERSİYON) ***
 const saveLateConnectionData = async () => {
-    syncLateDataBtn.disabled = true;
-    syncLateDataBtn.textContent = 'Syncing Data...';
+    // Buton referanslarını sildik çünkü buton artık HTML'de yok.
     const headers = getAuthHeaders();
     if (!headers) { handleLogout(); return; }
 
     try {
+        // NocoDB'yi güncelleyen n8n workflow'unu tetikler
         const response = await fetch(LATE_SAVE_DATA_URL, { method: 'POST', headers: headers });
         if (!response.ok) throw new Error(`Data save failed`);
-        syncLateDataBtn.textContent = 'Sync Successful!';
-        syncLateDataBtn.classList.add('btn-success');
+        
+        // İşlem başarılı olduğunda buton yerine sadece konsola yazıyoruz 
+        // ve arayüzdeki yeşil/turuncu butonları güncelliyoruz.
+        console.log('NocoDB Sync Successful!');
         renderConnectionStatus(); 
+        
     } catch (error) {
-        console.error(error);
-        syncLateDataBtn.textContent = 'Save Failed';
-        syncLateDataBtn.disabled = false;
+        console.error("NocoDB Save Error:", error);
+        // Hata durumunda kullanıcıyı bilgilendirmek istersen alert kullanabilirsin
+        alert("Account connected but failed to save in profile. Please try refreshing.");
     }
 };
 
