@@ -1,4 +1,3 @@
-<!-- assets/onboarding-form.html -->
 <form id="onboarding-form">
     
     <div class="form-section">
@@ -93,7 +92,6 @@
         <h3>Section 3: Marketing & Content Strategy</h3>
         <p class="section-description">Define your audience, brand voice, and core content themes.</p>
         
-        <!-- YENİDEN EKLENDİ -->
         <div class="form-group">
             <label for="targetPersona">Detailed Target Persona</label>
             <textarea id="targetPersona" name="TargetPersona" required></textarea>
@@ -183,7 +181,6 @@
             <p class="helper-text">Define the 3-5 core themes for your monthly content. Our system will generate posts based on these pillars. <br> <i>Example: 1. Power of Personalization 2. Special Occasion Celebrations (Gift guides) 3. The Art of Gifting (Tips, ideas)</i></p>
         </div>
 
-        <!-- YENİDEN EKLENDİ -->
         <div class="form-group">
             <label for="recurringThemes">Recurring Themes / Content Series</label>
             <textarea id="recurringThemes" name="RecurringThemes"></textarea>
@@ -258,15 +255,39 @@
             <p class="helper-text">How should blog posts address the reader?</p>
         </div>
 
+        </div>
+
+    <div class="form-section">
+        <h3>Section 5: Google Business Profile (GBP) Details</h3>
+        <p class="section-description">Provide specific details for your Google Business presence.</p>
+        
         <div class="form-group">
-            <label for="articleLength">Preferred Article Length</label>
-            <select id="articleLength" name="Blog_Default_Article_Size">
-                <option value="Small (300-500 words)">Small (300-500 words)</option>
-                <option value="Medium (500-800 words)" selected>Medium (500-800 words)</option>
-                <option value="Long (800-1200 words)">Long (800-1200 words)</option>
-                <option value="Very Long (1200-1500 words)">Very Long (1200-1500 words)</option>
-            </select>
-            <p class="helper-text">What is the typical length you're aiming for?</p>
+            <label for="gbpLocationName">Business Name on Google</label>
+            <input type="text" id="gbpLocationName" name="GBP_Location_Name">
+            <p class="helper-text">Exactly as it appears on Google Maps. <br> <i>Example: DizaynAtelierGifts</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="gbpCtaLink">Default Button Link</label>
+            <input type="url" id="gbpCtaLink" name="GBP_Default_Post_CTA_Link_Ref">
+            <p class="helper-text">Where should the action button on your Google posts lead? <br> <i>Example: https://your-website.com/shop</i></p>
+        </div>
+
+        <div class="form-group">
+            <label for="gbpCtaAction">Button Action Text</label>
+            <input type="text" id="gbpCtaAction" name="GBP_Default_Post_CTA_Action" placeholder="e.g., LEARN_MORE">
+            <p class="helper-text">Standard Google actions: LEARN_MORE, BOOK, ORDER, SIGN_UP, CALL.</p>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>Section 6: Etsy Shop Details</h3>
+        <p class="section-description">If you are an Etsy seller, please provide your shop information.</p>
+        
+        <div class="form-group">
+            <label for="etsyShopUrl">Etsy Shop URL</label>
+            <input type="url" id="etsyShopUrl" name="Etsy_Shop_URL">
+            <p class="helper-text">The main link to your Etsy storefront. <br> <i>Example: https://www.etsy.com/shop/YourShopName</i></p>
         </div>
     </div>
 
