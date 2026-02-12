@@ -56,61 +56,18 @@
     <p class="section-description">Define your social media presence, hashtag strategy, and visual style.</p>
 
     <div class="form-group">
-        <label class="main-question-label">Platform Focus & Usernames</label>
-        <p class="helper-text">Select your platforms and enter your current handle for each. This helps us tag you correctly.</p>
-        
-        <div id="platform-selection-container">
-            <div class="platform-row">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="pf-instagram" name="PlatformFocus" value="Instagram">
-                    <label for="pf-instagram" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Instagram</span></label>
-                </div>
-                <input type="text" id="pf-instagram-user" class="platform-username-input" placeholder="@username">
-            </div>
-
-            <div class="platform-row">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="pf-facebook" name="PlatformFocus" value="Facebook">
-                    <label for="pf-facebook" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Facebook</span></label>
-                </div>
-                <input type="text" id="pf-facebook-user" class="platform-username-input" placeholder="Page username">
-            </div>
-
-            <div class="platform-row">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="pf-pinterest" name="PlatformFocus" value="Pinterest">
-                    <label for="pf-pinterest" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Pinterest</span></label>
-                </div>
-                <input type="text" id="pf-pinterest-user" class="platform-username-input" placeholder="Username">
-            </div>
-
-            <div class="platform-row">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="pf-twitter" name="PlatformFocus" value="Twitter">
-                    <label for="pf-twitter" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Twitter / X</span></label>
-                </div>
-                <input type="text" id="pf-twitter-user" class="platform-username-input" placeholder="@handle">
-            </div>
-
-            <div class="platform-row">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="pf-linkedin" name="PlatformFocus" value="LinkedIn">
-                    <label for="pf-linkedin" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">LinkedIn</span></label>
-                </div>
-                <input type="text" id="pf-linkedin-user" class="platform-username-input" placeholder="Company page name">
-            </div>
-
-            <div class="platform-row">
-                <div class="checkbox-wrapper">
-                    <input type="checkbox" id="pf-gbp" name="PlatformFocus" value="GBP">
-                    <label for="pf-gbp" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">GBP</span></label>
-                </div>
-                <input type="text" id="pf-gbp-user" class="platform-username-input" placeholder="Business name on Google">
-            </div>
-        </div>
-    </div>
-
+    <label class="main-question-label">Platform Selection</label>
+    <p class="helper-text">Select the platforms you want to include in your automation. You will connect these accounts later via the "Social Media Connections" dashboard.</p>
     
+    <div id="platform-selection-container" class="simple-checkbox-grid">
+        <div class="checkbox-wrapper"><input type="checkbox" id="pf-instagram" name="PlatformFocus" value="Instagram"><label for="pf-instagram" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Instagram</span></label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="pf-facebook" name="PlatformFocus" value="Facebook"><label for="pf-facebook" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Facebook</span></label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="pf-pinterest" name="PlatformFocus" value="Pinterest"><label for="pf-pinterest" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Pinterest</span></label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="pf-twitter" name="PlatformFocus" value="Twitter"><label for="pf-twitter" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Twitter / X</span></label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="pf-linkedin" name="PlatformFocus" value="LinkedIn"><label for="pf-linkedin" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">LinkedIn</span></label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="pf-gbp" name="PlatformFocus" value="GBP"><label for="pf-gbp" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Google Business (GBP)</span></label></div>
+    </div>
+</div>
 
         <div class="form-group">
             <label for="brandHashtag">Main Brand Hashtag</label>
