@@ -76,9 +76,17 @@ const parseJwt = (token) => {
 
 // --- YENİ EKLENEN: SPECIAL INSTRUCTIONS BİRLEŞTİRİCİ ---
 const getCombinedSpecialInstructions = () => {
+    const instructions = [];
+    
+    // 1. Dropdown verisini al (Emoji Usage)
+    const emojiSelect = document.querySelector('select[name="ai-behavior-emoji"]');
+    if (emojiSelect) instructions.push(emojiSelect.value);
+
+    // 2. Checkbox verilerini al
     const checkboxes = document.querySelectorAll('input[name="ai-behavior"]:checked');
-    if (checkboxes.length === 0) return "";
-    const instructions = Array.from(checkboxes).map(cb => cb.value);
+    checkboxes.forEach(cb => instructions.push(cb.value));
+
+    if (instructions.length === 0) return "";
     return "Instruction: " + instructions.join(" ");
 };
 
