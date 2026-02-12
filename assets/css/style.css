@@ -948,6 +948,62 @@ textarea {
     color: #fff;
 }
 
+
+/* Form Grup Aralarını Açma */
+.form-group {
+    margin-bottom: 2.5rem; /* Sorular arasındaki boşluğu artırdık */
+}
+
+/* Ana Soru Başlıklarını Belirginleştirme */
+.form-group label:first-child {
+    font-size: 1.2rem; /* Başlığı büyüttük */
+    font-weight: 700;
+    color: #2d3436;
+    display: block;
+    margin-bottom: 0.8rem;
+}
+
+/* Yardımcı Metinleri Hafifletme */
+.helper-text {
+    font-size: 0.9rem;
+    color: #636e72;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+
+/* Sosyal Medya Satırlarını Hizalama */
+.platform-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #f9f9f9;
+    padding: 10px 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #eee;
+}
+
+.platform-row .checkbox-wrapper {
+    flex: 0 0 150px; /* Platform ismi sabit genişlik */
+    margin-bottom: 0;
+}
+
+.platform-username-input {
+    flex: 1; /* Input alanı kalan boşluğu doldurur */
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+/* Checkbox ve Radio Kutularını İyileştirme */
+.checkbox-group-container {
+    background: #fff;
+    border: 1px solid #e1e4e8;
+    padding: 20px;
+    border-radius: 12px;
+}
+
+
 #profile-actions-container {
     margin-top: 1.5rem;
     text-align: right;
