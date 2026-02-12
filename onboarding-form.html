@@ -199,33 +199,38 @@
         </div>
 
         <div class="form-group">
-            <label>AI Writing Behavior (Special Instructions)</label>
-            <p class="helper-text">Select how AI should strictly behave when writing your content.</p>
-            
-            <div class="checkbox-group-container">
-                <p><b>Emoji Usage:</b></p>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-noemoji" name="ai-behavior" value="Do not use any emojis."><label for="be-noemoji" class="checkbox-label"><span class="checkbox-custom"></span>No Emojis</label></div>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-minemoji" name="ai-behavior" value="Use maximum 1-2 relevant emojis at the very end."><label for="be-minemoji" class="checkbox-label"><span class="checkbox-custom"></span>Minimalist</label></div>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-engemoji" name="ai-behavior" value="Use emojis naturally throughout the text to enhance engagement."><label for="be-engemoji" class="checkbox-label"><span class="checkbox-custom"></span>Engaging</label></div>
-                
-                <p><b>Formatting & Layout:</b></p>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-hook" name="ai-behavior" value="Start with a high-impact, short hook sentence."><label for="be-hook" class="checkbox-label"><span class="checkbox-custom"></span>Hook Focused</label></div>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-bullet" name="ai-behavior" value="Use bullet points for better readability."><label for="be-bullet" class="checkbox-label"><span class="checkbox-custom"></span>Bullet Points</label></div>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-short" name="ai-behavior" value="Keep sentences short and high-impact."><label for="be-short" class="checkbox-label"><span class="checkbox-custom"></span>Short Sentences</label></div>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-break" name="ai-behavior" value="Add line breaks after every sentence for readability."><label for="be-break" class="checkbox-label"><span class="checkbox-custom"></span>Line Breaks</label></div>
-
-                <p><b>Tone & Engagement:</b></p>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-nohard" name="ai-behavior" value="Focus on building trust; do not use aggressive sales language."><label for="be-nohard" class="checkbox-label"><span class="checkbox-custom"></span>No Hard Sell</label></div>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-ask" name="ai-behavior" value="Always end the post with a thoughtful question for the audience."><label for="be-ask" class="checkbox-label"><span class="checkbox-custom"></span>Ask Questions</label></div>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-soft" name="ai-behavior" value="Gently suggest visiting the profile or link for more info."><label for="be-soft" class="checkbox-label"><span class="checkbox-custom"></span>Soft CTA</label></div>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-urgent" name="ai-behavior" value="Use urgent language like 'Limited time' or 'Explore now'."><label for="be-urgent" class="checkbox-label"><span class="checkbox-custom"></span>Urgency</label></div>
-
-                <p><b>Strict Prohibitions:</b></p>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-notext" name="ai-behavior" value="Do not include hashtags inside the main text; move them all to the end."><label for="be-notext" class="checkbox-label"><span class="checkbox-custom"></span>No Hashtags in Text</label></div>
-                <div class="checkbox-wrapper"><input type="checkbox" id="be-nojargon" name="ai-behavior" value="Avoid technical jargon; write so a 12-year-old can understand."><label for="be-nojargon" class="checkbox-label"><span class="checkbox-custom"></span>No Jargon</label></div>
-            </div>
-            <input type="hidden" id="specialInstructions" name="SpecialInstructions">
+    <label>AI Writing Behavior (Special Instructions)</label>
+    <p class="helper-text">Select how AI should strictly behave when writing your content.</p>
+    
+    <div class="checkbox-group-container">
+        <p><b>Emoji Usage (Select One):</b></p>
+        <div class="form-group">
+            <select name="ai-behavior-emoji" class="behavior-select">
+                <option value="Use natural emojis throughout the text.">Standard (Balanced)</option>
+                <option value="Do not use any emojis.">No Emojis (Corporate)</option>
+                <option value="Use maximum 1-2 relevant emojis at the very end.">Minimalist</option>
+                <option value="Use emojis generously to enhance engagement.">Engaging (High Density)</option>
+            </select>
         </div>
+        
+        <p><b>Formatting & Layout (Select Multiple):</b></p>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-hook" name="ai-behavior" value="Start with a high-impact, short hook sentence."><label for="be-hook" class="checkbox-label"><span class="checkbox-custom"></span>Hook Focused</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-bullet" name="ai-behavior" value="Use bullet points for better readability."><label for="be-bullet" class="checkbox-label"><span class="checkbox-custom"></span>Bullet Points</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-short" name="ai-behavior" value="Keep sentences short and high-impact."><label for="be-short" class="checkbox-label"><span class="checkbox-custom"></span>Short Sentences</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-break" name="ai-behavior" value="Add line breaks after every sentence for readability."><label for="be-break" class="checkbox-label"><span class="checkbox-custom"></span>Line Breaks</label></div>
+
+        <p><b>Tone & Engagement:</b></p>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-nohard" name="ai-behavior" value="Focus on building trust; do not use aggressive sales language."><label for="be-nohard" class="checkbox-label"><span class="checkbox-custom"></span>No Hard Sell</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-ask" name="ai-behavior" value="Always end the post with a thoughtful question for the audience."><label for="be-ask" class="checkbox-label"><span class="checkbox-custom"></span>Ask Questions</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-soft" name="ai-behavior" value="Gently suggest visiting the profile or link for more info."><label for="be-soft" class="checkbox-label"><span class="checkbox-custom"></span>Soft CTA</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-urgent" name="ai-behavior" value="Use urgent language like 'Limited time' or 'Explore now'."><label for="be-urgent" class="checkbox-label"><span class="checkbox-custom"></span>Urgency</label></div>
+
+        <p><b>Strict Prohibitions:</b></p>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-notext" name="ai-behavior" value="Do not include hashtags inside the main text; move them all to the end."><label for="be-notext" class="checkbox-label"><span class="checkbox-custom"></span>No Hashtags in Text</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="be-nojargon" name="ai-behavior" value="Avoid technical jargon; write so a 12-year-old can understand."><label for="be-nojargon" class="checkbox-label"><span class="checkbox-custom"></span>No Jargon</label></div>
+    </div>
+    <input type="hidden" id="specialInstructions" name="SpecialInstructions">
+</div>
 
         <div class="form-group">
             <label for="negativeKeywords">Banned Words/Topics</label>
