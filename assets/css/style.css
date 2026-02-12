@@ -951,7 +951,7 @@ textarea {
 
 /* Form Grup Aralarını Açma */
 .form-group {
-    margin-bottom: 2.5rem; /* Sorular arasındaki boşluğu artırdık */
+    margin-bottom: 3.5rem; /* Sorular arasındaki boşluğu artırdık */
 }
 
 /* Ana Soru Başlıklarını Belirginleştirme */
