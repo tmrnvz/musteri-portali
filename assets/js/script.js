@@ -254,15 +254,8 @@ const handleOnboardingSubmit = async (event) => {
         const platformFocusValues = Array.from(platformFocusCheckboxes).map(cb => cb.value);
         jsonData.PlatformFocus = platformFocusValues;
 
-        // 4. Platform Usernames
-        let platformUsernamesText = "";
-        platformFocusValues.forEach(platform => {
-            const safeId = platform.toLowerCase().replace(/ \/ /g, '-').replace(/ /g, '-');
-            const inputId = `pf-${safeId}-user`;
-            const userInput = document.getElementById(inputId);
-            platformUsernamesText += `${platform}: ${userInput && userInput.value ? userInput.value : '(Not provided)'}\n`;
-        });
-        jsonData.PlatformUsernamesForEmail = platformUsernamesText.trim();
+        // 4. Platform Usernames (Artık manuel sorulmuyor, Late API üzerinden çekiliyor)
+jsonData.PlatformUsernamesForEmail = "Connected via Late API";
 
         // 5. YENİ: Special Instructions Checkbox Birleştirme
         jsonData.SpecialInstructions = getCombinedSpecialInstructions();
