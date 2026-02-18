@@ -580,11 +580,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- FAZ 3: PAKET BAZLI DINAMIK UI KONTROLÜ ---
-const applyPackagePolicy = (planId) => {
+const applyPackagePolicy = (planId, retryCount = 0) => {
 if (!planId) return;
-const id = planId.toLowerCase();
 
-};
+const id = planId.toLowerCase();
 
 // DOĞRUDAN TAM ID İSİMLERİ İLE HEDEFLEME
 const blogSection = document.getElementById('section-blog');
