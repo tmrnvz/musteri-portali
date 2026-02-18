@@ -92,20 +92,22 @@ const getCombinedSpecialInstructions = () => {
 };
 
 const loadAndInjectForm = async () => {
-    if (formContainer.innerHTML.trim() !== "") return;
-    try {
-        const response = await fetch('onboarding-form.html');
-        if (!response.ok) throw new Error('Could not load the form.');
-        const formHtml = await response.text();
-        formContainer.innerHTML = formHtml;
-        const onboardingForm = formContainer.querySelector('#onboarding-form');
-        if (onboardingForm) {
-            onboardingForm.addEventListener('submit', handleOnboardingSubmit);
-        }
-    } catch (error) {
-        formContainer.innerHTML = `<p class="error">Error loading the onboarding form. Please refresh the page.</p>`;
-        console.error(error);
-    }
+if (formContainer.innerHTML.trim() !== "") return true;
+try {
+const response = await fetch('onboarding-form.html');
+if (!response.ok) throw new Error('Could not load the form.');
+const formHtml = await response.text();
+formContainer.innerHTML = formHtml;
+const onboardingForm = formContainer.querySelector('#onboarding-form');
+if (onboardingForm) {
+onboardingForm.addEventListener('submit', handleOnboardingSubmit);
+}
+return true;
+} catch (error) {
+formContainer.innerHTML = p class="error" Error loading the onboarding form. /p;
+console.error(error);
+return false;
+}
 };
 
 const routeUserByRole = async (role, username) => {
@@ -140,22 +142,25 @@ const routeUserByRole = async (role, username) => {
         // ------------------------------------------
         
         fetchAndRenderPlatforms();
-    } else if (role === 'new') { // Eski 'pending' rolü yerine
-        await loadAndInjectForm(); 
-        onboardingSection.style.display = 'block';
-        // Form yüklendikten hemen sonra paket kurallarını uygula
-        setTimeout(() => applyPackagePolicy(state.userPackage), 200);
-    } else if (role === 'activation') { // Eski 'pending_activation' rolü yerine
-        pendingActivationSection.style.display = 'block';
-    } else if (role === 'admin') {
-        loginSection.style.display = 'block';
-        setStatus(statusDiv, 'Admin panel is not accessible from this interface.', 'error');
-        handleLogout();
-    } else {
-        loginSection.style.display = 'block';
-        setStatus(statusDiv, 'An error occurred with your user role. Please contact support.', 'error');
-        handleLogout();
-    }
+} else if (role === 'new') {
+const isLoaded = await loadAndInjectForm();
+onboardingSection.style.display = 'block';
+if (isLoaded) {
+setTimeout(() => {
+applyPackagePolicy(state.userPackage);
+}, 100);
+}
+} else if (role === 'activation') {
+pendingActivationSection.style.display = 'block';
+} else if (role === 'admin') {
+loginSection.style.display = 'block';
+setStatus(statusDiv, 'Admin panel is not accessible from this interface.', 'error');
+handleLogout();
+} else {
+loginSection.style.display = 'block';
+setStatus(statusDiv, 'An error occurred with your user role. Please contact support.', 'error');
+handleLogout();
+}
 };
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
