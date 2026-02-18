@@ -145,10 +145,7 @@ const routeUserByRole = async (role, username) => {
 } else if (role === 'new') {
 const isLoaded = await loadAndInjectForm();
 onboardingSection.style.display = 'block';
-if (isLoaded) {
-setTimeout(() => {
-applyPackagePolicy(state.userPackage);
-}, 100);
+
 }
 } else if (role === 'activation') {
 pendingActivationSection.style.display = 'block';
