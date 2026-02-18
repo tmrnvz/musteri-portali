@@ -150,8 +150,7 @@ const routeUserByRole = async (role, username) => {
     if (isLoaded) {
         applyPackagePolicy(state.userPackage);
     }
-}
-        
+       
 } else if (role === 'activation') {
 pendingActivationSection.style.display = 'block';
 } else if (role === 'admin') {
