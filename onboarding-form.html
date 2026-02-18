@@ -1,6 +1,6 @@
 <form id="onboarding-form">
     
-    <div class="form-section">
+    <div class="form-section" id="section-core">
         <h3>Core Brand Identity Section</h3>
         <p class="section-description">This section helps us understand the fundamentals of your business.</p>
         
@@ -51,7 +51,7 @@
             </div>        
         </div>
 
-    <div class="form-section">
+    <div class="form-section" id="section-social">
     <h3>Social Media & Visual Strategy Section</h3>
     <p class="section-description">Define your social media presence, hashtag strategy, and visual style.</p>
 
@@ -65,7 +65,7 @@
         <div class="checkbox-wrapper"><input type="checkbox" id="pf-pinterest" name="PlatformFocus" value="Pinterest"><label for="pf-pinterest" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Pinterest</span></label></div>
         <div class="checkbox-wrapper"><input type="checkbox" id="pf-twitter" name="PlatformFocus" value="Twitter"><label for="pf-twitter" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Twitter / X</span></label></div>
         <div class="checkbox-wrapper"><input type="checkbox" id="pf-linkedin" name="PlatformFocus" value="LinkedIn"><label for="pf-linkedin" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">LinkedIn</span></label></div>
-        <div class="checkbox-wrapper"><input type="checkbox" id="pf-gbp" name="PlatformFocus" value="GBP"><label for="pf-gbp" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Google Business (GBP)</span></label></div>
+        <div class="checkbox-wrapper" id="wrapper-gbp-checkbox"><input type="checkbox" id="pf-gbp" name="PlatformFocus" value="GBP"><label for="pf-gbp" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">Google Business (GBP)</span></label></div>
     </div>
 </div>
 
@@ -140,10 +140,8 @@
             </div>
         </div>
     </div>
-        
-    </div>
 
-    <div class="form-section">
+    <div class="form-section" id="section-marketing">
         <h3>Marketing & Content Strategy Section</h3>
         <p class="section-description">Define your audience, brand voice, and set AI writing behavior.</p>
         
@@ -265,7 +263,7 @@
         </div>
     </div>
 
-    <div class="form-section">
+    <div class="form-section" id="section-blog">
         <h3>Blog & Website Content Section</h3>
         <p class="section-description">If your package includes blog content, complete this section.</p>
          
@@ -316,14 +314,13 @@
             <label for="wpCategoryID" class="main-question-label">WordPress Blog Category ID</label>
             <input type="number" id="wpCategoryID" name="WordPressBlogCategoryID" placeholder="e.g., 1">
             <p class="helper-text">
-                Enter the ID of the category where your blog posts should be published. 
-                <br><b>How to find it:</b> Go to your WordPress Dashboard > Posts > Categories. Click 'Edit' on your category; the ID is the number after <i>"tag_ID="</i> in the browser's address bar.
+                How to find it: Go to your WordPress Dashboard > Posts > Categories. Click 'Edit' on your category; the ID is the number after "tag_ID=" in the browser's address bar.
                 <br><i>*Leave empty to use your default WordPress category (usually ID: 1).</i>
             </p>
         </div>        
     </div>
 
-    <div class="form-section">
+    <div class="form-section" id="section-gbp">
         <h3>Google Business Profile (GBP) Details Section</h3>
         <p class="section-description">Provide specific details for your Google presence.</p>
         
@@ -353,7 +350,7 @@
         </div>
     </div>
 
-    <div class="form-section">
+    <div class="form-section" id="section-etsy">
         <h3>Etsy Shop Details Section</h3>
         <p class="section-description">If you are an Etsy seller, please provide your shop information.</p>
         
