@@ -591,7 +591,7 @@ console.log('Hata: planId gelmedi');
 return;
 }
 
-};
+const id = planId.toLowerCase();
 
 // DOĞRUDAN TAM ID İSİMLERİ İLE HEDEFLEME
 const blogSection = document.getElementById('section-blog');
