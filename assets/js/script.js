@@ -37,6 +37,7 @@ let state = {
     modalDecisions: [], 
     selectedPosts: [],
     businessId: null, // NocoDB Business Profile ID'si (Girişten sonra ayarlanacak)
+    userPackage: null // Kullanıcının paket ID'si (planId)
     lateProfileId: null // Late'in verdiği Profil ID'si (Status Çekmeden sonra ayarlanacak)
 };
 
@@ -108,6 +109,12 @@ const loadAndInjectForm = async () => {
 };
 
 const routeUserByRole = async (role, username) => {
+    const token = localStorage.getItem('jwtToken');
+    const decodedToken = parseJwt(token);
+    
+    // JWT içinden planId'yi al ve state'e kaydet (Yoksa varsayılan ata)
+    state.userPackage = (decodedToken && decodedToken.planId) ? decodedToken.planId : 'publish_start';
+
     loginSection.style.display = 'none';
     customerPanel.style.display = 'none';
     onboardingSection.style.display = 'none';
@@ -116,10 +123,7 @@ const routeUserByRole = async (role, username) => {
     approvalPortalSection.style.display = 'none';
     connectPageSection.style.display = 'none';
 
-    if (role === 'customer') {
-        const token = localStorage.getItem('jwtToken');
-        const decodedToken = parseJwt(token);
-        
+    if (role === 'published') { // Eski 'customer' rolü yerine
         if (decodedToken && decodedToken.userId) { 
             state.businessId = decodedToken.userId; 
         }
@@ -136,10 +140,12 @@ const routeUserByRole = async (role, username) => {
         // ------------------------------------------
         
         fetchAndRenderPlatforms();
-    } else if (role === 'pending' || role === 'new_member') {
+    } else if (role === 'new') { // Eski 'pending' rolü yerine
         await loadAndInjectForm(); 
         onboardingSection.style.display = 'block';
-    } else if (role === 'pending_activation') {
+        // Form yüklendikten hemen sonra paket kurallarını uygula
+        setTimeout(() => applyPackagePolicy(state.userPackage), 200);
+    } else if (role === 'activation') { // Eski 'pending_activation' rolü yerine
         pendingActivationSection.style.display = 'block';
     } else if (role === 'admin') {
         loginSection.style.display = 'block';
@@ -147,7 +153,7 @@ const routeUserByRole = async (role, username) => {
         handleLogout();
     } else {
         loginSection.style.display = 'block';
-        setStatus(statusDiv, 'An error occurred with your user role. Please contact contact support.', 'error');
+        setStatus(statusDiv, 'An error occurred with your user role. Please contact support.', 'error');
         handleLogout();
     }
 };
@@ -468,6 +474,15 @@ const renderConnectionStatus = async () => {
 
         // 4. ADIM: Butonları NocoDB + Late API verisine göre boya
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
+            // Paket GBP desteklemiyorsa butonu tamamen gizle
+if (platform === 'googlebusiness') {
+    const isGrow = state.userPackage.includes('grow');
+    const isPro = state.userPackage.includes('pro');
+    if (!(isGrow || isPro)) {
+        button.parentElement.style.display = 'none';
+        return;
+    }
+}
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
             const platformData = data.platforms[platform]; // NocoDB kaydı
@@ -563,3 +578,46 @@ window.addEventListener('DOMContentLoaded', async () => {
         }
     }
 });
+
+// --- FAZ 3: PAKET BAZLI DINAMIK UI KONTROLÜ ---
+const applyPackagePolicy = (planId) => {
+    if (!planId) return;
+
+    const id = planId.toLowerCase();
+    
+    // Paket Kategorileri Tanımları
+    const isGrow = id.includes('grow');
+    const isEtsy = id.includes('etsy');
+    const isEngage = id.includes('engage');
+    const isPro = id.includes('pro');
+
+    // GBP (Google Business Profile) Şartı: Grow paketleri VEYA Pro olan tüm paketler
+    const hasGBP = isGrow || isPro;
+    
+    // Blog Şartı: Sadece Grow ve Etsy Pro paketlerinde (senin Plans tablosuna göre)
+    const hasBlog = isGrow || (isEtsy && isPro);
+
+    // 1. Blog Bölümü Kontrolü
+    const blogSection = document.getElementById('section-blog');
+    if (blogSection) {
+        blogSection.style.display = hasBlog ? 'block' : 'none';
+    }
+
+    // 2. GBP Bölümü ve Checkbox Kontrolü
+    const gbpSection = document.getElementById('section-gbp');
+    const gbpCheckboxWrapper = document.getElementById('wrapper-gbp-checkbox');
+    if (gbpSection) {
+        gbpSection.style.display = hasGBP ? 'block' : 'none';
+    }
+    if (gbpCheckboxWrapper) {
+        gbpCheckboxWrapper.style.display = hasGBP ? 'block' : 'none';
+    }
+
+    // 3. Etsy Bölümü Kontrolü
+    const etsySection = document.getElementById('section-etsy');
+    if (etsySection) {
+        etsySection.style.display = isEtsy ? 'block' : 'none';
+    }
+
+    console.log(`Faz 3: ${id} paketi için kurallar uygulandı. (GBP: ${hasGBP}, Blog: ${hasBlog}, Etsy: ${isEtsy})`);
+};
