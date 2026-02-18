@@ -162,6 +162,7 @@ setStatus(statusDiv, 'An error occurred with your user role. Please contact supp
 handleLogout();
 }
 };
+};
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
 const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; connectPageSection.style.display = 'none'; customerPanel.style.display = 'block'; };
