@@ -37,7 +37,7 @@ let state = {
     modalDecisions: [], 
     selectedPosts: [],
     businessId: null, // NocoDB Business Profile ID'si (Girişten sonra ayarlanacak)
-    userPackage: null // Kullanıcının paket ID'si (planId)
+    userPackage: null, // Kullanıcının paket ID'si (planId)
     lateProfileId: null // Late'in verdiği Profil ID'si (Status Çekmeden sonra ayarlanacak)
 };
 
