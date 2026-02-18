@@ -145,8 +145,6 @@ const routeUserByRole = async (role, username) => {
 } else if (role === 'new') {
 const isLoaded = await loadAndInjectForm();
 onboardingSection.style.display = 'block';
-
-}
 } else if (role === 'activation') {
 pendingActivationSection.style.display = 'block';
 } else if (role === 'admin') {
