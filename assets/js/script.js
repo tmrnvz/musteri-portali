@@ -586,8 +586,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 // --- FAZ 3: PAKET BAZLI DINAMIK UI KONTROLÜ ---
 const applyPackagePolicy = (planId) => {
-if (!planId) return;
-const id = planId.toLowerCase();
+if (!planId) {
+console.log('Hata: planId gelmedi');
+return;
+}
 
 };
 
