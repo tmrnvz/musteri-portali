@@ -143,8 +143,15 @@ const routeUserByRole = async (role, username) => {
         
         fetchAndRenderPlatforms();
 } else if (role === 'new') {
-const isLoaded = await loadAndInjectForm();
-onboardingSection.style.display = 'block';
+    const isLoaded = await loadAndInjectForm();
+
+    onboardingSection.style.display = 'block';
+
+    if (isLoaded) {
+        applyPackagePolicy(state.userPackage);
+    }
+}
+        
 } else if (role === 'activation') {
 pendingActivationSection.style.display = 'block';
 } else if (role === 'admin') {
