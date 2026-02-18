@@ -585,44 +585,33 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // --- FAZ 3: PAKET BAZLI DINAMIK UI KONTROLÜ ---
-const applyPackagePolicy = (planId) => {
-    if (!planId) return;
+const applyPackagePolicy = (planId, retryCount = 0) => {
+if (!planId) return;
+const id = planId.toLowerCase();
 
-    const id = planId.toLowerCase();
-    
-    // Paket Kategorileri Tanımları
-    const isGrow = id.includes('grow');
-    const isEtsy = id.includes('etsy');
-    const isEngage = id.includes('engage');
-    const isPro = id.includes('pro');
+const blogSection = document.getElementById('section-blog');
+const gbpSection = document.getElementById('section-gbp');
 
-    // GBP (Google Business Profile) Şartı: Grow paketleri VEYA Pro olan tüm paketler
-    const hasGBP = isGrow || isPro;
-    
-    // Blog Şartı: Sadece Grow ve Etsy Pro paketlerinde (senin Plans tablosuna göre)
-    const hasBlog = isGrow || (isEtsy && isPro);
+if (!blogSection && retryCount < 10) {
+setTimeout(() => applyPackagePolicy(planId, retryCount + 1), 100);
+return;
+}
 
-    // 1. Blog Bölümü Kontrolü
-    const blogSection = document.getElementById('section-blog');
-    if (blogSection) {
-        blogSection.style.display = hasBlog ? 'block' : 'none';
-    }
+const isGrow = id.includes('grow');
+const isEtsy = id.includes('etsy');
+const isPro = id.includes('pro');
 
-    // 2. GBP Bölümü ve Checkbox Kontrolü
-    const gbpSection = document.getElementById('section-gbp');
-    const gbpCheckboxWrapper = document.getElementById('wrapper-gbp-checkbox');
-    if (gbpSection) {
-        gbpSection.style.display = hasGBP ? 'block' : 'none';
-    }
-    if (gbpCheckboxWrapper) {
-        gbpCheckboxWrapper.style.display = hasGBP ? 'block' : 'none';
-    }
+const hasGBP = isGrow || isPro;
+const hasBlog = isGrow || (isEtsy && isPro);
 
-    // 3. Etsy Bölümü Kontrolü
-    const etsySection = document.getElementById('section-etsy');
-    if (etsySection) {
-        etsySection.style.display = isEtsy ? 'block' : 'none';
-    }
+if (blogSection) blogSection.style.display = hasBlog ? 'block' : 'none';
+if (gbpSection) gbpSection.style.display = hasGBP ? 'block' : 'none';
 
-    console.log(`Faz 3: ${id} paketi için kurallar uygulandı. (GBP: ${hasGBP}, Blog: ${hasBlog}, Etsy: ${isEtsy})`);
+const gbpCheckbox = document.getElementById('wrapper-gbp-checkbox');
+if (gbpCheckbox) gbpCheckbox.style.display = hasGBP ? 'block' : 'none';
+
+const etsySection = document.getElementById('section-etsy');
+if (etsySection) etsySection.style.display = isEtsy ? 'block' : 'none';
+
+console.log('Faz 3 Uygulandı: ' + id + ' (Deneme: ' + retryCount + ')');
 };
