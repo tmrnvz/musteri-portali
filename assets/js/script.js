@@ -589,14 +589,19 @@ const applyPackagePolicy = (planId, retryCount = 0) => {
 if (!planId) return;
 const id = planId.toLowerCase();
 
+// DOĞRUDAN TAM ID İSİMLERİ İLE HEDEFLEME
 const blogSection = document.getElementById('section-blog');
 const gbpSection = document.getElementById('section-gbp');
+const etsySection = document.getElementById('section-etsy');
+const gbpCheckbox = document.getElementById('wrapper-gbp-checkbox');
 
-if (!blogSection && retryCount < 10) {
+// Eğer ana bölümler henüz yüklenmediyse tekrar dene (Max 2 saniye/20 deneme)
+if (!blogSection && retryCount < 20) {
 setTimeout(() => applyPackagePolicy(planId, retryCount + 1), 100);
 return;
 }
 
+// Paket Mantığı
 const isGrow = id.includes('grow');
 const isEtsy = id.includes('etsy');
 const isPro = id.includes('pro');
@@ -604,14 +609,22 @@ const isPro = id.includes('pro');
 const hasGBP = isGrow || isPro;
 const hasBlog = isGrow || (isEtsy && isPro);
 
-if (blogSection) blogSection.style.display = hasBlog ? 'block' : 'none';
-if (gbpSection) gbpSection.style.display = hasGBP ? 'block' : 'none';
+// Gizleme İşlemleri (Tüm hiyerarşiyi gizlemek için)
+if (blogSection) {
+blogSection.style.display = hasBlog ? 'block' : 'none';
+}
 
-const gbpCheckbox = document.getElementById('wrapper-gbp-checkbox');
-if (gbpCheckbox) gbpCheckbox.style.display = hasGBP ? 'block' : 'none';
+if (gbpSection) {
+gbpSection.style.display = hasGBP ? 'block' : 'none';
+}
 
-const etsySection = document.getElementById('section-etsy');
-if (etsySection) etsySection.style.display = isEtsy ? 'block' : 'none';
+if (gbpCheckbox) {
+gbpCheckbox.style.display = hasGBP ? 'block' : 'none';
+}
 
-console.log('Faz 3 Uygulandı: ' + id + ' (Deneme: ' + retryCount + ')');
+if (etsySection) {
+etsySection.style.display = isEtsy ? 'block' : 'none';
+}
+
+console.log('Sistem Başarıyla Uygulandı: ' + id + ' (Deneme: ' + retryCount + ')');
 };
