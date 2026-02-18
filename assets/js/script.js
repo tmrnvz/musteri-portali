@@ -104,7 +104,7 @@ onboardingForm.addEventListener('submit', handleOnboardingSubmit);
 }
 return true;
 } catch (error) {
-formContainer.innerHTML = p class="error" Error loading the onboarding form. /p;
+formContainer.innerHTML = '<p class="error">Error loading the onboarding form.</p>';
 console.error(error);
 return false;
 }
@@ -161,7 +161,6 @@ loginSection.style.display = 'block';
 setStatus(statusDiv, 'An error occurred with your user role. Please contact support.', 'error');
 handleLogout();
 }
-};
 };
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
