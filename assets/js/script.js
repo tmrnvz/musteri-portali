@@ -572,12 +572,19 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (token) {
         const decodedToken = parseJwt(token);
         if (decodedToken && decodedToken.role) {
+
+            state.userPackage = decodedToken.planId;
+
             await routeUserByRole(decodedToken.role, decodedToken.username);
+
+            applyPackagePolicy(decodedToken.planId);
+
         } else {
             handleLogout();
         }
     }
 });
+
 
 // --- FAZ 3: PAKET BAZLI DINAMIK UI KONTROLÜ ---
 const applyPackagePolicy = (planId, retryCount = 0) => {
