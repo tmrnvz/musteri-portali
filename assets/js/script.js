@@ -13,6 +13,7 @@ const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-
 const GET_PENDING_POSTS_URL = 'https://ops.synqbrand.com/webhook/ac5496d2-7540-4db1-b7e1-a28c0e2320dc';
 const PROCESS_APPROVAL_URL = 'https://ops.synqbrand.com/webhook/ef89b9df-469d-4329-9194-6805b12a6dc5';
 const PUBLISH_APPROVED_POSTS_URL = 'https://ops.synqbrand.com/webhook/eb85bb8a-a1c4-4f0e-a50f-fc0c2afd64d0';
+const activationConnectBtn = document.getElementById('activation-connect-btn');
 const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/e1b260ea-2f4f-4620-8098-c5e9d369258b/e1b260ea-2f4f-4620-8098-c5e9d369258b/';
 
 // FAZ 2 - URL'LER
@@ -125,43 +126,41 @@ const routeUserByRole = async (role, username) => {
     approvalPortalSection.style.display = 'none';
     connectPageSection.style.display = 'none';
 
-    if (role === 'published') { // Eski 'customer' rolü yerine
+    // Business ID'yi her iki aktif rol için de tanımlıyoruz
+    if (role === 'published' || role === 'activation') {
         if (decodedToken && decodedToken.userId) { 
             state.businessId = decodedToken.userId; 
         }
+    }
 
+    if (role === 'published') {
         welcomeMessage.textContent = `Welcome, ${username}!`;
         customerPanel.style.display = 'block';
         
-        // --- AKILLI SAĞLIK KONTROLÜ ENTEGRASYONU ---
-        // Önce NocoDB'den mevcut durumları ve profil ID'yi çekiyoruz
         renderConnectionStatus().then(() => {
-            // Profil ID netleştikten sonra arka planda Late API sağlık kontrolünü başlat
             runSystemHealthCheck();
         });
-        // ------------------------------------------
         
         fetchAndRenderPlatforms();
-} else if (role === 'new') {
-    const isLoaded = await loadAndInjectForm();
-
-    onboardingSection.style.display = 'block';
-
-    if (isLoaded) {
-        applyPackagePolicy(state.userPackage);
+    } else if (role === 'new') {
+        const isLoaded = await loadAndInjectForm();
+        onboardingSection.style.display = 'block';
+        if (isLoaded) {
+            applyPackagePolicy(state.userPackage);
+        }
+    } else if (role === 'activation') {
+        pendingActivationSection.style.display = 'block';
+        // Bekleme ekranındayken de mevcut bağlantı durumlarını çekelim
+        renderConnectionStatus(); 
+    } else if (role === 'admin') {
+        loginSection.style.display = 'block';
+        setStatus(statusDiv, 'Admin panel is not accessible from this interface.', 'error');
+        handleLogout();
+    } else {
+        loginSection.style.display = 'block';
+        setStatus(statusDiv, 'An error occurred with your user role. Please contact support.', 'error');
+        handleLogout();
     }
-       
-} else if (role === 'activation') {
-pendingActivationSection.style.display = 'block';
-} else if (role === 'admin') {
-loginSection.style.display = 'block';
-setStatus(statusDiv, 'Admin panel is not accessible from this interface.', 'error');
-handleLogout();
-} else {
-loginSection.style.display = 'block';
-setStatus(statusDiv, 'An error occurred with your user role. Please contact support.', 'error');
-handleLogout();
-}
 };
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
@@ -218,7 +217,16 @@ const showConnectPage = () => {
 
 const hideConnectPage = () => {
     connectPageSection.style.display = 'none';
-    customerPanel.style.display = 'block';
+    
+    // Kullanıcı rolüne göre geri döneceği yeri seç
+    const token = localStorage.getItem('jwtToken');
+    const decodedToken = parseJwt(token);
+    
+    if (decodedToken && decodedToken.role === 'activation') {
+        pendingActivationSection.style.display = 'block';
+    } else {
+        customerPanel.style.display = 'block';
+    }
 };
 
 // ... [ GALERİ VE POST İŞLEMLERİ AYNI KALIYOR ] ... 
@@ -563,6 +571,7 @@ modalCancelBtn.addEventListener('click', closeApprovalModal);
 publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
+activationConnectBtn.addEventListener('click', showConnectPage);
 //syncLateDataBtn.addEventListener('click', saveLateConnectionData);
 showConnectPageBtn.addEventListener('click', showConnectPage);
 backToPanelFromConnectBtn.addEventListener('click', hideConnectPage);
