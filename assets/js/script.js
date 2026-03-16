@@ -476,7 +476,7 @@ const renderConnectionStatus = async () => {
         if (!response.ok) throw new Error(`Status check failed`);
         const data = await response.json(); 
 
-        state.lateProfileId = data.lateProfileId; // Sonraki sorgu için profil ID'yi kaydet
+        state.lateProfileId = data.Late_Profile_ID || data.lateProfileId; // Sonraki sorgu için profil ID'yi kaydet
 
         // 3. ADIM: Late API Health Check Workflow'unu Çağır (Gerçek Zamanlı Durum)
         const healthResponse = await fetch('https://ops.synqbrand.com/webhook/late-system-health-check', {
@@ -555,8 +555,7 @@ const saveLateConnectionData = async () => {
     }
 };
 
-
-// Event Listeners (Aynı kalıyor)
+// Event Listeners
 loginForm.addEventListener('submit', handleLogin);
 postForm.addEventListener('submit', handlePostSubmit);
 logoutBtn.addEventListener('click', handleLogout);
@@ -571,8 +570,16 @@ modalCancelBtn.addEventListener('click', closeApprovalModal);
 publishApprovedBtn.addEventListener('click', handlePublishApproved);
 bulkSelectAll.addEventListener('change', () => { const isChecked = bulkSelectAll.checked; const actionableCheckboxes = approvalGalleryContainer.querySelectorAll('.bulk-select-checkbox'); actionableCheckboxes.forEach(cb => { cb.checked = isChecked; const postId = parseInt(cb.dataset.postId); const isAlreadySelected = state.selectedPosts.includes(postId); if (isChecked && !isAlreadySelected) { state.selectedPosts.push(postId); } else if (!isChecked && isAlreadySelected) { state.selectedPosts = state.selectedPosts.filter(id => id !== postId); } }); updateBulkActionsState(); });
 bulkApproveBtn.addEventListener('click', handleBulkApprove);
-activationConnectBtn.addEventListener('click', showConnectPage);
-//syncLateDataBtn.addEventListener('click', saveLateConnectionData);
+
+// AKTİVASYON EKRANINDAKİ BUTON DÜZENLEMESİ
+if (activationConnectBtn) {
+    activationConnectBtn.addEventListener('click', async () => {
+        pendingActivationSection.style.display = 'none';
+        connectPageSection.style.display = 'block';
+        await renderConnectionStatus(); // NocoDB'deki Late_Profile_ID'yi çekmek için
+    });
+}
+
 showConnectPageBtn.addEventListener('click', showConnectPage);
 backToPanelFromConnectBtn.addEventListener('click', hideConnectPage);
 platformButtonsContainer.addEventListener('click', (e) => {
@@ -587,13 +594,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (token) {
         const decodedToken = parseJwt(token);
         if (decodedToken && decodedToken.role) {
-
             state.userPackage = decodedToken.planId;
-
             await routeUserByRole(decodedToken.role, decodedToken.username);
-
             applyPackagePolicy(decodedToken.planId);
-
         } else {
             handleLogout();
         }
