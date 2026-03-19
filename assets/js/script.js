@@ -356,9 +356,15 @@ const startLatePolling = async (initialAccountIds) => {
             }
 
             try {
-                const current = await getLateStatusSnapshot();
-                const currentAccounts = current.accounts || []; 
-                const currentAccountIds = currentAccounts.map(account => account._id || account.id);
+                // startLatePolling içindeki ilgili kısım:
+const current = await getLateStatusSnapshot();
+// Zernio verisi genelde { accounts: [...] } şeklinde döner
+const currentData = Array.isArray(current) ? current[0] : current;
+const currentAccounts = currentData.accounts || []; 
+
+// Hem _id hem id kontrolü yaparak riski sıfırlıyoruz
+const currentAccountIds = currentAccounts.map(account => account._id || account.id);
+                
 
                 // 1. DURUM: Yeni bir ID eklendi mi? (İlk bağlantı senaryosu)
                 const newAccountFound = currentAccountIds.some(id => id && !initialAccountIds.includes(id));
@@ -463,37 +469,44 @@ const renderConnectionStatus = async () => {
     if (!headers) return;
 
     try {
-        // 2. ADIM: NocoDB'den mevcut kayıtlı ID'leri çek (Hızlı Başlangıç)
+        // 2. ADIM: NocoDB'den veriyi çek
         const response = await fetch(LATE_GET_STATUS_URL, { method: 'GET', headers: headers });
         if (!response.ok) throw new Error(`Status check failed`);
-        const data = await response.json(); 
+        
+        const rawData = await response.json(); 
+        // n8n v2 dizi döndürdüğü için ilk elemanı alıyoruz (Dizi/Obje koruması)
+        const data = Array.isArray(rawData) ? rawData[0] : rawData; 
 
-        state.lateProfileId = data.lateProfileId; // Sonraki sorgu için profil ID'yi kaydet
+        state.lateProfileId = data.lateProfileId; 
 
-        // 3. ADIM: Late API Health Check Workflow'unu Çağır (Gerçek Zamanlı Durum)
+        // 3. ADIM: Late API Health Check (Gerçek Zamanlı)
         const healthResponse = await fetch('https://ops.synqbrand.com/webhook/late-system-health-check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...headers },
             body: JSON.stringify({ lateProfileId: state.lateProfileId })
         });
-        const healthData = await healthResponse.json(); // hasIssues ve failedPlatforms listesini alıyoruz
+        const healthRawData = await healthResponse.json();
+        const healthData = Array.isArray(healthRawData) ? healthRawData[0] : healthRawData;
 
         // 4. ADIM: Butonları NocoDB + Late API verisine göre boya
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
-            // Paket GBP desteklemiyorsa butonu tamamen gizle
-if (platform === 'googlebusiness') {
-    const isGrow = state.userPackage.includes('grow');
-    const isPro = state.userPackage.includes('pro');
-    if (!(isGrow || isPro)) {
-        button.parentElement.style.display = 'none';
-        return;
-    }
-}
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
-            const platformData = data.platforms[platform]; // NocoDB kaydı
             
-            // Late'ten gelen listede bu platform "failed" (isActive: false) olarak işaretlenmiş mi?
+            // Paket Politikası: GBP kontrolü
+            if (platform === 'googlebusiness') {
+                const isGrow = state.userPackage && state.userPackage.includes('grow');
+                const isPro = state.userPackage && state.userPackage.includes('pro');
+                if (!(isGrow || isPro)) {
+                    button.parentElement.style.display = 'none';
+                    return;
+                }
+            }
+
+            // Veri yapısı güvenliği kontrolü
+            if (!data.platforms || !data.platforms[platform]) return;
+            
+            const platformData = data.platforms[platform];
             const isFailed = healthData.hasIssues && healthData.failedPlatforms.includes(platform.toUpperCase());
 
             button.classList.remove('is-connected', 'needs-reconnect');
@@ -501,18 +514,15 @@ if (platform === 'googlebusiness') {
 
             if (platformData && platformData.status === 'connected') {
                 if (isFailed) {
-                    // KAYIT VAR AMA TOKEN GEÇERSİZ (RECONNECT DURUMU)
                     button.classList.add('needs-reconnect');
                     statusTextEl.textContent = 'RECONNECT';
                     statusTextEl.classList.add('warning');
                 } else {
-                    // BAĞLANTI TAMAM VE AKTİF
                     button.classList.add('is-connected');
                     statusTextEl.textContent = 'CONNECTED';
                     statusTextEl.classList.add('connected');
                 }
             } else {
-                // HİÇ BAĞLANMAMIŞ
                 statusTextEl.textContent = 'NOT CONNECTED';
                 statusTextEl.classList.add('disconnected');
             }
