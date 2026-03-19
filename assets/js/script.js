@@ -358,16 +358,27 @@ const startLatePolling = async (initialAccountIds, targetPlatform) => {
                 const currentAccounts = currentData.accounts || []; 
                 const currentAccountIds = currentAccounts.map(account => account._id || account.id);
 
+                // 1. KRİTİK KONTROL: Yeni bir ID eklendi mi? (İlk kurulum için)
                 const newAccountFound = currentAccountIds.some(id => id && !initialAccountIds.includes(id));
-                const targetAccount = currentAccounts.find(acc => acc.platform === targetPlatform);
-                const isTargetActiveNow = targetAccount ? targetAccount.isActive === true : false;
 
-                if (newAccountFound || isTargetActiveNow) {
+                // 2. KRİTİK KONTROL: Tıkladığımız platformun token'ı güncellendi mi? (Reconnection için)
+                const targetAccount = currentAccounts.find(acc => acc.platform === targetPlatform);
+                
+                // Token süresini kontrol et (Şu andan ilerideyse token tazedir)
+                const now = new Date();
+                const isTokenValid = targetAccount && targetAccount.tokenExpiresAt 
+                                    ? new Date(targetAccount.tokenExpiresAt) > now 
+                                    : false;
+
+                // GÜVENLİ KAPATMA ŞARTI: 
+                // Ya yeni bir ID gelmiş olmalı (İlk bağlama) 
+                // Ya da mevcut platformun token'ı artık geçerli olmalı (Reconnect bitmiş demektir)
+                if (newAccountFound || (targetAccount && isTargetActiveNow && isTokenValid)) {
                     setTimeout(() => {
                         clearInterval(latePollingInterval);
                         if (latePopupRef && !latePopupRef.closed) latePopupRef.close(); 
                         resolve(true); 
-                    }, 1500);
+                    }, 1500); // Veritabanı senkronizasyonu için kısa bir es
                     return;
                 }
             } catch (err) { console.error('Polling error:', err); }
