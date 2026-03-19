@@ -443,7 +443,6 @@ const initiateLateConnection = async (platform) => {
     }
 };
 
-
 const renderConnectionStatus = async () => {
     document.querySelectorAll('.connection-status-text').forEach(el => {
         el.textContent = 'Checking...';
@@ -459,20 +458,27 @@ const renderConnectionStatus = async () => {
         const data = Array.isArray(rawData) ? rawData[0] : rawData; 
         state.lateProfileId = data.lateProfileId; 
 
-        // CANLI VERİ BURADAN GELİYOR
         const healthResponse = await fetch('https://ops.synqbrand.com/webhook/late-system-health-check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...headers },
             body: JSON.stringify({ lateProfileId: state.lateProfileId })
         });
         const healthRawData = await healthResponse.json();
-        const healthData = Array.isArray(healthRawData) ? healthRawData[0] : healthRawData;
+        
+        // KRİTİK KATMAN AYARI: accounts dizisini her türlü sarmaldan kurtarıp alıyoruz
+        let accountsList = [];
+        if (healthRawData.accounts) {
+            accountsList = healthRawData.accounts;
+        } else if (Array.isArray(healthRawData) && healthRawData[0].accounts) {
+            accountsList = healthRawData[0].accounts;
+        } else if (Array.isArray(healthRawData)) {
+            accountsList = healthRawData;
+        }
 
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
             
-            // Paket Politikası: GBP kontrolü
             if (platform === 'googlebusiness') {
                 const isGrow = state.userPackage && state.userPackage.includes('grow');
                 const isPro = state.userPackage && state.userPackage.includes('pro');
@@ -482,11 +488,8 @@ const renderConnectionStatus = async () => {
                 }
             }
 
-            // CANLI ZERNIO KONTROLÜ (NocoDB'ye değil, buraya güveniyoruz)
-            const liveAccount = healthData.accounts ? healthData.accounts.find(acc => acc.platform === platform) : null;
-            
+            const liveAccount = accountsList.find(acc => acc.platform === platform);
             const now = new Date();
-            // Token süresi dolmuş mu?
             const isTokenExpired = liveAccount && liveAccount.tokenExpiresAt 
                                    ? new Date(liveAccount.tokenExpiresAt) < now 
                                    : false;
@@ -496,18 +499,15 @@ const renderConnectionStatus = async () => {
 
             if (liveAccount) {
                 if (isTokenExpired) {
-                    // TOKEN ÖLMÜŞ (7 MART ÖRNEĞİ)
                     button.classList.add('needs-reconnect');
                     statusTextEl.textContent = 'NEEDS RECONNECT';
                     statusTextEl.classList.add('warning');
                 } else {
-                    // BAĞLANTI TAZE VE AKTİF
                     button.classList.add('is-connected');
                     statusTextEl.textContent = 'CONNECTED';
                     statusTextEl.classList.add('connected');
                 }
             } else {
-                // ZERNIO LİSTESİNDE HİÇ YOK
                 statusTextEl.textContent = 'NOT CONNECTED';
                 statusTextEl.classList.add('disconnected');
             }
