@@ -629,3 +629,9 @@ etsySection.style.display = isEtsy ? 'block' : 'none';
 
 console.log('Sistem Başarıyla Uygulandı: ' + id + ' (Deneme: ' + retryCount + ')');
 };
+
+document.getElementById('activation-connect-btn')?.addEventListener('click', () => {
+    pendingActivationSection.style.display = 'none';
+    connectPageSection.style.display = 'block';
+    renderConnectionStatus(); 
+});
