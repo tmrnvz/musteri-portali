@@ -114,9 +114,10 @@ const routeUserByRole = async (role, username) => {
     const token = localStorage.getItem('jwtToken');
     const decodedToken = parseJwt(token);
     
-    // JWT içinden planId'yi al ve state'e kaydet (Yoksa varsayılan ata)
+    // JWT içinden planId'yi al ve state'e kaydet
     state.userPackage = (decodedToken && decodedToken.planId) ? decodedToken.planId : 'publish_start';
 
+    // Tüm sectionları gizle (Reset)
     loginSection.style.display = 'none';
     customerPanel.style.display = 'none';
     onboardingSection.style.display = 'none';
@@ -125,43 +126,64 @@ const routeUserByRole = async (role, username) => {
     approvalPortalSection.style.display = 'none';
     connectPageSection.style.display = 'none';
 
-    if (role === 'published') { // Eski 'customer' rolü yerine
+    if (role === 'published') {
         if (decodedToken && decodedToken.userId) { 
             state.businessId = decodedToken.userId; 
         }
 
-        welcomeMessage.textContent = `Welcome, ${username}!`;
+        welcomeMessage.textContent = `Welcome, ${username}! 🚀`;
         customerPanel.style.display = 'block';
         
-        // --- AKILLI SAĞLIK KONTROLÜ ENTEGRASYONU ---
-        // Önce NocoDB'den mevcut durumları ve profil ID'yi çekiyoruz
+        // --- BAĞLANTI KONTROLÜ VE HOŞ GELDİN UYARISI ---
+        try {
+            const statusData = await getLateStatusSnapshot();
+            const data = Array.isArray(statusData) ? statusData[0] : statusData;
+            
+            // Eğer hiç hesap bağlı değilse (platforms boşsa veya hiç connected yoksa)
+            const hasConnections = data.platforms && Object.values(data.platforms).some(p => p.status === 'connected');
+            
+            // Varsa eski uyarıyı temizle
+            const oldNotice = document.querySelector('.onboarding-notice');
+            if (oldNotice) oldNotice.remove();
+
+            if (!hasConnections) {
+                const notice = document.createElement('div');
+                notice.className = 'onboarding-notice';
+                notice.innerHTML = `
+                    <span><strong>First Step:</strong> Your panel is ready! To start generating AI content, please connect your social media accounts using the <strong>"Social Media Connections"</strong> button below.</span>
+                `;
+                // Panelin en üstüne, butonların hemen üzerine ekle
+                customerPanel.insertBefore(notice, customerPanel.querySelector('.panel-buttons'));
+            }
+        } catch (e) { console.error("Notice check error:", e); }
+        // ----------------------------------------------
+
+        // Durumları ve sağlık kontrolünü çalıştır
         renderConnectionStatus().then(() => {
-            // Profil ID netleştikten sonra arka planda Late API sağlık kontrolünü başlat
             runSystemHealthCheck();
         });
-        // ------------------------------------------
         
         fetchAndRenderPlatforms();
-} else if (role === 'new') {
-    const isLoaded = await loadAndInjectForm();
 
-    onboardingSection.style.display = 'block';
+    } else if (role === 'new') {
+        const isLoaded = await loadAndInjectForm();
+        onboardingSection.style.display = 'block';
+        if (isLoaded) {
+            applyPackagePolicy(state.userPackage);
+        }
+           
+    } else if (role === 'activation') {
+        pendingActivationSection.style.display = 'block';
 
-    if (isLoaded) {
-        applyPackagePolicy(state.userPackage);
+    } else if (role === 'admin') {
+        loginSection.style.display = 'block';
+        setStatus(statusDiv, 'Admin panel is not accessible from this interface.', 'error');
+        handleLogout();
+    } else {
+        loginSection.style.display = 'block';
+        setStatus(statusDiv, 'An error occurred with your user role.', 'error');
+        handleLogout();
     }
-       
-} else if (role === 'activation') {
-pendingActivationSection.style.display = 'block';
-} else if (role === 'admin') {
-loginSection.style.display = 'block';
-setStatus(statusDiv, 'Admin panel is not accessible from this interface.', 'error');
-handleLogout();
-} else {
-loginSection.style.display = 'block';
-setStatus(statusDiv, 'An error occurred with your user role. Please contact support.', 'error');
-handleLogout();
-}
 };
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
