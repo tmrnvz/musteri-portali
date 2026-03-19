@@ -333,11 +333,15 @@ const getLateStatusSnapshot = async () => {
  * LATE VS LATE POLLING MEKANİZMASI
  * @param {Array} initialAccountIds - İşlem başlamadan hemen önce Late'ten alınan ID listesi
  */
-const startLatePolling = async (initialAccountIds, targetPlatform) => {
+const startLatePolling = async (initialAccounts, targetPlatform) => {
     if (latePollingInterval) clearInterval(latePollingInterval);
-    const POLL_INTERVAL = 3000; 
-    const TIMEOUT = 5 * 60 * 1000; 
+    const POLL_INTERVAL = 3000;
+    const TIMEOUT = 5 * 60 * 1000;
     const startTime = Date.now();
+
+    // Polling başladığı andaki bu platformun son güncelleme zamanını sakla
+    const targetAtStart = initialAccounts.find(acc => acc.platform === targetPlatform);
+    const initialUpdateDate = targetAtStart ? targetAtStart.updatedAt : null;
 
     return new Promise((resolve, reject) => {
         latePollingInterval = setInterval(async () => {
@@ -352,33 +356,28 @@ const startLatePolling = async (initialAccountIds, targetPlatform) => {
                 reject(new Error("Connection timed out."));
                 return;
             }
+
             try {
                 const current = await getLateStatusSnapshot();
                 const currentData = Array.isArray(current) ? current[0] : current;
-                const currentAccounts = currentData.accounts || []; 
-                const currentAccountIds = currentAccounts.map(account => account._id || account.id);
-
-                // 1. KRİTİK KONTROL: Yeni bir ID eklendi mi? (İlk kurulum için)
-                const newAccountFound = currentAccountIds.some(id => id && !initialAccountIds.includes(id));
-
-                // 2. KRİTİK KONTROL: Tıkladığımız platformun token'ı güncellendi mi? (Reconnection için)
+                const currentAccounts = currentData.accounts || [];
                 const targetAccount = currentAccounts.find(acc => acc.platform === targetPlatform);
-                
-                // Token süresini kontrol et (Şu andan ilerideyse token tazedir)
-                const now = new Date();
-                const isTokenValid = targetAccount && targetAccount.tokenExpiresAt 
-                                    ? new Date(targetAccount.tokenExpiresAt) > now 
-                                    : false;
 
-                // GÜVENLİ KAPATMA ŞARTI: 
-                // Ya yeni bir ID gelmiş olmalı (İlk bağlama) 
-                // Ya da mevcut platformun token'ı artık geçerli olmalı (Reconnect bitmiş demektir)
-                if (newAccountFound || (targetAccount && isTargetActiveNow && isTokenValid)) {
+                // KAPATMA ŞARTI:
+                // 1. Ya yeni bir ID gelmiş olmalı (İlk bağlama)
+                // 2. Ya da updatedAt değeri değişmiş olmalı (Reconnect başarılı)
+                const isNew = !targetAtStart && targetAccount;
+                const isUpdated = targetAccount && initialUpdateDate && targetAccount.updatedAt !== initialUpdateDate;
+
+                if (isNew || isUpdated) {
+                    // İşlem bitti! Kullanıcıya dropdown'a tıklama şansı vermeden kapat.
                     setTimeout(() => {
                         clearInterval(latePollingInterval);
-                        if (latePopupRef && !latePopupRef.closed) latePopupRef.close(); 
-                        resolve(true); 
-                    }, 1500); // Veritabanı senkronizasyonu için kısa bir es
+                        if (latePopupRef && !latePopupRef.closed) {
+                            latePopupRef.close(); 
+                        }
+                        resolve(true);
+                    }, 1000); 
                     return;
                 }
             } catch (err) { console.error('Polling error:', err); }
@@ -389,10 +388,9 @@ const startLatePolling = async (initialAccountIds, targetPlatform) => {
 // Polling Helper Functions END //
 
 const initiateLateConnection = async (platform) => {
-    // 1. Zaten bağlıysa popup açılmasını engelle
     const statusTextEl = document.getElementById(`status-${platform}`);
     if (statusTextEl && statusTextEl.textContent === 'CONNECTED') {
-        alert(`${platform.toUpperCase()} is already connected and active. No action needed!`);
+        alert(`${platform.toUpperCase()} is already connected and active.`);
         return; 
     }
 
@@ -407,9 +405,10 @@ const initiateLateConnection = async (platform) => {
     }
 
     try {
+        // SNAPSHOT: Polling'e kıyas yapabilmesi için tüm hesapları gönderiyoruz
         const initialLateData = await getLateStatusSnapshot();
         const initialData = Array.isArray(initialLateData) ? initialLateData[0] : initialLateData;
-        const initialAccountIds = (initialData.accounts || []).map(a => a._id || a.id);
+        const initialAccounts = initialData.accounts || [];
 
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
@@ -421,8 +420,8 @@ const initiateLateConnection = async (platform) => {
         latePopupRef = window.open(data.connectEndpoint, 'LateAuth', 'width=800,height=800');
         if (!latePopupRef) throw new Error("Popup blocked!");
 
-        // Polling'i başlat
-        await startLatePolling(initialAccountIds, platform); 
+        // DEĞİŞEN SATIR: Artık sadece ID'leri değil, initialAccounts listesini gönderiyoruz
+        await startLatePolling(initialAccounts, platform); 
 
         await saveLateConnectionData(); 
         alert(`Success: ${platform.toUpperCase()} connected!`);
@@ -435,10 +434,7 @@ const initiateLateConnection = async (platform) => {
         if (latePollingInterval) clearInterval(latePollingInterval);
         latePollingInterval = null;
         latePopupRef = null;
-        if (platformBtn) { 
-            platformBtn.innerHTML = originalHTML; 
-            platformBtn.disabled = false; 
-        }
+        if (platformBtn) { platformBtn.innerHTML = originalHTML; platformBtn.disabled = false; }
         await renderConnectionStatus(); 
     }
 };
