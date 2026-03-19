@@ -445,7 +445,6 @@ const initiateLateConnection = async (platform) => {
 
 
 const renderConnectionStatus = async () => {
-    // 1. Arayüzü Hazırla: Tüm butonları "Checking..." durumuna çek
     document.querySelectorAll('.connection-status-text').forEach(el => {
         el.textContent = 'Checking...';
         el.className = 'connection-status-text';
@@ -455,16 +454,12 @@ const renderConnectionStatus = async () => {
     if (!headers) return;
 
     try {
-        // 2. ADIM: NocoDB'den veriyi çek (Kaydedilmiş Profil Bilgileri)
         const response = await fetch(LATE_GET_STATUS_URL, { method: 'GET', headers: headers });
-        if (!response.ok) throw new Error(`Status check failed`);
-        
         const rawData = await response.json(); 
         const data = Array.isArray(rawData) ? rawData[0] : rawData; 
-
         state.lateProfileId = data.lateProfileId; 
 
-        // 3. ADIM: Late API Health Check (Zernio'dan Canlı Hesap Listesini Çekiyoruz)
+        // CANLI VERİ BURADAN GELİYOR
         const healthResponse = await fetch('https://ops.synqbrand.com/webhook/late-system-health-check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...headers },
@@ -473,7 +468,6 @@ const renderConnectionStatus = async () => {
         const healthRawData = await healthResponse.json();
         const healthData = Array.isArray(healthRawData) ? healthRawData[0] : healthRawData;
 
-        // 4. ADIM: Butonları NocoDB + Canlı Zernio Tarih Verisine göre boya
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
@@ -488,14 +482,11 @@ const renderConnectionStatus = async () => {
                 }
             }
 
-            // Veri yapısı güvenliği kontrolü
-            if (!data.platforms || !data.platforms[platform]) return;
-            
-            const platformData = data.platforms[platform]; // NocoDB'deki durum
-            
-            // CANLI KONTROL: Zernio'dan gelen hesaplar içinde bu platformu bul ve tarihine bak
+            // CANLI ZERNIO KONTROLÜ (NocoDB'ye değil, buraya güveniyoruz)
             const liveAccount = healthData.accounts ? healthData.accounts.find(acc => acc.platform === platform) : null;
+            
             const now = new Date();
+            // Token süresi dolmuş mu?
             const isTokenExpired = liveAccount && liveAccount.tokenExpiresAt 
                                    ? new Date(liveAccount.tokenExpiresAt) < now 
                                    : false;
@@ -503,20 +494,20 @@ const renderConnectionStatus = async () => {
             button.classList.remove('is-connected', 'needs-reconnect');
             statusTextEl.className = 'connection-status-text';
 
-            if (platformData && platformData.status === 'connected') {
+            if (liveAccount) {
                 if (isTokenExpired) {
-                    // KAYIT VAR AMA TOKEN SÜRESİ DOLMUŞ (7 Mart örneği gibi)
+                    // TOKEN ÖLMÜŞ (7 MART ÖRNEĞİ)
                     button.classList.add('needs-reconnect');
                     statusTextEl.textContent = 'NEEDS RECONNECT';
                     statusTextEl.classList.add('warning');
                 } else {
-                    // HER ŞEY YOLUNDA VE AKTİF
+                    // BAĞLANTI TAZE VE AKTİF
                     button.classList.add('is-connected');
                     statusTextEl.textContent = 'CONNECTED';
                     statusTextEl.classList.add('connected');
                 }
             } else {
-                // HİÇ BAĞLANMAMIŞ
+                // ZERNIO LİSTESİNDE HİÇ YOK
                 statusTextEl.textContent = 'NOT CONNECTED';
                 statusTextEl.classList.add('disconnected');
             }
