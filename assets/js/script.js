@@ -333,9 +333,8 @@ const getLateStatusSnapshot = async () => {
  * LATE VS LATE POLLING MEKANİZMASI
  * @param {Array} initialAccountIds - İşlem başlamadan hemen önce Late'ten alınan ID listesi
  */
-const startLatePolling = async (initialAccountIds) => {
+const startLatePolling = async (initialAccountIds, targetPlatform) => {
     if (latePollingInterval) clearInterval(latePollingInterval);
-
     const POLL_INTERVAL = 3000; 
     const TIMEOUT = 5 * 60 * 1000; 
     const startTime = Date.now();
@@ -347,49 +346,31 @@ const startLatePolling = async (initialAccountIds) => {
                 reject(new Error("Popup closed manually."));
                 return;
             }
-
             if (Date.now() - startTime > TIMEOUT) {
                 clearInterval(latePollingInterval);
                 if (latePopupRef && !latePopupRef.closed) latePopupRef.close();
-                reject(new Error("Connection timed out. Please try again."));
+                reject(new Error("Connection timed out."));
                 return;
             }
-
             try {
-                // startLatePolling içindeki ilgili kısım:
-const current = await getLateStatusSnapshot();
-// Zernio verisi genelde { accounts: [...] } şeklinde döner
-const currentData = Array.isArray(current) ? current[0] : current;
-const currentAccounts = currentData.accounts || []; 
+                const current = await getLateStatusSnapshot();
+                const currentData = Array.isArray(current) ? current[0] : current;
+                const currentAccounts = currentData.accounts || []; 
+                const currentAccountIds = currentAccounts.map(account => account._id || account.id);
 
-// Hem _id hem id kontrolü yaparak riski sıfırlıyoruz
-const currentAccountIds = currentAccounts.map(account => account._id || account.id);
-                
-
-                // 1. DURUM: Yeni bir ID eklendi mi? (İlk bağlantı senaryosu)
                 const newAccountFound = currentAccountIds.some(id => id && !initialAccountIds.includes(id));
+                const targetAccount = currentAccounts.find(acc => acc.platform === targetPlatform);
+                const isTargetActiveNow = targetAccount ? targetAccount.isActive === true : false;
 
-                // 2. DURUM: Mevcut hesaplardan biri "Reconnected" oldu mu? (isActive: true kontrolü)
-                // Late çıktısında tüm hesapların isActive durumunu kontrol ediyoruz
-                const allAccountsActive = currentAccounts.every(acc => acc.isActive === true);
-                
-                // Başlangıçta isActive: false olan bir hesap şimdi true olduysa bu da bir başarıdır
-                if (newAccountFound || allAccountsActive) {
-                    // Kısa bir bekleme ekleyelim ki n8n tarafındaki işlemler tam tamamlansın
+                if (newAccountFound || isTargetActiveNow) {
                     setTimeout(() => {
                         clearInterval(latePollingInterval);
-                        if (latePopupRef && !latePopupRef.closed) {
-                            latePopupRef.close(); 
-                        }
+                        if (latePopupRef && !latePopupRef.closed) latePopupRef.close(); 
                         resolve(true); 
-                    }, 1000);
+                    }, 1500);
                     return;
                 }
-            } catch (err) {
-                console.error('Late polling error:', err);
-                clearInterval(latePollingInterval);
-                reject(err);
-            }
+            } catch (err) { console.error('Polling error:', err); }
         }, POLL_INTERVAL);
     });
 };
@@ -397,62 +378,39 @@ const currentAccountIds = currentAccounts.map(account => account._id || account.
 // Polling Helper Functions END //
 
 const initiateLateConnection = async (platform) => {
-    if (!state.lateProfileId) { 
-        alert('Error: Late Profile ID is missing.');
-        return;
-    }
-    
+    if (!state.lateProfileId) { alert('Error: Late Profile ID missing.'); return; }
     const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
-    // Orijinal HTML yapısını (ikon + metin + span) en başta yedekleyelim
     const originalHTML = platformBtn.innerHTML;
-
     if (platformBtn) {
         platformBtn.disabled = true;
-        // İSTEDİĞİN DEĞİŞİKLİK: "Setup" ifadesi
-        const platformName = platform.charAt(0).toUpperCase() + platform.slice(1);
-        platformBtn.textContent = `${platformName} Setup...`; 
+        platformBtn.textContent = `${platform.charAt(0).toUpperCase() + platform.slice(1)} Setup...`; 
     }
-    
     try {
         const initialLateData = await getLateStatusSnapshot();
-        const initialAccountIds = (initialLateData.accounts || []).map(a => a._id || a.id);
-
+        const initialData = Array.isArray(initialLateData) ? initialLateData[0] : initialLateData;
+        const initialAccountIds = (initialData.accounts || []).map(a => a._id || a.id);
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({ businessId: state.businessId, platform: platform })
         });
         const data = await response.json();
-        
         latePopupRef = window.open(data.connectEndpoint, 'LateAuth', 'width=800,height=800');
-        
-        if (!latePopupRef) throw new Error("Popup engellendi!");
+        if (!latePopupRef) throw new Error("Popup blocked!");
 
-        // POLLING (Düzgün çalışan kapanma mekanizması)
-        await startLatePolling(initialAccountIds); 
+        await startLatePolling(initialAccountIds, platform); 
 
-        // BAŞARI: Otomatik Kayıt
         await saveLateConnectionData(); 
-        
         alert(`Success: ${platform.toUpperCase()} connected!`);
-
     } catch (error) {
-        console.error('Late Connection Error:', error);
-        alert(`Hata: ${error.message}`);
-        // Hata olursa butonu o anki orijinal haline geri döndür
+        console.error('Error:', error);
+        alert(`Error: ${error.message}`);
         if (platformBtn) platformBtn.innerHTML = originalHTML;
     } finally {
         if (latePollingInterval) clearInterval(latePollingInterval);
         latePollingInterval = null;
         latePopupRef = null;
-        
-        // KRİTİK DOKUNUŞ: 
-        // Önce butonun HTML yapısını (içindeki span'ları) geri yükle, 
-        // sonra NocoDB'den güncel statüyü çek.
-        if (platformBtn) {
-            platformBtn.innerHTML = originalHTML;
-            platformBtn.disabled = false;
-        }
+        if (platformBtn) { platformBtn.innerHTML = originalHTML; platformBtn.disabled = false; }
         await renderConnectionStatus(); 
     }
 };
