@@ -389,30 +389,44 @@ const startLatePolling = async (initialAccountIds, targetPlatform) => {
 // Polling Helper Functions END //
 
 const initiateLateConnection = async (platform) => {
+    // 1. Zaten bağlıysa popup açılmasını engelle
+    const statusTextEl = document.getElementById(`status-${platform}`);
+    if (statusTextEl && statusTextEl.textContent === 'CONNECTED') {
+        alert(`${platform.toUpperCase()} is already connected and active. No action needed!`);
+        return; 
+    }
+
     if (!state.lateProfileId) { alert('Error: Late Profile ID missing.'); return; }
+
     const platformBtn = document.querySelector(`.platform-connect-btn[data-platform="${platform}"]`);
     const originalHTML = platformBtn.innerHTML;
+
     if (platformBtn) {
         platformBtn.disabled = true;
         platformBtn.textContent = `${platform.charAt(0).toUpperCase() + platform.slice(1)} Setup...`; 
     }
+
     try {
         const initialLateData = await getLateStatusSnapshot();
         const initialData = Array.isArray(initialLateData) ? initialLateData[0] : initialLateData;
         const initialAccountIds = (initialData.accounts || []).map(a => a._id || a.id);
+
         const response = await fetch(LATE_GET_CONNECT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
             body: JSON.stringify({ businessId: state.businessId, platform: platform })
         });
         const data = await response.json();
+        
         latePopupRef = window.open(data.connectEndpoint, 'LateAuth', 'width=800,height=800');
         if (!latePopupRef) throw new Error("Popup blocked!");
 
+        // Polling'i başlat
         await startLatePolling(initialAccountIds, platform); 
 
         await saveLateConnectionData(); 
         alert(`Success: ${platform.toUpperCase()} connected!`);
+
     } catch (error) {
         console.error('Error:', error);
         alert(`Error: ${error.message}`);
@@ -421,7 +435,10 @@ const initiateLateConnection = async (platform) => {
         if (latePollingInterval) clearInterval(latePollingInterval);
         latePollingInterval = null;
         latePopupRef = null;
-        if (platformBtn) { platformBtn.innerHTML = originalHTML; platformBtn.disabled = false; }
+        if (platformBtn) { 
+            platformBtn.innerHTML = originalHTML; 
+            platformBtn.disabled = false; 
+        }
         await renderConnectionStatus(); 
     }
 };
@@ -438,17 +455,16 @@ const renderConnectionStatus = async () => {
     if (!headers) return;
 
     try {
-        // 2. ADIM: NocoDB'den veriyi çek
+        // 2. ADIM: NocoDB'den veriyi çek (Kaydedilmiş Profil Bilgileri)
         const response = await fetch(LATE_GET_STATUS_URL, { method: 'GET', headers: headers });
         if (!response.ok) throw new Error(`Status check failed`);
         
         const rawData = await response.json(); 
-        // n8n v2 dizi döndürdüğü için ilk elemanı alıyoruz (Dizi/Obje koruması)
         const data = Array.isArray(rawData) ? rawData[0] : rawData; 
 
         state.lateProfileId = data.lateProfileId; 
 
-        // 3. ADIM: Late API Health Check (Gerçek Zamanlı)
+        // 3. ADIM: Late API Health Check (Zernio'dan Canlı Hesap Listesini Çekiyoruz)
         const healthResponse = await fetch('https://ops.synqbrand.com/webhook/late-system-health-check', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', ...headers },
@@ -457,7 +473,7 @@ const renderConnectionStatus = async () => {
         const healthRawData = await healthResponse.json();
         const healthData = Array.isArray(healthRawData) ? healthRawData[0] : healthRawData;
 
-        // 4. ADIM: Butonları NocoDB + Late API verisine göre boya
+        // 4. ADIM: Butonları NocoDB + Canlı Zernio Tarih Verisine göre boya
         document.querySelectorAll('.platform-connect-btn').forEach(button => {
             const platform = button.dataset.platform;
             const statusTextEl = document.getElementById(`status-${platform}`);
@@ -475,23 +491,32 @@ const renderConnectionStatus = async () => {
             // Veri yapısı güvenliği kontrolü
             if (!data.platforms || !data.platforms[platform]) return;
             
-            const platformData = data.platforms[platform];
-            const isFailed = healthData.hasIssues && healthData.failedPlatforms.includes(platform.toUpperCase());
+            const platformData = data.platforms[platform]; // NocoDB'deki durum
+            
+            // CANLI KONTROL: Zernio'dan gelen hesaplar içinde bu platformu bul ve tarihine bak
+            const liveAccount = healthData.accounts ? healthData.accounts.find(acc => acc.platform === platform) : null;
+            const now = new Date();
+            const isTokenExpired = liveAccount && liveAccount.tokenExpiresAt 
+                                   ? new Date(liveAccount.tokenExpiresAt) < now 
+                                   : false;
 
             button.classList.remove('is-connected', 'needs-reconnect');
             statusTextEl.className = 'connection-status-text';
 
             if (platformData && platformData.status === 'connected') {
-                if (isFailed) {
+                if (isTokenExpired) {
+                    // KAYIT VAR AMA TOKEN SÜRESİ DOLMUŞ (7 Mart örneği gibi)
                     button.classList.add('needs-reconnect');
-                    statusTextEl.textContent = 'RECONNECT';
+                    statusTextEl.textContent = 'NEEDS RECONNECT';
                     statusTextEl.classList.add('warning');
                 } else {
+                    // HER ŞEY YOLUNDA VE AKTİF
                     button.classList.add('is-connected');
                     statusTextEl.textContent = 'CONNECTED';
                     statusTextEl.classList.add('connected');
                 }
             } else {
+                // HİÇ BAĞLANMAMIŞ
                 statusTextEl.textContent = 'NOT CONNECTED';
                 statusTextEl.classList.add('disconnected');
             }
@@ -501,6 +526,7 @@ const renderConnectionStatus = async () => {
         console.error("Status update error:", error); 
     }
 };
+
 
 
 // *** VERİ KAYDETME FONKSİYONU (OTOMATİK ÇALIŞAN VERSİYON) ***
