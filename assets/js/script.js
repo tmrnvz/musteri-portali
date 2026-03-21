@@ -247,6 +247,7 @@ const hideConnectPage = () => {
 };
 
 const showChangePasswordPage = () => {
+    console.log("Şifre değiştirme sayfası açılıyor..."); // Console'da bunu görüyorsan JS çalışıyor demektir
     customerPanel.style.display = 'none';
     changePasswordSection.style.display = 'block';
 };
