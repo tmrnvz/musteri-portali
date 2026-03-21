@@ -32,25 +32,63 @@
 
        <!-- Customer Panel Section (Anasayfa) -->
         <div id="customer-panel" style="display:none;">
-
-            
             <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
-            <div id="global-alert-bar" class="global-alert-bar" style="display:none;">
-        </div>
-                
+            <div id="global-alert-bar" class="global-alert-bar" style="display:none;"></div>
+            
             <h1>User Panel</h1>
             <p id="welcome-message"></p>
-            <div class="panel-buttons">
-                <!-- Üst Grup -->
-                <button id="show-form-btn" class="btn-primary">Create New Post</button>
-                <button id="show-approval-portal-btn" class="btn-primary">Pending Monthly Posts</button>
-                
-                <!-- Alt Grup: BUTON DEĞİŞTİRİLDİ -->
-                <button id="show-connect-page-btn" class="btn-primary">Social Media Connections</button>
-                <button id="logout-btn" class="btn-secondary">Log Out</button>
+
+            <div class="panel-container">
+                <div class="panel-group">
+                    <h3>Content Management</h3>
+                    <div class="panel-buttons">
+                        <button id="show-form-btn" class="btn-primary">Create New Post</button>
+                        <button id="show-approval-portal-btn" class="btn-primary">Pending Monthly Posts</button>
+                    </div>
+                </div>
+
+                <div class="panel-group">
+                    <h3>Infrastructure & Billing</h3>
+                    <div class="panel-buttons">
+                        <button id="show-connect-page-btn" class="btn-primary">Social Media Connections</button>
+                        <button id="manage-billing-btn" class="btn-primary btn-info">Manage Subscription</button>
+                        <button id="request-upgrade-btn" class="btn-primary btn-upgrade">Upgrade My Plan</button>
+                    </div>
+                </div>
+
+                <div class="panel-group">
+                    <h3>Account Settings</h3>
+                    <div class="panel-buttons">
+                        <button id="show-change-password-btn" class="btn-secondary">Change Password</button>
+                        <button id="logout-btn" class="btn-secondary">Log Out</button>
+                    </div>
+                </div>
             </div>
         </div>
 
+        <div id="change-password-section" style="display:none;">
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h2>Change Your Password</h2>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="current-password">Current Password</label>
+                    <input type="password" id="current-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">New Password</label>
+                    <input type="password" id="new-password" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Confirm New Password</label>
+                    <input type="password" id="confirm-password" required minlength="6">
+                </div>
+                <button type="submit" id="update-password-btn" class="btn-primary">Update Password</button>
+                <button type="button" id="back-to-panel-from-pw-btn" class="btn-secondary">Back to Panel</button>
+            </form>
+            <div id="pw-status" style="text-align: center; margin-top: 15px; font-weight: bold;"></div>
+        </div>
+
+        
         <!-- YENİ BÖLÜM: SOSYAL MEDYA BAĞLANTI SAYFASI -->
 
         <div id="connect-page-section" style="display:none;">
