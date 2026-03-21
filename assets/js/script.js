@@ -16,6 +16,10 @@ const PUBLISH_APPROVED_POSTS_URL = 'https://ops.synqbrand.com/webhook/eb85bb8a-a
 const GET_MANUAL_POST_BY_ID_URL = 'https://ops.synqbrand.com/webhook/e1b260ea-2f4f-4620-8098-c5e9d369258b/e1b260ea-2f4f-4620-8098-c5e9d369258b/';
 const CHANGE_PASSWORD_URL = 'https://ops.synqbrand.com/webhook/auth/change-password';
 const REQUEST_UPGRADE_URL = 'https://ops.synqbrand.com/webhook/request-upgrade';
+const upgradePlanSection = document.getElementById('upgrade-plan-section');
+const planSelect = document.getElementById('plan-select');
+const currentPlanDisplay = document.getElementById('current-plan-display');
+const GET_PLANS_URL = 'https://ops.synqbrand.com/webhook/get-available-plans'; // n8n'de bu yolu açacağız
 
 
 // FAZ 2 - URL'LER
@@ -117,6 +121,19 @@ return false;
 const routeUserByRole = async (role, username) => {
     const token = localStorage.getItem('jwtToken');
     const decodedToken = parseJwt(token);
+
+    // Mevcut paket bilgisini state'e alalım (zaten alıyorduk muhtemelen)
+    state.userPackage = decodedToken.planId;
+
+    // --- EKLEYECEĞİMİZ KISIM BURASI ---
+    // Display current plan in header
+    const planDisplay = document.getElementById('current-plan-display');
+    if (planDisplay && state.userPackage) {
+        const formattedPlan = state.userPackage.replace('_', ' ').toUpperCase();
+        planDisplay.textContent = `Current Plan: ${formattedPlan}`;
+    }
+    // ----------------------------------
+
     
     // JWT içinden planId'yi al ve state'e kaydet
     state.userPackage = (decodedToken && decodedToken.planId) ? decodedToken.planId : 'publish_start';
@@ -247,6 +264,85 @@ const showConnectPage = () => {
     approvalPortalSection.style.display = 'none';
     connectPageSection.style.display = 'block';
     renderConnectionStatus(); // YENİ: Durum Kontrolü Çağrısı
+};
+
+// 1. Header'da paketi gösteren fonksiyon
+const updatePlanDisplay = () => {
+    if (currentPlanDisplay && state.userPackage) {
+        // 'publish_start' -> 'PUBLISH START' gibi formatla
+        const formattedPlan = state.userPackage.replace('_', ' ').toUpperCase();
+        currentPlanDisplay.textContent = `Current Plan: ${formattedPlan}`;
+    }
+};
+
+// 2. Upgrade sayfasını açan ve planları n8n'den çeken fonksiyon
+const showUpgradePage = async () => {
+    customerPanel.style.display = 'none';
+    upgradePlanSection.style.display = 'block';
+    
+    // Dropdown henüz dolmadıysa n8n'den çek
+    if (planSelect.options.length <= 1) {
+        try {
+            const response = await fetch(GET_PLANS_URL, { headers: getAuthHeaders() });
+            const data = await response.json(); // Beklenen format: { plans: [{ id: '..', name: '..' }] }
+            
+            planSelect.innerHTML = '<option value="">-- Select a New Plan --</option>';
+            data.plans.forEach(plan => {
+                // Mevcut paketini listede göstermeyelim
+                if (plan.planId !== state.userPackage) {
+                    const option = document.createElement('option');
+                    option.value = plan.planId;
+                    option.textContent = plan.planName;
+                    planSelect.appendChild(option);
+                }
+            });
+        } catch (e) {
+            planSelect.innerHTML = '<option value="">Error loading plans.</option>';
+        }
+    }
+};
+
+// 3. Seçilen paketle talebi gönderen fonksiyon (Eskisini güncelle)
+const handleUpgradeRequest = async () => {
+    const selectedPlan = planSelect.value;
+    const upgradeStatus = document.getElementById('upgrade-status');
+
+    if (!selectedPlan) { 
+        alert("Please select the plan you'd like to switch to."); 
+        return; 
+    }
+
+    setStatus(upgradeStatus, "Sending your request...", "info");
+
+    try {
+        const response = await fetch(REQUEST_UPGRADE_URL, {
+            method: 'POST',
+            headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                businessId: state.businessId,
+                username: localStorage.getItem('username'),
+                currentPackage: state.userPackage,
+                requestedPackage: selectedPlan 
+            })
+        });
+
+        if (response.ok) {
+            // İSTEDİĞİN 24 SAAT UYARISI BURADA:
+            setStatus(upgradeStatus, "Your request has been successfully received. Your plan upgrade will be completed within 24 hours.", "success");
+            
+            // 4 saniye sonra paneli kapatıp ana sayfaya döndür
+            setTimeout(() => {
+                upgradePlanSection.style.display = 'none';
+                customerPanel.style.display = 'block';
+                upgradeStatus.innerHTML = '';
+                planSelect.value = ''; 
+            }, 4500);
+        } else {
+            throw new Error("Server error");
+        }
+    } catch (e) { 
+        setStatus(upgradeStatus, "An error occurred. Please try again later.", "error"); 
+    }
 };
 
 const hideConnectPage = () => {
@@ -670,6 +766,12 @@ platformButtonsContainer.addEventListener('click', (e) => {
 });
 onboardingLogoutBtn.addEventListener('click', handleLogout);
 pendingLogoutBtn.addEventListener('click', handleLogout);
+document.getElementById('request-upgrade-btn').onclick = showUpgradePage; // Mevcut listener'ı bununla değiştir
+document.getElementById('back-to-panel-from-upgrade-btn').addEventListener('click', () => {
+    upgradePlanSection.style.display = 'none';
+    customerPanel.style.display = 'block';
+});
+document.getElementById('submit-upgrade-request-btn').addEventListener('click', handleUpgradeRequest);
 
 // --- YENİ EKLENEN BUTONLARIN LİSTENER'LARI ---
 document.getElementById('show-change-password-btn').addEventListener('click', showChangePasswordPage);
