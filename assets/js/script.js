@@ -417,27 +417,6 @@ const handleChangePassword = async (event) => {
     }
 };
 
-const handleUpgradeRequest = async () => {
-    const confirmRequest = confirm("Are you sure you want to request a plan upgrade? Tamer will be notified and contact you shortly.");
-    if (!confirmRequest) return;
-
-    try {
-        const response = await fetch(REQUEST_UPGRADE_URL, {
-            method: 'POST',
-            headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                businessId: state.businessId,
-                username: localStorage.getItem('username'),
-                currentPackage: state.userPackage
-            })
-        });
-        if (response.ok) alert("Upgrade request sent successfully!");
-        else throw new Error("Request failed.");
-    } catch (e) {
-        alert("Error sending request. Please try again later.");
-    }
-};
-
 const handleOnboardingSubmit = async (event) => {
     event.preventDefault();
     const onboardingForm = event.target;
