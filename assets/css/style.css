@@ -1109,3 +1109,18 @@ textarea {
     margin-top: 1rem;
     font-weight: 600;
 }
+
+
+#change-password-section {
+    display: none; /* JS ile kontrol edilecek */
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+#change-password-section form {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: left; /* Formun içi sola yaslı olsun */
+}
