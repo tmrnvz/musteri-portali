@@ -1046,3 +1046,66 @@ textarea {
         transform: rotate(360deg);
     }
 }
+
+/* --- SYNQBRAND PORTAL GRUPLANDIRMA VE YENİ BUTONLAR --- */
+
+.panel-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.panel-group {
+    background: #ffffff;
+    border: 1px solid #dddfe2;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: left;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.panel-group h3 {
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    font-size: 0.95rem;
+    color: #606770;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.6rem;
+}
+
+/* Özel Renkli Butonlar */
+.btn-info {
+    border-color: #17a2b8 !important;
+    color: #17a2b8 !important;
+}
+
+.btn-info:hover {
+    background-color: #17a2b8 !important;
+    color: white !important;
+}
+
+.btn-upgrade {
+    border-color: #f39c12 !important;
+    color: #f39c12 !important;
+    background-color: #fffaf0 !important;
+}
+
+.btn-upgrade:hover {
+    background-color: #f39c12 !important;
+    color: white !important;
+}
+
+/* Şifre Değiştirme Formu Ek Stilleri */
+#change-password-form {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: left;
+}
+
+#pw-status {
+    margin-top: 1rem;
+    font-weight: 600;
+}
