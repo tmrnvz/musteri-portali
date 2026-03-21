@@ -56,7 +56,8 @@ const formContainer = document.getElementById('form-container');
 const onboardingLogoutBtn = document.getElementById('onboarding-logout-btn');
 const pendingLogoutBtn = document.getElementById('pending-logout-btn');
 const showConnectPageBtn = document.getElementById('show-connect-page-btn'); 
-const connectPageSection = document.getElementById('connect-page-section');    
+const connectPageSection = document.getElementById('connect-page-section'); 
+const changePasswordSection = document.getElementById('change-password-section');
 const backToPanelFromConnectBtn = document.getElementById('back-to-panel-from-connect-btn');
 const platformButtonsContainer = document.getElementById('platform-buttons-container');
 //const syncLateDataBtn = document.getElementById('sync-late-data-btn');
@@ -156,7 +157,7 @@ const routeUserByRole = async (role, username) => {
                     <span><strong>First Step:</strong> Your panel is ready! To start generating AI content, please connect your social media accounts using the <strong>"Social Media Connections"</strong> button below.</span>
                 `;
                 // Panelin en üstüne, butonların hemen üzerine ekle
-                customerPanel.insertBefore(notice, customerPanel.querySelector('.panel-buttons'));
+                customerPanel.insertBefore(notice, customerPanel.queryScustomerPanel.querySelector('.panel-container').prepend(notice);elector('.panel-buttons'));
             }
         } catch (e) { console.error("Notice check error:", e); }
         // ----------------------------------------------
