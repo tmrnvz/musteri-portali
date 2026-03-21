@@ -37,6 +37,7 @@
             
             <h1>User Panel</h1>
             <p id="welcome-message"></p>
+            <p id="current-plan-display" style="font-weight: bold; color: #4A90E2; margin-top: -10px; margin-bottom: 20px;">Current Plan: Loading...</p>
 
             <div class="panel-container">
                 <div class="panel-group">
@@ -87,6 +88,27 @@
             </form>
             <div id="pw-status" style="text-align: center; margin-top: 15px; font-weight: bold;"></div>
         </div>
+
+
+        <div id="upgrade-plan-section" style="display:none;">
+    <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+    <h2>Upgrade Your Plan</h2>
+    <p style="text-align: center; color: #606770; margin-bottom: 20px;">Select the new plan you'd like to switch to.</p>
+    
+    <div class="form-group">
+        <label for="plan-select">Available Plans</label>
+        <select id="plan-select">
+            <option value="">Loading plans...</option>
+        </select>
+        <p class="helper-text" style="margin-top: 10px;">
+            <a href="https://synqbrand.com/packages/" target="_blank" class="btn-primary" style="display: inline-block; width: auto; font-size: 0.8rem; padding: 5px 15px;">Review Detailed Plan Features</a>
+        </p>
+    </div>
+
+    <button id="submit-upgrade-request-btn" class="btn-primary btn-upgrade">Submit Upgrade Request</button>
+    <button type="button" id="back-to-panel-from-upgrade-btn" class="btn-secondary">Back to Panel</button>
+    <div id="upgrade-status" style="text-align: center; margin-top: 15px; font-weight: bold;"></div>
+</div>
 
         
         <!-- YENİ BÖLÜM: SOSYAL MEDYA BAĞLANTI SAYFASI -->
