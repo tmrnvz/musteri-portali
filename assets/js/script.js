@@ -156,10 +156,17 @@ const routeUserByRole = async (role, username) => {
                 notice.innerHTML = `
                     <span><strong>First Step:</strong> Your panel is ready! To start generating AI content, please connect your social media accounts using the <strong>"Social Media Connections"</strong> button below.</span>
                 `;
-                // Panelin en üstüne, butonların hemen üzerine ekle
-                customerPanel.insertBefore(notice, customerPanel.queryScustomerPanel.querySelector('.panel-container').prepend(notice);elector('.panel-buttons'));
+                
+                const panelContainer = customerPanel.querySelector('.panel-container');
+                if (panelContainer) {
+                    panelContainer.prepend(notice);
+                } else {
+                    customerPanel.appendChild(notice);
+                }
             }
-        } catch (e) { console.error("Notice check error:", e); }
+        } catch (e) { 
+            console.error("Notice check error:", e); 
+        }
         // ----------------------------------------------
 
         // Durumları ve sağlık kontrolünü çalıştır
