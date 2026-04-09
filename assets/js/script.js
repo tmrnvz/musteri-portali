@@ -454,105 +454,26 @@ jsonData.PlatformUsernamesForEmail = "Connected via Late API";
         // 5. YENİ: Special Instructions Checkbox Birleştirme
         jsonData.SpecialInstructions = getCombinedSpecialInstructions();
 
-const handlePostSubmit = async (event) => {
-  event.preventDefault();
+        const response = await fetch(ONBOARDING_WORKFLOW_URL, {
+            method: 'POST',
+            headers: { ...authHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify(jsonData),
+        });
 
-  const authHeaders = getAuthHeaders();
-  if (!authHeaders) {
-    handleLogout();
-    return;
-  }
+        if (!response.ok) {
+            let errorData;
+            try { errorData = await response.json(); } catch (e) { throw new Error(`Submission failed with status: ${response.status}`); }
+            throw new Error(errorData.message || 'Submission failed due to a server error.');
+        }
 
-  const files = uppy.getFiles();
-  if (files.length === 0) {
-    postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`;
-    return;
-  }
-
-  const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value);
-  if (selectedPlatforms.length === 0) {
-    postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`;
-    return;
-  }
-
-  const messages = ["Processing...", "Uploading media files...", "AI is generating content...", "Finalizing..."];
-  let messageIndex = 0;
-
-  postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts. </h4><p>${messages[messageIndex]}</p></div>`;
-
-  if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
-
-  state.loadingIntervalId = setInterval(() => {
-    messageIndex = (messageIndex + 1) % messages.length;
-    postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts.</h4><p>${messages[messageIndex]}</p></div>`;
-  }, 4000);
-
-  submitPostBtn.disabled = true;
-  backToPanelBtn.disabled = true;
-
-  try {
-    const result = await uppy.upload();
-
-    if (result.failed.length > 0) {
-      throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`);
+        onboardingSection.style.display = 'none';
+        pendingActivationSection.style.display = 'block';
+    } catch (error) {
+        setStatus(onboardingStatus, `Error: ${error.message}`, 'error');
+        submitBtn.disabled = false;
     }
-
-    const sortedFiles = uppy.getFiles();
-    const sortedFileKeys = sortedFiles
-      .map(file => {
-        const successfulUpload = result.successful.find(s => s.id === file.id);
-        return successfulUpload ? new URL(successfulUpload.uploadURL).pathname.substring(1) : null;
-      })
-      .filter(key => key !== null);
-
-    const sortedFileUrls = sortedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`);
-
-    const postData = {
-      postTitle: document.getElementById('postTitle').value,
-      postContent: document.getElementById('postContent').value,
-      destinationLink: document.getElementById('destinationLink').value,
-      fileKeys: sortedFileKeys,
-      fileUrls: sortedFileUrls,
-      submissionID: crypto.randomUUID(),
-      selectedPlatforms: selectedPlatforms
-    };
-
-    const response = await fetch(MAIN_POST_WORKFLOW_URL, {
-      method: 'POST',
-      headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' },
-      body: JSON.stringify(postData)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Server returned an error: ${response.status} - ${errorText}`);
-    }
-
-    const responseData = await response.json();
-    console.log("MAIN_POST_WORKFLOW response:", responseData);
-
-    const newPostId = responseData?.Id || responseData?.[0]?.Id;
-    console.log("Resolved newPostId:", newPostId);
-
-    if (!newPostId) {
-      throw new Error("Workflow completed but no post Id was returned.");
-    }
-
-    if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
-    queueMicrotask(() => displayReviewInterface(newPostId));
-
-  } catch (error) {
-    if (state.loadingIntervalId) clearInterval(state.loadingIntervalId);
-
-    const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`;
-    postStatusDiv.innerHTML = errorHtml;
-
-    submitPostBtn.disabled = false;
-    backToPanelBtn.disabled = false;
-  }
 };
-        
-//const handlePostSubmit = async (event) => { event.preventDefault(); const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } const files = uppy.getFiles(); if (files.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`; return; } const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value); if (selectedPlatforms.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`; return; } const messages = ["Processing...", "Uploading media files...", "AI is generating content...", "Finalizing..."]; let messageIndex = 0; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts. </h4><p>${messages[messageIndex]}</p></div>`; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); state.loadingIntervalId = setInterval(() => { messageIndex = (messageIndex + 1) % messages.length; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts.</h4><p>${messages[messageIndex]}</p></div>`; }, 4000); submitPostBtn.disabled = true; backToPanelBtn.disabled = true; try { const result = await uppy.upload(); if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`); const sortedFiles = uppy.getFiles(); const sortedFileKeys = sortedFiles.map(file => { const successfulUpload = result.successful.find(s => s.id === file.id); return successfulUpload ? new URL(successfulUpload.uploadURL).pathname.substring(1) : null; }).filter(key => key !== null); const sortedFileUrls = sortedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`); const postData = { postTitle: document.getElementById('postTitle').value, postContent: document.getElementById('postContent').value, destinationLink: document.getElementById('destinationLink').value, fileKeys: sortedFileKeys, fileUrls: sortedFileUrls, submissionID: crypto.randomUUID(), selectedPlatforms: selectedPlatforms }; const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(postData) }); if (!response.ok) { const errorText = await response.text(); throw new Error(`Server returned an error: ${response.status} - ${errorText}`); } const responseData = await response.json(); const newPostId = responseData.Id; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); queueMicrotask(() => displayReviewInterface(newPostId)); } catch (error) { if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`; postStatusDiv.innerHTML = errorHtml; submitBtn.disabled = false; backToPanelBtn.disabled = false; } };
+const handlePostSubmit = async (event) => { event.preventDefault(); const authHeaders = getAuthHeaders(); if (!authHeaders) { handleLogout(); return; } const files = uppy.getFiles(); if (files.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one media file.</p></div>`; return; } const selectedPlatforms = Array.from(document.querySelectorAll('input[name="platforms"]:checked')).map(cb => cb.value); if (selectedPlatforms.length === 0) { postStatusDiv.innerHTML = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>Please select at least one platform to post to.</p></div>`; return; } const messages = ["Processing...", "Uploading media files...", "AI is generating content...", "Finalizing..."]; let messageIndex = 0; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts. </h4><p>${messages[messageIndex]}</p></div>`; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); state.loadingIntervalId = setInterval(() => { messageIndex = (messageIndex + 1) % messages.length; postStatusDiv.innerHTML = `<div class="status-block status-success"><h4>Processing... Please wait a moment. A window will open shortly for you to review and approve your posts.</h4><p>${messages[messageIndex]}</p></div>`; }, 4000); submitPostBtn.disabled = true; backToPanelBtn.disabled = true; try { const result = await uppy.upload(); if (result.failed.length > 0) throw new Error(`Failed to upload: ${result.failed.map(f => f.name).join(', ')}`); const sortedFiles = uppy.getFiles(); const sortedFileKeys = sortedFiles.map(file => { const successfulUpload = result.successful.find(s => s.id === file.id); return successfulUpload ? new URL(successfulUpload.uploadURL).pathname.substring(1) : null; }).filter(key => key !== null); const sortedFileUrls = sortedFileKeys.map(key => `${R2_PUBLIC_BASE_URL}/${key}`); const postData = { postTitle: document.getElementById('postTitle').value, postContent: document.getElementById('postContent').value, destinationLink: document.getElementById('destinationLink').value, fileKeys: sortedFileKeys, fileUrls: sortedFileUrls, submissionID: crypto.randomUUID(), selectedPlatforms: selectedPlatforms }; const response = await fetch(MAIN_POST_WORKFLOW_URL, { method: 'POST', headers: { ...getAuthHeaders(), 'Content-Type': 'application/json' }, body: JSON.stringify(postData) }); if (!response.ok) { const errorText = await response.text(); throw new Error(`Server returned an error: ${response.status} - ${errorText}`); } const responseData = await response.json(); const newPostId = responseData.Id; if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); queueMicrotask(() => displayReviewInterface(newPostId)); } catch (error) { if (state.loadingIntervalId) clearInterval(state.loadingIntervalId); const errorHtml = `<div class="status-block status-error"><h4>SUBMISSION FAILED!</h4><p>${error.message}</p></div>`; postStatusDiv.innerHTML = errorHtml; submitBtn.disabled = false; backToPanelBtn.disabled = false; } };
 const handleApproveAndPublish = async (postId) => { /* Orijinal dosyadaki tek satırlık kodun */ };
 const displayReviewInterface = async (postId) => { /* Orijinal dosyadaki tek satırlık kodun */ };
 const setupReviewAccordionListeners = () => { /* Orijinal dosyadaki tek satırlık kodun */ };
@@ -899,4 +820,3 @@ etsySection.style.display = isEtsy ? 'block' : 'none';
 
 console.log('Sistem Başarıyla Uygulandı: ' + id + ' (Deneme: ' + retryCount + ')');
 };
-
