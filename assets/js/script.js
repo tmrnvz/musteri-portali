@@ -1,5 +1,5 @@
 /* assets/js/script.js - FINAL LATE POLLING INTEGRATION - Late vs Late Versiyon */
-
+console.log("SCRIPT_JS_LOADED_V2");
 import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3.3.1/uppy.min.mjs";
 
 // API URLs
