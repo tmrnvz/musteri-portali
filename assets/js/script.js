@@ -690,16 +690,39 @@ const fetchAndRenderPlatforms = async () => {
 
 const setupSelectAllLogic = () => {
     const selectAllCheckbox = document.getElementById('select-all-platforms');
-    const platformCheckboxes = document.querySelectorAll('input[name="platforms"]');
     if (!selectAllCheckbox) return;
+
+    // Platformlar dinamik yüklendiği için listeyi her işlemde tazelemeliyiz
+    const getPlatformCheckboxes = () => document.querySelectorAll('input[name="platforms"]');
+
     const syncSelectAllState = () => {
+        const platformCheckboxes = getPlatformCheckboxes();
+        if (platformCheckboxes.length === 0) return;
+        
         const allChecked = Array.from(platformCheckboxes).every(cb => cb.checked);
         selectAllCheckbox.checked = allChecked;
     };
+
+    // Ana checkbox'a tıklandığında hepsini değiştir
     selectAllCheckbox.addEventListener('change', () => {
-        platformCheckboxes.forEach(cb => { cb.checked = selectAllCheckbox.checked; });
+        const platformCheckboxes = getPlatformCheckboxes();
+        platformCheckboxes.forEach(cb => {
+            cb.checked = selectAllCheckbox.checked;
+        });
     });
-    platformCheckboxes.forEach(cb => { cb.addEventListener('change', syncSelectAllState); });
+
+    // Alt checkbox'lardan biri değiştiğinde ana checkbox'ı güncelle
+    // Event delegation kullanarak daha sağlam hale getiriyoruz
+    const container = document.getElementById('platform-selection-container');
+    if (container) {
+        container.addEventListener('change', (e) => {
+            if (e.target.name === 'platforms') {
+                syncSelectAllState();
+            }
+        });
+    }
+
+    // İlk yüklemede durumu eşitle
     syncSelectAllState();
 };
 
