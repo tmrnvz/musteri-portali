@@ -672,8 +672,10 @@ const fetchAndRenderPlatforms = async () => {
         let platforms = data.platforms || [];
         if (!platforms.length) {
             container.innerHTML = '<p class="error">No platforms configured.</p>';
+            if (selectAllCheckbox) selectAllCheckbox.disabled = true; // Platform yoksa kapalı kalsın
             return;
         }
+        
         container.innerHTML = '';
         platforms.forEach(platform => {
             const id = `platform-${platform}`;
@@ -682,6 +684,12 @@ const fetchAndRenderPlatforms = async () => {
             wrapper.innerHTML = `<input type="checkbox" id="${id}" name="platforms" value="${platform}" checked><label for="${id}" class="checkbox-label"><span class="checkbox-custom"></span><span class="checkbox-label-text">${platform}</span></label>`;
             container.appendChild(wrapper);
         });
+
+        // KİLİDİ AÇAN KRİTİK SATIR BURASI
+        if (selectAllCheckbox) {
+            selectAllCheckbox.disabled = false; 
+        }
+
         setupSelectAllLogic();
     } catch (error) {
         container.innerHTML = `<p class="error">Failed to load platforms.</p>`;
