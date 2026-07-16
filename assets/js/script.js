@@ -1007,7 +1007,7 @@ document.getElementById('submit-upgrade-request-btn').addEventListener('click', 
 // --- YENİ EKLENEN BUTONLARIN LİSTENER'LARI ---
 document.getElementById('show-change-password-btn').addEventListener('click', showChangePasswordPage);
 document.getElementById('back-to-panel-from-pw-btn').addEventListener('click', hideChangePasswordPage);
-document.getElementById('change-password-form').addEventListener('submit', handleChangePassword);
+//document.getElementById('change-password-form').addEventListener('submit', handleChangePassword);
 document.getElementById('request-upgrade-btn').addEventListener('click', handleUpgradeRequest);
 document.getElementById('manage-billing-btn').addEventListener('click', () => {
     window.open('https://customer-portal.paddle.com/cpl_01km0xnpr1rqp5yasmsvkrssev', '_blank');
