@@ -374,6 +374,81 @@ const handlePublishApproved = async () => { publishStatus.innerHTML = `<div clas
 
 const uppy = new Uppy({ debug:false, autoProceed:false, restrictions:{ maxFileSize:100*1024*1024, allowedFileTypes:['image/*','video/*'], minNumberOfFiles:1 } }); uppy.use(Dashboard, { inline:true, target:'#uppy-drag-drop-area', proudlyDisplayPoweredByUppy:false, theme:'light', height:300, hideUploadButton:true, allowMultipleUploadBatches:false }); uppy.use(AwsS3, { getUploadParameters: async (file) => { const response = await fetch(PRESIGNER_API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({fileName:file.name, contentType:file.type}) }); const presignData = await response.json(); return { method:'PUT', url:presignData.uploadUrl, fields:{}, headers:{'Content-Type':file.type} }; } });
 
+//Change Password
+const handleChangePassword = async (event) => {
+    event.preventDefault();
+
+    const currentPassword =
+        document.getElementById('current-password').value;
+    const newPassword =
+        document.getElementById('new-password').value;
+    const confirmPassword =
+        document.getElementById('confirm-password').value;
+    const pwStatus =
+        document.getElementById('pw-status');
+
+    if (newPassword !== confirmPassword) {
+        setStatus(
+            pwStatus,
+            "New passwords do not match!",
+            "error"
+        );
+        return;
+    }
+
+    setStatus(
+        pwStatus,
+        "Updating password...",
+        "info"
+    );
+
+    try {
+        const response = await fetch(CHANGE_PASSWORD_URL, {
+            method: 'POST',
+            headers: {
+                ...getAuthHeaders(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                currentPassword,
+                newPassword,
+                businessId: state.businessId
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(
+                errorData.message || 'Update failed.'
+            );
+        }
+
+        setStatus(
+            pwStatus,
+            "Password updated successfully!",
+            "success"
+        );
+
+        setTimeout(() => {
+            hideChangePasswordPage();
+
+            document
+                .getElementById('change-password-form')
+                .reset();
+
+            pwStatus.innerHTML = '';
+        }, 2000);
+
+    } catch (error) {
+        setStatus(
+            pwStatus,
+            error.message,
+            "error"
+        );
+    }
+};
+
+
 const handleLogin = async (event) => {
     event.preventDefault();
     const username = document.getElementById("username").value;
