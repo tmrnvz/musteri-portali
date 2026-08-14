@@ -4,6 +4,8 @@ import { Uppy, Dashboard, AwsS3 } from "https://releases.transloadit.com/uppy/v3
 
 // API URLs
 const LOGIN_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/auth/login';
+//Son
+const WORDPRESS_CONNECT_AUTHORIZE_URL = 'https://ops.synqbrand.com/webhook/wordpress/connect-authorize';
 const ONBOARDING_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/af26ffa3-b636-46cf-9135-05fe0de71aac';
 const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
 const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/ee3b3bd2-ae44-47ae-812d-c97a41a62731'; 
@@ -81,6 +83,115 @@ const parseJwt = (token) => {
         console.error("Invalid JWT token:", e);
         return null;
     }
+};
+
+//Son
+// --- WORDPRESS SYNQBRAND BAĞLANTISI ---
+
+const getWordPressConnectParams = () => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get('wordpress_connect') !== '1') {
+        return null;
+    }
+
+    const siteUrl = params.get('site_url');
+    const returnUrl = params.get('return_url');
+    const state = params.get('state');
+
+    if (!siteUrl || !returnUrl || !state) {
+        return {
+            error: 'WordPress connection parameters are missing.'
+        };
+    }
+
+    return {
+        siteUrl,
+        returnUrl,
+        state
+    };
+};
+
+const completeWordPressConnection = async () => {
+    const connectionRequest = getWordPressConnectParams();
+
+    if (!connectionRequest) {
+        return false;
+    }
+
+    if (connectionRequest.error) {
+        throw new Error(connectionRequest.error);
+    }
+
+    const authHeaders = getAuthHeaders();
+
+    if (!authHeaders) {
+        throw new Error('Please sign in to connect your WordPress site.');
+    }
+
+    setStatus(
+        statusDiv,
+        'Connecting your WordPress site to SynqBrand...',
+        'info'
+    );
+
+    const response = await fetch(WORDPRESS_CONNECT_AUTHORIZE_URL, {
+        method: 'POST',
+        headers: {
+            ...authHeaders,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            siteUrl: connectionRequest.siteUrl,
+            returnUrl: connectionRequest.returnUrl,
+            state: connectionRequest.state
+        })
+    });
+
+    if (!response.ok) {
+        let message = 'WordPress connection could not be completed.';
+
+        try {
+            const errorData = await response.json();
+            message = errorData.message || message;
+        } catch (error) {
+            // JSON olmayan hata cevabında genel mesaj kullanılır.
+        }
+
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('jwtToken');
+            localStorage.removeItem('username');
+        }
+
+        throw new Error(message);
+    }
+
+    const data = await response.json();
+
+    if (
+        !data.connectionToken ||
+        !data.returnUrl ||
+        !data.state
+    ) {
+        throw new Error('Invalid connection response received from SynqBrand.');
+    }
+
+    if (data.state !== connectionRequest.state) {
+        throw new Error('WordPress connection security check failed.');
+    }
+
+    const wordpressReturnUrl = new URL(data.returnUrl);
+
+    const fragment = new URLSearchParams({
+        synqbrand_token: data.connectionToken,
+        synqbrand_state: data.state
+    });
+
+    wordpressReturnUrl.hash = fragment.toString();
+
+    window.location.replace(wordpressReturnUrl.toString());
+
+    return true;
 };
 
 // --- YENİ EKLENEN: SPECIAL INSTRUCTIONS BİRLEŞTİRİCİ ---
@@ -1090,11 +1201,37 @@ document.getElementById('manage-billing-btn').addEventListener('click', () => {
 
 window.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('jwtToken');
+
     if (token) {
         const decodedToken = parseJwt(token);
+
         if (decodedToken && decodedToken.role) {
             state.userPackage = decodedToken.planId;
-            await routeUserByRole(decodedToken.role, decodedToken.username);
+
+            if (getWordPressConnectParams()) {
+                try {
+                    await completeWordPressConnection();
+                } catch (error) {
+                    console.error('WordPress connection error:', error);
+
+                    loginSection.style.display = 'block';
+                    customerPanel.style.display = 'none';
+
+                    setStatus(
+                        statusDiv,
+                        error.message,
+                        'error'
+                    );
+                }
+
+                return;
+            }
+
+            await routeUserByRole(
+                decodedToken.role,
+                decodedToken.username
+            );
+
             applyPackagePolicy(decodedToken.planId);
         } else {
             handleLogout();
