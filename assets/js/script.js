@@ -581,12 +581,27 @@ const handleLogin = async (event) => {
         localStorage.setItem('jwtToken', token);
         const decodedToken = parseJwt(token);
         if (decodedToken && decodedToken.role) {
-            localStorage.setItem('username', decodedToken.username);
-            setStatus(statusDiv, "", "success");
-            await routeUserByRole(decodedToken.role, decodedToken.username);
-        } else {
-            throw new Error('Invalid token received from server.');
-        }
+    localStorage.setItem(
+        'username',
+        decodedToken.username
+    );
+
+    setStatus(statusDiv, "", "success");
+
+    if (getWordPressConnectParams()) {
+        await completeWordPressConnection();
+        return;
+    }
+
+    await routeUserByRole(
+        decodedToken.role,
+        decodedToken.username
+    );
+} else {
+    throw new Error(
+        'Invalid token received from server.'
+    );
+}
     } catch (error) {
         setStatus(statusDiv, error.message, "error");
     } finally {
@@ -1199,45 +1214,60 @@ document.getElementById('manage-billing-btn').addEventListener('click', () => {
     window.open('https://customer-portal.paddle.com/cpl_01km0xnpr1rqp5yasmsvkrssev', '_blank');
 });
 
-window.addEventListener('DOMContentLoaded', async () => {
+const initializePortal = async () => {
     const token = localStorage.getItem('jwtToken');
 
-    if (token) {
-        const decodedToken = parseJwt(token);
+    if (!token) {
+        return;
+    }
 
-        if (decodedToken && decodedToken.role) {
-            state.userPackage = decodedToken.planId;
+    const decodedToken = parseJwt(token);
 
-            if (getWordPressConnectParams()) {
-                try {
-                    await completeWordPressConnection();
-                } catch (error) {
-                    console.error('WordPress connection error:', error);
+    if (!decodedToken || !decodedToken.role) {
+        handleLogout();
+        return;
+    }
 
-                    loginSection.style.display = 'block';
-                    customerPanel.style.display = 'none';
+    state.userPackage = decodedToken.planId;
 
-                    setStatus(
-                        statusDiv,
-                        error.message,
-                        'error'
-                    );
-                }
-
-                return;
-            }
-
-            await routeUserByRole(
-                decodedToken.role,
-                decodedToken.username
+    if (getWordPressConnectParams()) {
+        try {
+            await completeWordPressConnection();
+        } catch (error) {
+            console.error(
+                'WordPress connection error:',
+                error
             );
 
-            applyPackagePolicy(decodedToken.planId);
-        } else {
-            handleLogout();
+            loginSection.style.display = 'block';
+            customerPanel.style.display = 'none';
+
+            setStatus(
+                statusDiv,
+                error.message,
+                'error'
+            );
         }
+
+        return;
     }
-});
+
+    await routeUserByRole(
+        decodedToken.role,
+        decodedToken.username
+    );
+
+    applyPackagePolicy(decodedToken.planId);
+};
+
+if (document.readyState === 'loading') {
+    window.addEventListener(
+        'DOMContentLoaded',
+        initializePortal
+    );
+} else {
+    initializePortal();
+}
 
 // --- FAZ 3: PAKET BAZLI DINAMIK UI KONTROLÜ ---
 const applyPackagePolicy = (planId, retryCount = 0) => {
