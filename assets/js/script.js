@@ -1278,17 +1278,6 @@ function updateAdBudgetPreview() {
 
 const initializeMetaAdForm = () => {
     populateAdCountries();
-    const browserLanguage = navigator.language || 'en';
-    const language = browserLanguage.split(/[-_]/)[0].toLowerCase();
-    const languageSelect = document.getElementById('ad-language');
-    if ([...languageSelect.options].some(option => option.value === language)) languageSelect.value = language;
-    const region = browserLanguage.split(/[-_]/)[1]?.toUpperCase();
-    if (region && region.length === 2 && Intl.DisplayNames) {
-        const countryName = new Intl.DisplayNames(['en'], { type: 'region' }).of(region);
-        if (countryName && countryName !== region) document.getElementById('ad-country').value = countryName;
-    }
-    const currencies = { TR: 'TRY', US: 'USD', GB: 'GBP', DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR', NL: 'EUR', PT: 'EUR' };
-    if (currencies[region]) document.getElementById('ad-currency').value = currencies[region];
     updateAdDestinationField();
     updateAdBudgetFields();
 };
