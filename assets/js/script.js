@@ -1215,13 +1215,43 @@ const populateAdCountries = () => {
 };
 
 const populateAdCurrencies = () => {
-    const list = document.getElementById('ad-currency-list');
-    if (!list || list.options.length) return;
-    list.replaceChildren(...[...adCurrencyCodes].sort().map(code => {
+    const select = document.getElementById('ad-currency');
+    const selected = select.value;
+    const locale = document.getElementById('ad-language').value || 'en';
+    let currencyNames;
+    try {
+        currencyNames = new Intl.DisplayNames([locale], { type: 'currency' });
+    } catch (_) {
+        currencyNames = null;
+    }
+    const common = new Set(['USD', 'EUR', 'GBP', 'TRY', 'CAD', 'AUD']);
+    const label = code => {
+        if (locale === 'tr' && code === 'TRY') return 'Türk Lirası (TRY)';
+        const name = currencyNames?.of(code) || code;
+        const capitalized = name.charAt(0).toLocaleUpperCase(locale) + name.slice(1);
+        return `${capitalized} (${code})`;
+    };
+    const makeOption = code => {
         const option = document.createElement('option');
         option.value = code;
+        option.textContent = label(code);
         return option;
-    }));
+    };
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Select a currency';
+    const popularGroup = document.createElement('optgroup');
+    popularGroup.label = 'Common currencies';
+    for (const code of common) {
+        if (adCurrencyCodes.has(code)) popularGroup.appendChild(makeOption(code));
+    }
+    const otherGroup = document.createElement('optgroup');
+    otherGroup.label = 'Other currencies';
+    const others = [...adCurrencyCodes].filter(code => !common.has(code));
+    others.sort((a, b) => label(a).localeCompare(label(b), locale));
+    for (const code of others) otherGroup.appendChild(makeOption(code));
+    select.replaceChildren(placeholder, popularGroup, otherGroup);
+    select.value = selected && adCurrencyCodes.has(selected) ? selected : '';
 };
 
 const showAdPlatformSelection = () => {
@@ -1412,10 +1442,8 @@ document.getElementById('back-to-panel-from-ad-platforms-btn').addEventListener(
 document.getElementById('back-to-ad-platforms-btn').addEventListener('click', showAdPlatformSelection);
 adDestinationType.addEventListener('change', updateAdDestinationField);
 document.getElementById('ad-country').addEventListener('input', event => event.target.setCustomValidity(''));
-document.getElementById('ad-currency').addEventListener('input', event => {
-    event.target.setCustomValidity('');
-    event.target.value = event.target.value.toUpperCase();
-});
+document.getElementById('ad-language').addEventListener('change', populateAdCurrencies);
+document.getElementById('ad-currency').addEventListener('change', event => event.target.setCustomValidity(''));
 adBudgetMode.addEventListener('change', updateAdBudgetFields);
 for (const id of ['ad-budget-type', 'ad-budget-amount', 'ad-duration', 'ad-currency']) {
     document.getElementById(id).addEventListener('input', updateAdBudgetPreview);

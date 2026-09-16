@@ -327,9 +327,10 @@
                     </div>
                     <div class="form-group">
                         <label for="ad-currency" class="required">Currency</label>
-                        <input type="text" id="ad-currency" name="currency" list="ad-currency-list" required maxlength="3" minlength="3" pattern="[A-Za-z]{3}" placeholder="Start typing a currency code" autocomplete="off">
-                        <datalist id="ad-currency-list"></datalist>
-                        <p class="helper-text">Select the three-letter currency code of the advertising account you plan to use.</p>
+                        <select id="ad-currency" name="currency" required>
+                            <option value="">Select a currency</option>
+                        </select>
+                        <p class="helper-text">Choose the currency of your Meta advertising account. The code appears in parentheses.</p>
                     </div>
                     <p class="helper-text">SynqBrand will recommend how to structure and review your spending. Results are not guaranteed.</p>
                 </fieldset>
