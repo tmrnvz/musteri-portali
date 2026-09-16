@@ -1189,25 +1189,37 @@ const saveLateConnectionData = async () => {
 
 
 // Meta Ads campaign guide
+// ISO 3166-1 alpha-2 country codes (including territories).
+const adCountryIsoCodes = new Set(`AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW`.split(' '));
 const adCountryCodes = new Map();
+const adCurrencyCodes = new Set(typeof Intl.supportedValuesOf === 'function'
+    ? Intl.supportedValuesOf('currency')
+    : ['USD', 'EUR', 'TRY', 'GBP', 'CAD', 'AUD', 'CHF', 'JPY', 'INR', 'BRL', 'AED', 'SAR']);
 const populateAdCountries = () => {
     const list = document.getElementById('ad-country-list');
     if (!list || list.options.length || !Intl.DisplayNames) return;
     const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
     const options = [];
-    for (let first = 65; first <= 90; first++) {
-        for (let second = 65; second <= 90; second++) {
-            const code = String.fromCharCode(first, second);
-            const name = displayNames.of(code);
-            if (!name || name === code || !/^[\p{L}]/u.test(name)) continue;
-            adCountryCodes.set(name.toLowerCase(), code);
-            options.push(name);
-        }
+    for (const code of adCountryIsoCodes) {
+        const name = displayNames.of(code);
+        if (!name || name === code) continue;
+        adCountryCodes.set(name.toLowerCase(), code);
+        options.push(name);
     }
     options.sort((a, b) => a.localeCompare(b, 'en'));
     list.replaceChildren(...options.map(name => {
         const option = document.createElement('option');
         option.value = name;
+        return option;
+    }));
+};
+
+const populateAdCurrencies = () => {
+    const list = document.getElementById('ad-currency-list');
+    if (!list || list.options.length) return;
+    list.replaceChildren(...[...adCurrencyCodes].sort().map(code => {
+        const option = document.createElement('option');
+        option.value = code;
         return option;
     }));
 };
@@ -1278,6 +1290,7 @@ function updateAdBudgetPreview() {
 
 const initializeMetaAdForm = () => {
     populateAdCountries();
+    populateAdCurrencies();
     updateAdDestinationField();
     updateAdBudgetFields();
 };
@@ -1298,18 +1311,27 @@ const handleMetaAdSubmit = async event => {
     const userBudget = budgetMode === 'user_defined';
     const budgetAmount = userBudget ? Number(value('budget_amount')) : null;
     const durationDays = userBudget ? Number(value('duration_days')) : null;
-    const maximumTotalBudget = userBudget && value('maximum_total_budget')
+    const maximumTotalBudget = value('maximum_total_budget')
         ? Number(value('maximum_total_budget')) : null;
     const country = value('target_country');
     const countryCode = /^[a-z]{2}$/i.test(country)
         ? country.toUpperCase()
         : (adCountryCodes.get(country.toLowerCase()) || '');
+    const currency = value('currency').toUpperCase();
     const destinationType = value('destination_type');
     const destinationValue = adDestinationValue.disabled ? '' : value('destination_value');
 
-    if (!countryCode) {
-        metaAdStatus.textContent = 'Select a target country from the list, or enter its two-letter country code.';
-        metaAdStatus.className = 'error';
+    if (!adCountryIsoCodes.has(countryCode)) {
+        const input = document.getElementById('ad-country');
+        input.setCustomValidity('Select a country from the suggestions or enter a valid two-letter country code.');
+        input.reportValidity();
+        return;
+    }
+
+    if (!adCurrencyCodes.has(currency)) {
+        const input = document.getElementById('ad-currency');
+        input.setCustomValidity('Select a valid three-letter currency code from the suggestions.');
+        input.reportValidity();
         return;
     }
 
@@ -1337,16 +1359,24 @@ const handleMetaAdSubmit = async event => {
         budget_mode: budgetMode,
         budget_type: userBudget ? value('budget_type') : '',
         budget_amount: budgetAmount,
-        currency: value('currency').toUpperCase(),
+        currency,
         duration_days: durationDays,
         maximum_total_budget: maximumTotalBudget,
-        reference_url: '',
-        additional_notes: value('additional_notes')
+        reference_url: value('reference_url'),
+        additional_notes: [
+            value('additional_notes'),
+            {
+                housing: 'Advertiser indicates this specific ad concerns housing or real estate. Verify the applicable Meta Special Ad Category.',
+                employment: 'Advertiser indicates this specific ad concerns jobs or employment. Verify the applicable Meta Special Ad Category.',
+                financial: 'Advertiser indicates this specific ad concerns financial products or services. Verify the applicable Meta Special Ad Category.',
+                politics: 'Advertiser indicates this specific ad concerns social issues, elections or politics. Verify the applicable Meta Special Ad Category.'
+            }[value('ad_topic')] || ''
+        ].filter(Boolean).join('\n')
     };
 
     metaAdSubmitButton.disabled = true;
     metaAdStatus.className = 'info';
-    metaAdStatus.textContent = 'Creating your campaign guide. This may take a few minutes. Keep this page open.';
+    metaAdStatus.textContent = 'We are reviewing your campaign details using Meta advertising guidance that we update regularly. Our AI is preparing clear setup steps and ad copy for your business. This can take several minutes. Please keep this page open.';
     try {
         const response = await fetch(META_AD_GUIDE_WORKFLOW_URL, {
             method: 'POST',
@@ -1363,7 +1393,7 @@ const handleMetaAdSubmit = async event => {
                 ? result.message : 'We could not create the campaign guide. Please try again.');
         }
         metaAdStatus.className = 'success';
-        metaAdStatus.textContent = result.message || 'Your campaign guide has been sent by email.';
+        metaAdStatus.textContent = 'Your Meta Ads campaign guide has been sent to the email address registered in your SynqBrand Business Profile. Please check your inbox and spam folder.';
         metaAdForm.reset();
         initializeMetaAdForm();
         metaAdStatus.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1381,6 +1411,11 @@ document.getElementById('show-meta-ad-form-btn').addEventListener('click', showM
 document.getElementById('back-to-panel-from-ad-platforms-btn').addEventListener('click', showCustomerPanel);
 document.getElementById('back-to-ad-platforms-btn').addEventListener('click', showAdPlatformSelection);
 adDestinationType.addEventListener('change', updateAdDestinationField);
+document.getElementById('ad-country').addEventListener('input', event => event.target.setCustomValidity(''));
+document.getElementById('ad-currency').addEventListener('input', event => {
+    event.target.setCustomValidity('');
+    event.target.value = event.target.value.toUpperCase();
+});
 adBudgetMode.addEventListener('change', updateAdBudgetFields);
 for (const id of ['ad-budget-type', 'ad-budget-amount', 'ad-duration', 'ad-currency']) {
     document.getElementById(id).addEventListener('input', updateAdBudgetPreview);

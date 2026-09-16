@@ -1231,32 +1231,66 @@ textarea {
 }
 
 .ad-email-note {
-    padding: 1rem;
-    background: #edf7fc;
-    border-left: 3px solid #31a6c4;
-    border-radius: 5px;
+    padding: 1.1rem 1.25rem;
+    background: #ebf8fc;
+    border: 1px solid #a8dbea;
+    border-left: 4px solid #14a0c8;
+    border-radius: 8px;
+    color: #173847;
+}
+
+.ad-email-note strong {
+    display: inline-block;
+    font-size: 1rem;
+    margin-bottom: 0.3rem;
 }
 
 #meta-ad-status:not(:empty) {
-    padding: 0.95rem;
-    margin-top: 1rem;
-    border-radius: 6px;
-    line-height: 1.5;
+    padding: 1.15rem 1.25rem;
+    margin-top: 1.25rem;
+    border-radius: 9px;
+    line-height: 1.6;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 1px solid transparent;
 }
 
 #meta-ad-status.info {
-    background: #edf7fc;
-    color: #173847;
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    background: #fff7e9;
+    color: #603b07;
+    border-color: #edc37a;
+    box-shadow: 0 2px 10px rgba(130, 88, 20, 0.08);
+}
+
+#meta-ad-status.info::before {
+    content: '';
+    display: block;
+    flex: 0 0 1.15rem;
+    height: 1.15rem;
+    margin-top: 0.2rem;
+    border: 3px solid #f2d49f;
+    border-top-color: #b9730e;
+    border-radius: 50%;
+    animation: ad-status-spin 0.9s linear infinite;
+}
+
+@keyframes ad-status-spin {
+    to { transform: rotate(360deg); }
 }
 
 #meta-ad-status.success {
     background: #e9f7ed;
     color: #216637;
+    border-color: #a9dcb6;
 }
 
 #meta-ad-status.error {
     background: #fff1f0;
     color: #a22724;
+    border-color: #efb5b1;
 }
 
 .ad-page [hidden] {
@@ -1264,6 +1298,11 @@ textarea {
 }
 
 @media (max-width: 620px) {
+    .container {
+        box-sizing: border-box;
+        padding: 1.25rem 1rem;
+    }
+
     .ad-two-columns {
         grid-template-columns: 1fr;
         gap: 0;
@@ -1272,5 +1311,11 @@ textarea {
     .ad-platform-card,
     .ad-fieldset {
         padding: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #meta-ad-status.info::before {
+        animation-duration: 2.5s;
     }
 }

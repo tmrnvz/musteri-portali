@@ -199,8 +199,8 @@
                     <legend>1. Your advertisement</legend>
                     <div class="form-group">
                         <label for="ad-promotion" class="required">What do you want to promote?</label>
-                        <textarea id="ad-promotion" name="promotion_description" required maxlength="3000" placeholder="Describe the product, service or campaign you'd like to advertise."></textarea>
-                        <p class="helper-text">Include what you sell and who it helps. Your Business Profile already provides the general business details.</p>
+                        <textarea id="ad-promotion" name="promotion_description" required maxlength="3000" placeholder="What would you like to advertise? A sentence or a rough note is enough."></textarea>
+                        <p class="helper-text">Write it in your own words. We already have your general business details from your Business Profile.</p>
                     </div>
                     <div class="form-group">
                         <label for="ad-offer">Offer details (optional)</label>
@@ -217,6 +217,23 @@
                             <option value="sales">Product sales</option>
                             <option value="awareness">Brand awareness</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ad-topic">Does this particular advertisement involve a regulated topic? (optional)</label>
+                        <select id="ad-topic" name="ad_topic">
+                            <option value="unsure">I'm not sure / let SynqBrand check</option>
+                            <option value="housing">Housing or real estate</option>
+                            <option value="employment">Jobs or employment</option>
+                            <option value="financial">Credit, insurance or other financial products and services</option>
+                            <option value="politics">Social issues, elections or politics</option>
+                            <option value="none">None of the above</option>
+                        </select>
+                        <p class="helper-text">Answer based on this ad, even if your business also offers other services. SynqBrand will still assess the ad topic.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="ad-reference-url">Link to an existing post or example (optional)</label>
+                        <input type="url" id="ad-reference-url" name="reference_url" maxlength="500" placeholder="https://example.com/post" autocomplete="off">
+                        <p class="helper-text">Add a reference link if you have one. We won't automatically open or inspect it.</p>
                     </div>
                 </fieldset>
 
@@ -249,10 +266,11 @@
                             <label for="ad-country" class="required">Target country</label>
                             <input type="text" id="ad-country" name="target_country" list="ad-country-list" required maxlength="100" autocomplete="off" placeholder="Start typing the country you want to target">
                             <datalist id="ad-country-list"></datalist>
+                            <p class="helper-text">Select a country from the suggestions, or enter its two-letter country code.</p>
                         </div>
                         <div class="form-group">
                             <label for="ad-location" class="required">City or area</label>
-                            <input type="text" id="ad-location" name="target_location" required maxlength="200" placeholder="e.g. İzmir or nationwide">
+                            <input type="text" id="ad-location" name="target_location" required maxlength="200" placeholder="e.g. nationwide or the name of a city">
                         </div>
                     </div>
                     <div class="form-group">
@@ -300,16 +318,17 @@
                             <input type="number" id="ad-duration" name="duration_days" min="1" max="365" step="1" inputmode="numeric" placeholder="e.g. 14">
                         </div>
                         <p class="ad-budget-preview" id="ad-budget-preview" aria-live="polite"></p>
-                        <div class="form-group">
-                            <label for="ad-spending-cap">Maximum total spending limit (optional)</label>
-                            <input type="number" id="ad-spending-cap" name="maximum_total_budget" min="0.01" step="0.01" inputmode="decimal" placeholder="Leave blank if you haven't set a limit">
-                            <p class="helper-text">Enter a limit only if you have one. This is separate from your estimated total budget.</p>
-                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ad-spending-cap">Maximum total budget for this plan (optional)</label>
+                        <input type="number" id="ad-spending-cap" name="maximum_total_budget" min="0.01" step="0.01" inputmode="decimal" placeholder="Leave blank if you haven't set a limit">
+                        <p class="helper-text">If you have a ceiling, enter it here even when SynqBrand recommends the budget. This is for the plan, not a spending limit set in Meta Ads Manager.</p>
                     </div>
                     <div class="form-group">
                         <label for="ad-currency" class="required">Currency</label>
-                        <input type="text" id="ad-currency" name="currency" required maxlength="3" minlength="3" pattern="[A-Za-z]{3}" placeholder="USD, EUR, TRY..." autocomplete="off">
-                        <p class="helper-text">Use the currency of the advertising account you plan to use.</p>
+                        <input type="text" id="ad-currency" name="currency" list="ad-currency-list" required maxlength="3" minlength="3" pattern="[A-Za-z]{3}" placeholder="Start typing a currency code" autocomplete="off">
+                        <datalist id="ad-currency-list"></datalist>
+                        <p class="helper-text">Select the three-letter currency code of the advertising account you plan to use.</p>
                     </div>
                     <p class="helper-text">SynqBrand will recommend how to structure and review your spending. Results are not guaranteed.</p>
                 </fieldset>
@@ -322,7 +341,7 @@
                     </div>
                 </fieldset>
 
-                <p class="ad-email-note">We'll send the guide to the email address on your Business Profile. This creates a plan for you to set up in Meta Ads Manager.</p>
+                <p class="ad-email-note"><strong>Your guide will be emailed to the address registered in your SynqBrand Business Profile.</strong><br>This creates a plan for you to set up in Meta Ads Manager.</p>
                 <button type="submit" id="submit-meta-ad-btn" class="btn-primary">Create My Campaign Guide</button>
                 <div id="meta-ad-status" role="status" aria-live="polite"></div>
                 <button type="button" id="back-to-ad-platforms-btn" class="btn-secondary">Back to platforms</button>
