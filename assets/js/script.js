@@ -1354,7 +1354,7 @@ const handleMetaAdSubmit = async event => {
         destination_value: destinationValue,
         target_country_code: countryCode,
         target_country: country,
-        target_location: value('target_location'),
+        target_location: value('target_location') || 'Nationwide',
         campaign_language: value('campaign_language'),
         budget_mode: budgetMode,
         budget_type: userBudget ? value('budget_type') : '',
