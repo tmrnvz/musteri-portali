@@ -9,6 +9,7 @@ const WORDPRESS_CONNECT_AUTHORIZE_URL = 'https://ops.synqbrand.com/webhook/wordp
 const ONBOARDING_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/af26ffa3-b636-46cf-9135-05fe0de71aac';
 const PRESIGNER_API_URL = 'https://presigner.synqbrand.com/generate-presigned-url';
 const MAIN_POST_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/ee3b3bd2-ae44-47ae-812d-c97a41a62731'; 
+const META_AD_GUIDE_WORKFLOW_URL = 'https://ops.synqbrand.com/webhook/meta-ads-campaign-request';
 const APPROVE_MANUAL_POST_URL = 'https://ops.synqbrand.com/webhook/8596e58f-177e-4396-909a-cd4de4d5373c';
 const R2_PUBLIC_BASE_URL = 'https://media.izmirarkadas.com';
 const GET_PLATFORMS_URL = 'https://ops.synqbrand.com/webhook/e3b4673c-d346-4f09-a970-052526b6646e';
@@ -66,6 +67,16 @@ const connectPageSection = document.getElementById('connect-page-section');
 const changePasswordSection = document.getElementById('change-password-section');
 const backToPanelFromConnectBtn = document.getElementById('back-to-panel-from-connect-btn');
 const platformButtonsContainer = document.getElementById('platform-buttons-container');
+const adPlatformsSection = document.getElementById('ad-platforms-section');
+const metaAdFormSection = document.getElementById('meta-ad-form-section');
+const metaAdForm = document.getElementById('meta-ad-form');
+const metaAdStatus = document.getElementById('meta-ad-status');
+const metaAdSubmitButton = document.getElementById('submit-meta-ad-btn');
+const adDestinationType = document.getElementById('ad-destination-type');
+const adDestinationValueGroup = document.getElementById('ad-destination-value-group');
+const adDestinationValue = document.getElementById('ad-destination-value');
+const adBudgetMode = document.getElementById('ad-budget-mode');
+const adBudgetFields = document.getElementById('ad-budget-fields');
 //const syncLateDataBtn = document.getElementById('sync-late-data-btn');
 
 
@@ -257,6 +268,8 @@ const routeUserByRole = async (role, username) => {
     postFormSection.style.display = 'none';
     approvalPortalSection.style.display = 'none';
     connectPageSection.style.display = 'none';
+    adPlatformsSection.style.display = 'none';
+    metaAdFormSection.style.display = 'none';
 
     if (role === 'published') {
         if (decodedToken && decodedToken.userId) { 
@@ -326,7 +339,7 @@ const routeUserByRole = async (role, username) => {
 };
 
 const showApprovalPortal = () => { customerPanel.style.display = 'none'; approvalPortalSection.style.display = 'block'; publishApprovedBtn.disabled = true; publishStatus.innerHTML = ''; loadAndRenderApprovalGallery(); };
-const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; connectPageSection.style.display = 'none'; customerPanel.style.display = 'block'; };
+const showCustomerPanel = () => { approvalPortalSection.style.display = 'none'; postFormSection.style.display = 'none'; connectPageSection.style.display = 'none'; adPlatformsSection.style.display = 'none'; metaAdFormSection.style.display = 'none'; customerPanel.style.display = 'block'; };
 
 
 // YENİ: Health Check Fonksiyonu
@@ -1175,7 +1188,216 @@ const saveLateConnectionData = async () => {
 };
 
 
+// Meta Ads campaign guide
+const adCountryCodes = new Map();
+const populateAdCountries = () => {
+    const list = document.getElementById('ad-country-list');
+    if (!list || list.options.length || !Intl.DisplayNames) return;
+    const displayNames = new Intl.DisplayNames(['en'], { type: 'region' });
+    const options = [];
+    for (let first = 65; first <= 90; first++) {
+        for (let second = 65; second <= 90; second++) {
+            const code = String.fromCharCode(first, second);
+            const name = displayNames.of(code);
+            if (!name || name === code || !/^[\p{L}]/u.test(name)) continue;
+            adCountryCodes.set(name.toLowerCase(), code);
+            options.push(name);
+        }
+    }
+    options.sort((a, b) => a.localeCompare(b, 'en'));
+    list.replaceChildren(...options.map(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        return option;
+    }));
+};
+
+const showAdPlatformSelection = () => {
+    customerPanel.style.display = 'none';
+    metaAdFormSection.style.display = 'none';
+    adPlatformsSection.style.display = 'block';
+};
+
+const showMetaAdForm = () => {
+    adPlatformsSection.style.display = 'none';
+    metaAdFormSection.style.display = 'block';
+    metaAdStatus.textContent = '';
+    metaAdStatus.className = '';
+};
+
+const updateAdDestinationField = () => {
+    const type = adDestinationType.value;
+    const field = document.getElementById('ad-destination-value');
+    const label = document.getElementById('ad-destination-value-label');
+    const help = document.getElementById('ad-destination-help');
+    const config = {
+        website: ['Website or landing page URL', 'Use the page where visitors can take the action. If blank, your Business Profile website may be used.', 'url', false],
+        product_page: ['Product page URL', 'Enter the exact page for the product in this ad.', 'url', true],
+        whatsapp: ['WhatsApp number', 'Include country code, for example +12025550100.', 'tel', true],
+        instagram_dm: ['Instagram username or profile URL', 'The account people will message.', 'text', false],
+        messenger: ['Facebook Page URL', 'The page people will message.', 'url', false]
+    }[type];
+    adDestinationValueGroup.hidden = !config;
+    field.required = Boolean(config?.[3]);
+    field.disabled = !config;
+    if (config) {
+        label.textContent = config[0];
+        help.textContent = config[1];
+        field.type = config[2];
+    } else {
+        field.value = '';
+        field.type = 'text';
+    }
+};
+
+const updateAdBudgetFields = () => {
+    const userBudget = adBudgetMode.value === 'user_defined';
+    adBudgetFields.hidden = !userBudget;
+    for (const input of adBudgetFields.querySelectorAll('input, select')) {
+        input.disabled = !userBudget;
+    }
+    document.getElementById('ad-budget-amount').required = userBudget;
+    document.getElementById('ad-budget-type').required = userBudget;
+    document.getElementById('ad-duration').required = userBudget;
+    updateAdBudgetPreview();
+};
+
+function updateAdBudgetPreview() {
+    const amount = Number(document.getElementById('ad-budget-amount').value);
+    const days = Number(document.getElementById('ad-duration').value);
+    const type = document.getElementById('ad-budget-type').value;
+    const preview = document.getElementById('ad-budget-preview');
+    if (adBudgetMode.value !== 'user_defined' || !(amount > 0) || !(days > 0)) {
+        preview.textContent = '';
+        return;
+    }
+    const total = type === 'daily' ? amount * days : amount;
+    const currency = document.getElementById('ad-currency').value.trim().toUpperCase();
+    preview.textContent = `Estimated total for ${days} days: ${total.toLocaleString(undefined, { maximumFractionDigits: 2 })} ${currency}`;
+}
+
+const initializeMetaAdForm = () => {
+    populateAdCountries();
+    const browserLanguage = navigator.language || 'en';
+    const language = browserLanguage.split(/[-_]/)[0].toLowerCase();
+    const languageSelect = document.getElementById('ad-language');
+    if ([...languageSelect.options].some(option => option.value === language)) languageSelect.value = language;
+    const region = browserLanguage.split(/[-_]/)[1]?.toUpperCase();
+    if (region && region.length === 2 && Intl.DisplayNames) {
+        const countryName = new Intl.DisplayNames(['en'], { type: 'region' }).of(region);
+        if (countryName && countryName !== region) document.getElementById('ad-country').value = countryName;
+    }
+    const currencies = { TR: 'TRY', US: 'USD', GB: 'GBP', DE: 'EUR', FR: 'EUR', ES: 'EUR', IT: 'EUR', NL: 'EUR', PT: 'EUR' };
+    if (currencies[region]) document.getElementById('ad-currency').value = currencies[region];
+    updateAdDestinationField();
+    updateAdBudgetFields();
+};
+
+const handleMetaAdSubmit = async event => {
+    event.preventDefault();
+    if (!metaAdForm.reportValidity()) return;
+    const headers = getAuthHeaders();
+    if (!headers) {
+        metaAdStatus.textContent = 'Your session has expired. Please log in again.';
+        metaAdStatus.className = 'error';
+        return;
+    }
+
+    const form = new FormData(metaAdForm);
+    const value = field => String(form.get(field) || '').trim();
+    const budgetMode = value('budget_mode');
+    const userBudget = budgetMode === 'user_defined';
+    const budgetAmount = userBudget ? Number(value('budget_amount')) : null;
+    const durationDays = userBudget ? Number(value('duration_days')) : null;
+    const maximumTotalBudget = userBudget && value('maximum_total_budget')
+        ? Number(value('maximum_total_budget')) : null;
+    const country = value('target_country');
+    const countryCode = /^[a-z]{2}$/i.test(country)
+        ? country.toUpperCase()
+        : (adCountryCodes.get(country.toLowerCase()) || '');
+    const destinationType = value('destination_type');
+    const destinationValue = adDestinationValue.disabled ? '' : value('destination_value');
+
+    if (!countryCode) {
+        metaAdStatus.textContent = 'Select a target country from the list, or enter its two-letter country code.';
+        metaAdStatus.className = 'error';
+        return;
+    }
+
+    if (userBudget && maximumTotalBudget !== null) {
+        const estimatedTotal = value('budget_type') === 'daily'
+            ? budgetAmount * durationDays : budgetAmount;
+        if (maximumTotalBudget < estimatedTotal - 0.001) {
+            metaAdStatus.textContent = 'Your maximum total spending limit is below your planned budget. Please adjust one of them.';
+            metaAdStatus.className = 'error';
+            return;
+        }
+    }
+
+    const request = {
+        platform: 'meta',
+        promotion_description: value('promotion_description'),
+        offer_details: value('offer_details'),
+        desired_result: value('desired_result'),
+        destination_type: destinationType,
+        destination_value: destinationValue,
+        target_country_code: countryCode,
+        target_country: country,
+        target_location: value('target_location'),
+        campaign_language: value('campaign_language'),
+        budget_mode: budgetMode,
+        budget_type: userBudget ? value('budget_type') : '',
+        budget_amount: budgetAmount,
+        currency: value('currency').toUpperCase(),
+        duration_days: durationDays,
+        maximum_total_budget: maximumTotalBudget,
+        reference_url: '',
+        additional_notes: value('additional_notes')
+    };
+
+    metaAdSubmitButton.disabled = true;
+    metaAdStatus.className = 'info';
+    metaAdStatus.textContent = 'Creating your campaign guide. This may take a few minutes. Keep this page open.';
+    try {
+        const response = await fetch(META_AD_GUIDE_WORKFLOW_URL, {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify(request)
+        });
+        const rawResult = await response.json().catch(() => ({}));
+        const result = Array.isArray(rawResult) ? rawResult[0] || {} : rawResult;
+        if (!response.ok || result.success !== true) {
+            if (response.status === 401 || response.status === 403) {
+                throw new Error('Your session has expired. Please log in again.');
+            }
+            throw new Error(typeof result.message === 'string' && result.message
+                ? result.message : 'We could not create the campaign guide. Please try again.');
+        }
+        metaAdStatus.className = 'success';
+        metaAdStatus.textContent = result.message || 'Your campaign guide has been sent by email.';
+        metaAdForm.reset();
+        initializeMetaAdForm();
+        metaAdStatus.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (error) {
+        metaAdStatus.className = 'error';
+        metaAdStatus.textContent = error.message || 'We could not create the campaign guide. Please try again.';
+    } finally {
+        metaAdSubmitButton.disabled = false;
+    }
+};
+
 // Event Listeners (Son Eklemelerle Birlikte)
+document.getElementById('show-ad-platforms-btn').addEventListener('click', showAdPlatformSelection);
+document.getElementById('show-meta-ad-form-btn').addEventListener('click', showMetaAdForm);
+document.getElementById('back-to-panel-from-ad-platforms-btn').addEventListener('click', showCustomerPanel);
+document.getElementById('back-to-ad-platforms-btn').addEventListener('click', showAdPlatformSelection);
+adDestinationType.addEventListener('change', updateAdDestinationField);
+adBudgetMode.addEventListener('change', updateAdBudgetFields);
+for (const id of ['ad-budget-type', 'ad-budget-amount', 'ad-duration', 'ad-currency']) {
+    document.getElementById(id).addEventListener('input', updateAdBudgetPreview);
+}
+metaAdForm.addEventListener('submit', handleMetaAdSubmit);
+initializeMetaAdForm();
 loginForm.addEventListener('submit', handleLogin);
 postForm.addEventListener('submit', handlePostSubmit);
 logoutBtn.addEventListener('click', handleLogout);

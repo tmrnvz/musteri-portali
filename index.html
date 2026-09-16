@@ -49,6 +49,13 @@
                 </div>
 
                 <div class="panel-group">
+                    <h3>Advertising</h3>
+                    <div class="panel-buttons">
+                        <button type="button" id="show-ad-platforms-btn" class="btn-primary">Create an Ad Campaign</button>
+                    </div>
+                </div>
+
+                <div class="panel-group">
                     <h3>Infrastructure & Billing</h3>
                     <div class="panel-buttons">
                         <button id="show-connect-page-btn" class="btn-primary">Social Media Connections</button>
@@ -167,6 +174,158 @@
         </div>
     </div>
 </section>
+
+        <!-- Advertising platform selection -->
+        <section id="ad-platforms-section" class="ad-page" style="display:none;">
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h2>Choose an Advertising Platform</h2>
+            <p class="ad-intro">Choose where you'd like to advertise. SynqBrand will prepare a practical campaign guide for you.</p>
+            <div class="ad-platform-card">
+                <h3>Meta Ads</h3>
+                <p>Instagram &amp; Facebook</p>
+                <p>Get recommended settings, ready-to-use ad copy and step-by-step instructions for Meta Ads Manager.</p>
+                <button type="button" id="show-meta-ad-form-btn" class="btn-primary">Create Meta Ads Campaign</button>
+            </div>
+            <button type="button" id="back-to-panel-from-ad-platforms-btn" class="btn-secondary">Back to Panel</button>
+        </section>
+
+        <!-- Meta Ads campaign request -->
+        <section id="meta-ad-form-section" class="ad-page" style="display:none;">
+            <img src="assets/images/SynqBrand_Logo.webp" alt="SynqBrand Logo" class="header-logo">
+            <h2>Create a Meta Ads Campaign</h2>
+            <p class="ad-intro">Tell us what you want to promote. We'll email you a campaign guide to set up in Meta Ads Manager.</p>
+            <form id="meta-ad-form">
+                <fieldset class="ad-fieldset">
+                    <legend>1. Your advertisement</legend>
+                    <div class="form-group">
+                        <label for="ad-promotion" class="required">What do you want to promote?</label>
+                        <textarea id="ad-promotion" name="promotion_description" required maxlength="3000" placeholder="Describe the product, service or campaign you'd like to advertise."></textarea>
+                        <p class="helper-text">Include what you sell and who it helps. Your Business Profile already provides the general business details.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="ad-offer">Offer details (optional)</label>
+                        <textarea id="ad-offer" name="offer_details" maxlength="1500" placeholder="Any real price, promotion or service detail you want mentioned?"></textarea>
+                        <p class="helper-text">Only enter offers and claims your business can actually provide.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="ad-result" class="required">What result do you want?</label>
+                        <select id="ad-result" name="desired_result" required>
+                            <option value="">Select a result</option>
+                            <option value="qualified_leads">Enquiries or qualified leads</option>
+                            <option value="messages">Messages or conversations</option>
+                            <option value="website_visits">Website visits</option>
+                            <option value="sales">Product sales</option>
+                            <option value="awareness">Brand awareness</option>
+                        </select>
+                    </div>
+                </fieldset>
+
+                <fieldset class="ad-fieldset">
+                    <legend>2. Where should people go?</legend>
+                    <div class="form-group">
+                        <label for="ad-destination-type" class="required">Preferred destination</label>
+                        <select id="ad-destination-type" name="destination_type" required>
+                            <option value="">Select a destination</option>
+                            <option value="synqbrand_recommend">Let SynqBrand recommend</option>
+                            <option value="website">Website or landing page</option>
+                            <option value="product_page">Product page</option>
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="instagram_dm">Instagram messages</option>
+                            <option value="messenger">Facebook Messenger</option>
+                            <option value="instant_form">Meta lead form</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="ad-destination-value-group" hidden>
+                        <label for="ad-destination-value" id="ad-destination-value-label">Destination</label>
+                        <input type="text" id="ad-destination-value" name="destination_value" maxlength="300" autocomplete="off">
+                        <p class="helper-text" id="ad-destination-help"></p>
+                    </div>
+                </fieldset>
+
+                <fieldset class="ad-fieldset">
+                    <legend>3. Who should see it?</legend>
+                    <div class="ad-two-columns">
+                        <div class="form-group">
+                            <label for="ad-country" class="required">Target country</label>
+                            <input type="text" id="ad-country" name="target_country" list="ad-country-list" required maxlength="100" placeholder="Start typing a country">
+                            <datalist id="ad-country-list"></datalist>
+                        </div>
+                        <div class="form-group">
+                            <label for="ad-location" class="required">City or area</label>
+                            <input type="text" id="ad-location" name="target_location" required maxlength="200" placeholder="e.g. İzmir or nationwide">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ad-language" class="required">Ad and email language</label>
+                        <select id="ad-language" name="campaign_language" required>
+                            <option value="">Select a language</option>
+                            <option value="en">English</option>
+                            <option value="tr">Türkçe</option>
+                            <option value="de">Deutsch</option>
+                            <option value="fr">Français</option>
+                            <option value="es">Español</option>
+                            <option value="it">Italiano</option>
+                            <option value="pt">Português</option>
+                            <option value="nl">Nederlands</option>
+                        </select>
+                    </div>
+                </fieldset>
+
+                <fieldset class="ad-fieldset">
+                    <legend>4. Budget</legend>
+                    <div class="form-group">
+                        <label for="ad-budget-mode" class="required">How would you like to set your budget?</label>
+                        <select id="ad-budget-mode" name="budget_mode" required>
+                            <option value="synqbrand_recommend">Let SynqBrand recommend a starting plan</option>
+                            <option value="user_defined">I have a budget</option>
+                        </select>
+                    </div>
+                    <div id="ad-budget-fields" hidden>
+                        <div class="ad-two-columns">
+                            <div class="form-group">
+                                <label for="ad-budget-type" class="required">Budget type</label>
+                                <select id="ad-budget-type" name="budget_type">
+                                    <option value="daily">Daily</option>
+                                    <option value="total">Total campaign budget</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ad-budget-amount" class="required">Budget amount</label>
+                                <input type="number" id="ad-budget-amount" name="budget_amount" min="0.01" step="0.01" inputmode="decimal" placeholder="e.g. 50">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="ad-duration" class="required">Campaign duration (days)</label>
+                            <input type="number" id="ad-duration" name="duration_days" min="1" max="365" step="1" inputmode="numeric" placeholder="e.g. 14">
+                        </div>
+                        <p class="ad-budget-preview" id="ad-budget-preview" aria-live="polite"></p>
+                        <div class="form-group">
+                            <label for="ad-spending-cap">Maximum total spending limit (optional)</label>
+                            <input type="number" id="ad-spending-cap" name="maximum_total_budget" min="0.01" step="0.01" inputmode="decimal" placeholder="Leave blank if you haven't set a limit">
+                            <p class="helper-text">Enter a limit only if you have one. This is separate from your estimated total budget.</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ad-currency" class="required">Currency</label>
+                        <input type="text" id="ad-currency" name="currency" required maxlength="3" minlength="3" pattern="[A-Za-z]{3}" placeholder="USD, EUR, TRY..." autocomplete="off">
+                    </div>
+                    <p class="helper-text">SynqBrand will recommend how to structure and review your spending. Results are not guaranteed.</p>
+                </fieldset>
+
+                <fieldset class="ad-fieldset">
+                    <legend>5. Anything else?</legend>
+                    <div class="form-group">
+                        <label for="ad-notes">Additional notes (optional)</label>
+                        <textarea id="ad-notes" name="additional_notes" maxlength="2000" placeholder="Anything we should consider for this campaign?"></textarea>
+                    </div>
+                </fieldset>
+
+                <p class="ad-email-note">We'll send the guide to the email address on your Business Profile. This creates a plan for you to set up in Meta Ads Manager.</p>
+                <button type="submit" id="submit-meta-ad-btn" class="btn-primary">Create My Campaign Guide</button>
+                <div id="meta-ad-status" role="status" aria-live="polite"></div>
+                <button type="button" id="back-to-ad-platforms-btn" class="btn-secondary">Back to platforms</button>
+            </form>
+        </section>
 
         <!-- Post Form Section -->
         <div id="post-form-section" style="display:none;">

@@ -1124,3 +1124,153 @@ textarea {
     margin: 0 auto;
     text-align: left; /* Formun içi sola yaslı olsun */
 }
+
+/* Advertising platform selection and campaign form */
+.ad-page {
+    text-align: left;
+}
+
+.ad-page .header-logo,
+.ad-page > h2,
+.ad-page > .ad-intro {
+    display: block;
+    text-align: center;
+}
+
+.ad-page .header-logo {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.ad-page > h2 {
+    margin-bottom: 0.6rem;
+}
+
+.ad-intro {
+    color: #516273;
+    line-height: 1.6;
+    margin: 0 auto 2rem;
+    max-width: 36rem;
+}
+
+.ad-platform-card,
+.ad-fieldset {
+    border: 1px solid #dce4eb;
+    border-radius: 12px;
+    padding: 1.35rem;
+    margin: 0 0 1.5rem;
+    background-color: #fff;
+}
+
+.ad-platform-card {
+    box-shadow: 0 2px 9px rgba(16, 43, 57, 0.07);
+}
+
+.ad-platform-card h3 {
+    color: #173847;
+    font-size: 1.25rem;
+    margin: 0 0 0.35rem;
+}
+
+.ad-platform-card p {
+    color: #43576a;
+    line-height: 1.55;
+}
+
+.ad-fieldset legend {
+    color: #173847;
+    font-size: 1.12rem;
+    font-weight: 700;
+    padding: 0 0.35rem;
+}
+
+.ad-fieldset .form-group:last-child {
+    margin-bottom: 0;
+}
+
+.ad-two-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1.25rem;
+}
+
+.ad-page input[type="number"],
+.ad-page input[type="tel"] {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    margin-top: 0.25rem;
+}
+
+.ad-page input,
+.ad-page select,
+.ad-page textarea {
+    box-sizing: border-box;
+}
+
+.ad-page textarea {
+    min-height: 95px;
+}
+
+.ad-page .helper-text,
+.ad-budget-preview,
+.ad-email-note {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: #576b7b;
+}
+
+.ad-budget-preview:not(:empty) {
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    background: #edf7fc;
+    color: #173847;
+}
+
+.ad-email-note {
+    padding: 1rem;
+    background: #edf7fc;
+    border-left: 3px solid #31a6c4;
+    border-radius: 5px;
+}
+
+#meta-ad-status:not(:empty) {
+    padding: 0.95rem;
+    margin-top: 1rem;
+    border-radius: 6px;
+    line-height: 1.5;
+}
+
+#meta-ad-status.info {
+    background: #edf7fc;
+    color: #173847;
+}
+
+#meta-ad-status.success {
+    background: #e9f7ed;
+    color: #216637;
+}
+
+#meta-ad-status.error {
+    background: #fff1f0;
+    color: #a22724;
+}
+
+.ad-page [hidden] {
+    display: none !important;
+}
+
+@media (max-width: 620px) {
+    .ad-two-columns {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .ad-platform-card,
+    .ad-fieldset {
+        padding: 1rem;
+    }
+}
