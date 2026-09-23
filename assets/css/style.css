@@ -1087,17 +1087,6 @@ textarea {
     color: white !important;
 }
 
-.btn-upgrade {
-    border-color: #f39c12 !important;
-    color: #f39c12 !important;
-    background-color: #fffaf0 !important;
-}
-
-.btn-upgrade:hover {
-    background-color: #f39c12 !important;
-    color: white !important;
-}
-
 /* Şifre Değiştirme Formu Ek Stilleri */
 #change-password-form {
     max-width: 400px;
